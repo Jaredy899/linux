@@ -2,17 +2,62 @@
 
 # Function to check if a package is installed
 check_package() {
-    if ! dpkg -l | grep -q "$1"; then
-        echo "$1 is not installed. Installing $1..."
-        sudo apt-get update
-        sudo apt-get install -y "$1"
-    else
-        echo "$1 is already installed."
-    fi
+    case "$1" in
+        ubuntu|debian)
+            package_name="cifs-utils"
+            if ! dpkg -l | grep -q "$package_name"; then
+                echo "$package_name is not installed. Installing $package_name..."
+                sudo apt-get update
+                sudo apt-get install -y "$package_name"
+            else
+                echo "$package_name is already installed."
+            fi
+            ;;
+        fedora)
+            package_name="cifs-utils"
+            if ! rpm -qa | grep -q "$package_name"; then
+                echo "$package_name is not installed. Installing $package_name..."
+                sudo dnf install -y "$package_name"
+            else
+                echo "$package_name is already installed."
+            fi
+            ;;
+        centos|rhel)
+            package_name="cifs-utils"
+            if ! rpm -qa | grep -q "$package_name"; then
+                echo "$package_name is not installed. Installing $package_name..."
+                sudo yum install -y "$package_name"
+            else
+                echo "$package_name is already installed."
+            fi
+            ;;
+        arch)
+            package_name="cifs-utils"
+            if ! pacman -Qi "$package_name" > /dev/null; then
+                echo "$package_name is not installed. Installing $package_name..."
+                sudo pacman -Sy --noconfirm "$package_name"
+            else
+                echo "$package_name is already installed."
+            fi
+            ;;
+        *)
+            echo "Unsupported distribution. Please install cifs-utils manually."
+            exit 1
+            ;;
+    esac
 }
 
+# Detect the Linux distribution
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    distro="$ID"
+else
+    echo "Could not detect the operating system."
+    exit 1
+fi
+
 # Ensure cifs-utils is installed
-check_package cifs-utils
+check_package "$distro"
 
 # Prompt the user for the remote mount location
 read -p "Enter the remote mount location (e.g., //192.168.1.1/Files): " remote_mount
