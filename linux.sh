@@ -94,6 +94,15 @@ else
     echo "Network drive not installed."
 fi
 
+# Ask the user if they want to install qemu-guest-agent
+qemu-guest-agent=$(get_user_input "Do you want to install qemu-guest-agent? (y/n): " "n")
+
+if [ "$qemu-guest-agent" = "y" ]; then
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/qemu-guest-agent.sh)"
+else
+    echo "qemu-guest-agentnot installed."
+fi
+
 # Ask the user if they want to install Docker and Portainer
 docker_response=$(get_user_input "Do you want to install Docker and Portainer? (y/n): " "n")
 
