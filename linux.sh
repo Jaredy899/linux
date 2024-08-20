@@ -89,7 +89,7 @@ fi
 network_drive_response=$(get_user_input "Do you want to install a network drive? (y/n): " "n")
 
 if [ "$network_drive_response" = "y" ]; then
-    curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/add_network_drive.sh | sh
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/add_network_drive.sh)
 else
     echo "Network drive not installed."
 fi
