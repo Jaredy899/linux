@@ -19,16 +19,12 @@ install_cockpit() {
             sudo apt install -y cockpit
             sudo systemctl enable --now cockpit
             ;;
-        fedora)
+        fedora|rocky|alma)
             sudo dnf install -y cockpit
             sudo systemctl enable --now cockpit
             ;;
         centos|rhel)
             sudo yum install -y cockpit
-            sudo systemctl enable --now cockpit
-            ;;
-        rocky|alma)
-            sudo dnf install -y cockpit
             sudo systemctl enable --now cockpit
             ;;
         opensuse|sles)
