@@ -1,5 +1,19 @@
 #!/bin/bash
 
+# Function to check if a package is installed
+check_package() {
+    if ! dpkg -l | grep -q "$1"; then
+        echo "$1 is not installed. Installing $1..."
+        sudo apt-get update
+        sudo apt-get install -y "$1"
+    else
+        echo "$1 is already installed."
+    fi
+}
+
+# Ensure cifs-utils is installed
+check_package cifs-utils
+
 # Prompt the user for the remote mount location
 read -p "Enter the remote mount location (e.g., //192.168.1.1/Files): " remote_mount
 
