@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Function to check if Cockpit is installed
 is_cockpit_installed() {
