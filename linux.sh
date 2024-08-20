@@ -1,8 +1,19 @@
-#!/bin/sh
+#!/bin/bash
 
 # Function to check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
+}
+
+# Function to capture user input
+get_user_input() {
+    prompt="$1"
+    default="$2"
+    read -r -p "$prompt" response
+    if [ -z "$response" ]; then
+        response="$default"
+    fi
+    echo "$response"
 }
 
 # Ensure git is installed
@@ -47,17 +58,6 @@ if [ -f /etc/os-release ]; then
     fi
 fi
 
-# Function to capture user input
-get_user_input() {
-    prompt="$1"
-    default="$2"
-    read -r -p "$prompt" response
-    if [ -z "$response" ]; then
-        response="$default"
-    fi
-    echo "$response"
-}
-
 # Ask the user if they want to start the ChrisTitusTech script
 response=$(get_user_input "Do you want to start the ChrisTitusTech script? (y/n): " "n")
 
@@ -83,6 +83,15 @@ if [ "$cockpit_response" = "y" ]; then
     curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/cockpit.sh | sh
 else
     echo "Cockpit not installed."
+fi
+
+# Ask the user if they want to install a network drive
+network_drive_response=$(get_user_input "Do you want to install a network drive? (y/n): " "n")
+
+if [ "$network_drive_response" = "y" ]; then
+    curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/add_network_drive.sh | sh
+else
+    echo "Network drive not installed."
 fi
 
 # Ask the user if they want to install Docker and Portainer
