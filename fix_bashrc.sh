@@ -14,8 +14,11 @@ insert_line_at_position() {
     local position="$2"
     local file="$3"
 
-    sed -i "${position}i\\
+    # Check if the line already exists in the file
+    if ! grep -Fxq "$line" "$file"; then
+        sed -i "${position}i\\
 $line" "$file"
+    fi
 }
 
 # Add the lines at specific positions
@@ -23,9 +26,9 @@ insert_line_at_position "$line4" 4 "$file"
 insert_line_at_position "$line5" 5 "$file"
 
 # Check if the file already ends with 'fi' and remove it if present to avoid duplicates
-sed -i '$s/^\s*fi\s*$//' "$file"
-
-# Append "fi" at the end of the file
-echo "$line_end" >> "$file"
+if ! grep -Fxq "$line_end" "$file"; then
+    sed -i '$s/^\s*fi\s*$//' "$file"
+    echo "$line_end" >> "$file"
+fi
 
 echo "Lines added successfully to $file."
