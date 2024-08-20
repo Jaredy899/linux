@@ -28,8 +28,18 @@ install_qemu_guest_agent() {
     fi
 }
 
+# Function to enable and start the qemu-guest-agent service
+enable_qemu_guest_agent_service() {
+    sudo systemctl enable qemu-guest-agent
+    sudo systemctl start qemu-guest-agent
+    echo "qemu-guest-agent service has been enabled and started."
+}
+
 # Check if qemu-guest-agent is installed and install it if not
 if ! check_qemu_guest_agent; then
     install_qemu_guest_agent
     echo "qemu-guest-agent has been installed."
 fi
+
+# Ensure the qemu-guest-agent service is enabled and started
+enable_qemu_guest_agent_service
