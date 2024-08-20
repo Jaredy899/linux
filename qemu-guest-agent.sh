@@ -28,13 +28,8 @@ install_qemu_guest_agent() {
     fi
 }
 
-# Ask the user if they want to install qemu-guest-agent
-read -p "Do you want to install qemu-guest-agent? (y/n) " answer
-if [[ "$answer" =~ ^[Yy]$ ]]; then
-    if ! check_qemu_guest_agent; then
-        install_qemu_guest_agent
-        echo "qemu-guest-agent has been installed."
-    fi
-else
-    echo "qemu-guest-agent installation skipped."
+# Check if qemu-guest-agent is installed and install it if not
+if ! check_qemu_guest_agent; then
+    install_qemu_guest_agent
+    echo "qemu-guest-agent has been installed."
 fi
