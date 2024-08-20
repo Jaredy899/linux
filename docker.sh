@@ -28,9 +28,9 @@ install_packages() {
         sudo pacman -Syu --noconfirm
         sudo pacman -S --noconfirm docker docker-compose
 
-    elif [ -f /etc/redhat-release ]; then
-        # CentOS/Fedora-based system
-        echo "Detected Red Hat-based system"
+    elif [ -f /etc/redhat-release ] || [ -f /etc/SuSE-release ] || ( [ -f /etc/os-release ] && grep -qi "suse" /etc/os-release ); then
+        # Red Hat-based system or openSUSE-based system
+        echo "Detected Red Hat or openSUSE-based system"
         curl -fsSL https://get.docker.com | sh
 
     else
