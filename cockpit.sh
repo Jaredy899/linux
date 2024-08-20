@@ -33,11 +33,8 @@ install_cockpit() {
             sudo apt update
             sudo apt install -y cockpit
             ;;
-        fedora|rocky|alma)
+        fedora|rocky|alma|centos|rhel)
             sudo dnf install -y cockpit
-            ;;
-        centos|rhel)
-            sudo yum install -y cockpit
             ;;
         opensuse|sles)
             sudo zypper install -y cockpit
