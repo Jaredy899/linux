@@ -44,7 +44,6 @@ if [ -f /etc/os-release ]; then
     if [ "$ID" = "ubuntu" ]; then
         echo "Ubuntu detected. Adding the PPA for fastfetch..."
         sudo add-apt-repository ppa:zhangsongcui3371/fastfetch -y
-        sudo apt-get update
     fi
 fi
 
