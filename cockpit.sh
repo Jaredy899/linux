@@ -32,29 +32,35 @@ install_cockpit() {
         ubuntu|debian)
             sudo apt update
             sudo apt install -y cockpit
-            sudo systemctl enable --now cockpit
             ;;
         fedora|rocky|alma)
             sudo dnf install -y cockpit
-            sudo systemctl enable --now cockpit
             ;;
         centos|rhel)
             sudo yum install -y cockpit
-            sudo systemctl enable --now cockpit
             ;;
         opensuse|sles)
             sudo zypper install -y cockpit
-            sudo systemctl enable --now cockpit
             ;;
         arch)
             sudo pacman -Sy --noconfirm cockpit
-            sudo systemctl enable --now cockpit
             ;;
         *)
             echo "Unsupported Linux distribution: $DISTRO"
             exit 1
             ;;
     esac
+
+    sudo systemctl enable --now cockpit
+
+    # Configure UFW to allow Cockpit through the firewall
+    if command_exists ufw; then
+        sudo ufw allow 9090/tcp
+        sudo ufw reload
+        echo "UFW configuration updated to allow Cockpit."
+    else
+        echo "UFW is not installed or not found. Please ensure port 9090 is open for Cockpit."
+    fi
 
     echo "Cockpit installation complete."
     echo "You can access Cockpit via https://<your-server-ip>:9090"
