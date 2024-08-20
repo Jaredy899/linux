@@ -1,88 +1,97 @@
 #!/bin/sh
 
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
+set -o errexit
+set -o nounset
+IFS=$(printf '\n\t')
+
+# Function to check if Docker is already installed
+check_docker_installed() {
+    if command -v docker > /dev/null 2>&1; then
+        echo "Docker is already installed. Skipping installation."
+        return 0
+    else
+        return 1
+    fi
 }
 
-# Ensure git is installed
-if ! command_exists git; then
-    echo "Git is not installed. Installing git..."
-    
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        case "$ID" in
-            ubuntu|debian)
-                sudo apt-get update -qq
-                sudo apt-get install -y git -qq
-                ;;
-            fedora)
-                sudo dnf install -y git -q
-                ;;
-            centos|rhel)
-                sudo yum install -y git -q
-                ;;
-            arch)
-                sudo pacman -Sy git --noconfirm >/dev/null
-                ;;
-            *)
-                echo "Unsupported distro. Please install git manually."
-                exit 1
-                ;;
-        esac
+# Function to detect the distribution and install the necessary packages
+install_packages() {
+    if [ -f /etc/debian_version ]; then
+        # Debian/Ubuntu-based system
+        echo "Detected Debian-based system"
+        sudo apt update && sudo apt install -y curl
+        curl -sSL https://get.docker.com | sh
+
+    elif [ -f /etc/arch-release ]; then
+        # Arch-based system
+        echo "Detected Arch-based system"
+        sudo pacman -Syu --noconfirm
+        sudo pacman -S --noconfirm docker docker-compose
+
+    elif [ -f /etc/redhat-release ] || [ -f /etc/SuSE-release ] || ( [ -f /etc/os-release ] && grep -qi "suse" /etc/os-release ); then
+        # Red Hat-based system or openSUSE-based system
+        echo "Detected Red Hat or openSUSE-based system"
+        curl -fsSL https://get.docker.com | sh
+
     else
-        echo "Could not detect the operating system. Please install git manually."
+        echo "Unsupported distribution"
         exit 1
     fi
-else
-    echo "Git is already installed."
-fi
+}
 
-# Check if the system is Ubuntu
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    if [ "$ID" = "ubuntu" ]; then
-        echo "Ubuntu detected. Adding the PPA for fastfetch..."
-        sudo add-apt-repository ppa:zhangsongcui3371/fastfetch -y
+# Function to start and enable Docker
+start_enable_docker() {
+    echo "Starting and enabling Docker service..."
+    sudo systemctl start docker
+    sudo systemctl enable docker
+}
+
+# Function to install and start Portainer
+install_portainer() {
+    if [ "$(sudo docker ps -q -f name=portainer)" ]; then
+        echo "Portainer is already running."
+    else
+        echo "Installing and starting Portainer..."
+        sudo docker volume create portainer_data
+        sudo docker run -d \
+          -p 8000:8000 \
+          -p 9000:9000 \
+          --name=portainer \
+          --restart=always \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          -v portainer_data:/data \
+          portainer/portainer-ce:latest
+
+        printf 'Waiting for Portainer to start...\n'
+        
+        TIMEOUT=30
+        while [ "$(sudo docker inspect -f '{{.State.Status}}' portainer)" != "running" ]; do
+            sleep 1
+            TIMEOUT=$((TIMEOUT - 1))
+            if [ $TIMEOUT -le 0 ]; then
+                echo "Portainer failed to start within the expected time."
+                exit 1
+            fi
+        done
+
+        echo "Portainer started successfully."
     fi
-fi
+}
 
-# Ask the user if they want to start the ChrisTitusTech script
-printf "Do you want to start the ChrisTitusTech script? (y/n): "
-read response
-
-if [ "$response" = "y" ]; then
-    curl -fsSL https://christitus.com/linux | sh
+# Main script execution
+if ! check_docker_installed; then
+    install_packages
+    start_enable_docker
 else
-    echo "ChrisTitusTech script not started."
+    start_enable_docker
 fi
 
-# Ask the user if they want to fix .bashrc
-printf "Do you want to fix bashrc? (y/n): "
-read bashrc_response
+install_portainer
 
-if [ "$bashrc_response" = "y" ]; then
-    curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/fix_bashrc.sh | sh
-else
-    echo ".bashrc not fixed."
-fi
-
-# Ask the user if they want to install Cockpit
-printf "Do you want to install Cockpit? (y/n): "
-read cockpit_response
-
-if [ "$cockpit_response" = "y" ]; then
-    curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/cockpit.sh | sh
-else
-    echo "Cockpit not installed."
-fi
-
-# Ask the user if they want to install Docker and Portainer
-printf "Do you want to install Docker and Portainer? (y/n): "
-read docker_response
-
-if [ "$docker_response" = "y" ]; then
-    curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/docker.sh | sh
-else
-    echo "Docker and Portainer not installed."
-fi
+# Display instructions to manually add user to Docker group after Portainer is started
+echo "To add your user to the Docker group and apply the changes, please run the following commands:"
+echo
+echo "  sudo usermod -aG docker $USER"
+echo "  newgrp docker"
+echo
+echo "After running these commands, you can use Docker without sudo."
