@@ -38,6 +38,16 @@ else
     echo "Git is already installed."
 fi
 
+# Check if the system is Ubuntu and add the PPA if it is
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    if [ "$ID" = "ubuntu" ]; then
+        echo "Ubuntu detected. Adding the PPA for fastfetch..."
+        sudo add-apt-repository ppa:zhangsongcui3371/fastfetch -y
+        sudo apt-get update
+    fi
+fi
+
 # Function to capture user input
 get_user_input() {
     prompt="$1"
