@@ -4,16 +4,6 @@ set -o errexit
 set -o nounset
 IFS=$(printf '\n\t')
 
-# Function to check if Docker is already installed
-check_docker_installed() {
-    if command -v docker > /dev/null 2>&1; then
-        echo "Docker is already installed. Skipping installation."
-        return 0
-    else
-        return 1
-    fi
-}
-
 # Function to detect the distribution and install the necessary packages
 install_packages() {
     if [ -f /etc/debian_version ]; then
@@ -27,11 +17,23 @@ install_packages() {
         echo "Detected Arch-based system"
         sudo pacman -Syu --noconfirm
         sudo pacman -S --noconfirm docker docker-compose
+        sudo systemctl start docker
+        sudo systemctl enable docker
 
-    elif [ -f /etc/redhat-release ] || [ -f /etc/SuSE-release ] || ( [ -f /etc/os-release ] && grep -qi "suse" /etc/os-release ); then
-        # Red Hat-based system or openSUSE-based system
-        echo "Detected Red Hat or openSUSE-based system"
+    elif [ -f /etc/redhat-release ]; then
+        # CentOS/Fedora-based system
+        echo "Detected Red Hat-based system"
         curl -fsSL https://get.docker.com | sh
+        sudo systemctl start docker
+        sudo systemctl enable docker
+
+    elif [ -f /etc/os-release ] && grep -qi "suse" /etc/os-release; then
+        # openSUSE-based system
+        echo "Detected openSUSE-based system"
+        sudo zypper refresh
+        sudo zypper install -y docker docker-compose
+        sudo systemctl start docker
+        sudo systemctl enable docker
 
     else
         echo "Unsupported distribution"
@@ -39,34 +41,11 @@ install_packages() {
     fi
 }
 
-# Function to start and enable Docker
-start_enable_docker() {
-    echo "Starting and enabling Docker service..."
-    
-    # Ensure cgroups and necessary kernel modules are loaded
-    sudo modprobe overlay
-    sudo modprobe br_netfilter
-    
-    # Start and enable Docker
-    sudo systemctl daemon-reload
-    sudo systemctl enable docker
-    sudo systemctl start docker
-
-    # Verify if Docker started successfully
-    if ! sudo systemctl is-active --quiet docker; then
-        echo "Docker service failed to start. Please check the logs with 'journalctl -xeu docker.service' for more details."
-        exit 1
-    fi
-
-    echo "Docker service started successfully."
-}
-
 # Function to install and start Portainer
 install_portainer() {
     if [ "$(sudo docker ps -q -f name=portainer)" ]; then
-        echo "Portainer is already running."
+        echo "Portainer is already running"
     else
-        echo "Installing and starting Portainer..."
         sudo docker volume create portainer_data
         sudo docker run -d \
           -p 8000:8000 \
@@ -77,30 +56,18 @@ install_portainer() {
           -v portainer_data:/data \
           portainer/portainer-ce:latest
 
-        printf 'Waiting for Portainer to start...\n'
-        
-        TIMEOUT=30
-        while [ "$(sudo docker inspect -f '{{.State.Status}}' portainer)" != "running" ]; do
+        printf 'Waiting for Portainer to start...\n\n'
+        until [ "$(sudo docker inspect -f '{{.State.Status}}' portainer)" = "running" ]; do
             sleep 1
-            TIMEOUT=$((TIMEOUT - 1))
-            if [ $TIMEOUT -le 0 ]; then
-                echo "Portainer failed to start within the expected time."
-                exit 1
-            fi
         done
 
-        echo "Portainer started successfully."
+        printf '\nPortainer started successfully\n\n'
     fi
 }
 
-# Main script execution
-if ! check_docker_installed; then
-    install_packages
-    start_enable_docker
-else
-    start_enable_docker
-fi
+install_packages
 
+# Install Portainer with sudo to avoid permission issues
 install_portainer
 
 # Display instructions to manually add user to Docker group after Portainer is started
