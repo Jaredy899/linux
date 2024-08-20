@@ -48,7 +48,7 @@ if [ -f /etc/os-release ]; then
 fi
 
 # Ask the user if they want to start the ChrisTitusTech script
-echo "Do you want to start the ChrisTitusTech script? (y/n): \c"
+printf "Do you want to start the ChrisTitusTech script? (y/n): "
 read response
 
 if [ "$response" = "y" ]; then
@@ -58,7 +58,7 @@ else
 fi
 
 # Ask the user if they want to fix .bashrc
-echo "Do you want to fix bashrc? (y/n): \c"
+printf "Do you want to fix bashrc? (y/n): "
 read bashrc_response
 
 if [ "$bashrc_response" = "y" ]; then
@@ -68,7 +68,7 @@ else
 fi
 
 # Ask the user if they want to install Cockpit
-echo "Do you want to install Cockpit? (y/n): \c"
+printf "Do you want to install Cockpit? (y/n): "
 read cockpit_response
 
 if [ "$cockpit_response" = "y" ]; then
@@ -78,7 +78,7 @@ else
 fi
 
 # Ask the user if they want to install Docker and Portainer
-echo "Do you want to install Docker and Portainer? (y/n): \c"
+printf "Do you want to install Docker and Portainer? (y/n): "
 read docker_response
 
 if [ "$docker_response" = "y" ]; then
