@@ -5,15 +5,40 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Function to capture user input using whiptail
-get_user_input() {
-    prompt="$1"
-    default="$2"
-    response=$(whiptail --inputbox "$prompt" 8 78 "$default" --title "Input Required" 3>&1 1>&2 2>&3)
-    echo "$response"
-}
+# Install whiptail if it isn't already installed
+if ! command_exists whiptail; then
+    echo "whiptail is not installed. Installing whiptail..."
+    
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        case "$ID" in
+            ubuntu|debian)
+                sudo apt-get update -qq
+                sudo apt-get install -y whiptail -qq
+                ;;
+            fedora)
+                sudo dnf install -y newt -q
+                ;;
+            centos|rhel)
+                sudo yum install -y newt -q
+                ;;
+            arch)
+                sudo pacman -Sy newt --noconfirm >/dev/null
+                ;;
+            *)
+                echo "Unsupported distro. Please install whiptail manually."
+                exit 1
+                ;;
+        esac
+    else
+        echo "Could not detect the operating system. Please install whiptail manually."
+        exit 1
+    fi
+else
+    echo "whiptail is already installed."
+fi
 
-# Ensure git is installed
+# Check if git is installed, and install if necessary
 if ! command_exists git; then
     whiptail --msgbox "Git is not installed. Installing git..." 8 78 --title "Installing Git"
     
