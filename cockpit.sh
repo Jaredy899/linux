@@ -51,7 +51,8 @@ install_cockpit() {
             ;;
     esac
 
-    sudo systemctl enable --now cockpit
+    sudo systemctl start cockpit
+    sudo systemctl enable cockpit
 
     # Configure UFW to allow Cockpit through the firewall
     if command_exists ufw; then
