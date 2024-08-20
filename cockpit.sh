@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Function to install Cockpit and additional modules
+# Function to install Cockpit
 install_cockpit() {
-    echo "Installing Cockpit and additional modules..."
+    echo "Installing Cockpit..."
 
     # Detect the Linux distribution
     if [ -f /etc/os-release ]; then
@@ -16,27 +16,27 @@ install_cockpit() {
     case "$DISTRO" in
         ubuntu|debian)
             sudo apt update
-            sudo apt install -y cockpit cockpit-dashboard cockpit-storaged
+            sudo apt install -y cockpit
             sudo systemctl enable --now cockpit
             ;;
         fedora)
-            sudo dnf install -y cockpit cockpit-dashboard cockpit-storaged
+            sudo dnf install -y cockpit
             sudo systemctl enable --now cockpit
             ;;
         centos|rhel)
-            sudo yum install -y cockpit cockpit-dashboard cockpit-storaged
+            sudo yum install -y cockpit
             sudo systemctl enable --now cockpit
             ;;
         rocky|alma)
-            sudo dnf install -y cockpit cockpit-dashboard cockpit-storaged
+            sudo dnf install -y cockpit
             sudo systemctl enable --now cockpit
             ;;
         opensuse|sles)
-            sudo zypper install -y cockpit cockpit-dashboard cockpit-storaged
+            sudo zypper install -y cockpit
             sudo systemctl enable --now cockpit
             ;;
         arch)
-            sudo pacman -Sy --noconfirm cockpit cockpit-dashboard cockpit-storaged
+            sudo pacman -Sy --noconfirm cockpit
             sudo systemctl enable --now cockpit
             ;;
         *)
