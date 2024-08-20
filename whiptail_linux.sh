@@ -5,7 +5,7 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Install whiptail if it isn't already installed
+# Ensure whiptail is installed
 if ! command_exists whiptail; then
     echo "whiptail is not installed. Installing whiptail..."
     
@@ -23,7 +23,12 @@ if ! command_exists whiptail; then
                 sudo yum install -y newt -q
                 ;;
             arch)
-                sudo pacman -Sy newt --noconfirm >/dev/null
+                if command_exists yay; then
+                    yay -S --noconfirm newt
+                else
+                    echo "Please install 'newt' from the AUR manually or use an AUR helper like 'yay'."
+                    exit 1
+                fi
                 ;;
             *)
                 echo "Unsupported distro. Please install whiptail manually."
