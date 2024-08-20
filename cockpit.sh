@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Function to check if Cockpit is installed
+is_cockpit_installed() {
+    if command_exists cockpit; then
+        echo "Cockpit is already installed."
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
 # Function to install Cockpit
 install_cockpit() {
     echo "Installing Cockpit..."
@@ -45,5 +60,10 @@ install_cockpit() {
     echo "You can access Cockpit via https://<your-server-ip>:9090"
 }
 
-# Run the install function
-install_cockpit
+# Check if Cockpit is already installed
+if is_cockpit_installed; then
+    echo "No need to install Cockpit."
+else
+    # Run the install function
+    install_cockpit
+fi
