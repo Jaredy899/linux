@@ -13,17 +13,17 @@ if ! command_exists git; then
         . /etc/os-release
         case "$ID" in
             ubuntu|debian)
-                sudo apt-get update
-                sudo apt-get install -y git
+                sudo apt-get update -qq
+                sudo apt-get install -y git -qq
                 ;;
             fedora)
-                sudo dnf install -y git
+                sudo dnf install -y git -q
                 ;;
             centos|rhel)
-                sudo yum install -y git
+                sudo yum install -y git -q
                 ;;
             arch)
-                sudo pacman -Sy git --noconfirm
+                sudo pacman -Sy git --noconfirm > /dev/null
                 ;;
             *)
                 echo "Unsupported distro. Please install git manually."
@@ -41,7 +41,7 @@ fi
 # Check if the system is Ubuntu
 if [ -f /etc/os-release ]; then
     . /etc/os-release
-    if [[ "$ID" == "ubuntu" ]]; then
+    if [ "$ID" = "ubuntu" ]; then
         echo "Ubuntu detected. Adding the PPA for fastfetch..."
         sudo add-apt-repository ppa:zhangsongcui3371/fastfetch -y
     fi
@@ -50,7 +50,7 @@ fi
 # Ask the user if they want to start the ChrisTitusTech script
 read -p "Do you want to start the ChrisTitusTech script? (y/n): " response
 
-if [[ "$response" == "y" ]]; then
+if [ "$response" = "y" ]; then
     curl -fsSL https://christitus.com/linux | sh
 else
     echo "ChrisTitusTech script not started."
@@ -59,7 +59,7 @@ fi
 # Ask the user if they want to fix .bashrc
 read -p "Do you want to fix bashrc? (y/n): " bashrc_response
 
-if [[ "$bashrc_response" == "y" ]]; then
+if [ "$bashrc_response" = "y" ]; then
     curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/fix_bashrc.sh | sh
 else
     echo ".bashrc not fixed."
@@ -68,7 +68,7 @@ fi
 # Ask the user if they want to install Cockpit
 read -p "Do you want to install Cockpit? (y/n): " cockpit_response
 
-if [[ "$cockpit_response" == "y" ]]; then
+if [ "$cockpit_response" = "y" ]; then
     curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/cockpit.sh | sh
 else
     echo "Cockpit not installed."
@@ -77,7 +77,7 @@ fi
 # Ask the user if they want to install Docker and Portainer
 read -p "Do you want to install Docker and Portainer? (y/n): " docker_response
 
-if [[ "$docker_response" == "y" ]]; then
+if [ "$docker_response" = "y" ]; then
     curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/docker.sh | sh
 else
     echo "Docker and Portainer not installed."
