@@ -42,8 +42,23 @@ install_packages() {
 # Function to start and enable Docker
 start_enable_docker() {
     echo "Starting and enabling Docker service..."
-    sudo systemctl start docker
+    
+    # Ensure cgroups and necessary kernel modules are loaded
+    sudo modprobe overlay
+    sudo modprobe br_netfilter
+    
+    # Start and enable Docker
+    sudo systemctl daemon-reload
     sudo systemctl enable docker
+    sudo systemctl start docker
+
+    # Verify if Docker started successfully
+    if ! sudo systemctl is-active --quiet docker; then
+        echo "Docker service failed to start. Please check the logs with 'journalctl -xeu docker.service' for more details."
+        exit 1
+    fi
+
+    echo "Docker service started successfully."
 }
 
 # Function to install and start Portainer
