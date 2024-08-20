@@ -38,18 +38,19 @@ else
     echo "Git is already installed."
 fi
 
-# Check if the system is Ubuntu
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    if [ "$ID" = "ubuntu" ]; then
-        echo "Ubuntu detected. Adding the PPA for fastfetch..."
-        sudo add-apt-repository ppa:zhangsongcui3371/fastfetch -y
+# Function to capture user input
+get_user_input() {
+    prompt="$1"
+    default="$2"
+    read -r -p "$prompt" response
+    if [ -z "$response" ]; then
+        response="$default"
     fi
-fi
+    echo "$response"
+}
 
 # Ask the user if they want to start the ChrisTitusTech script
-printf "Do you want to start the ChrisTitusTech script? (y/n): "
-read response
+response=$(get_user_input "Do you want to start the ChrisTitusTech script? (y/n): " "n")
 
 if [ "$response" = "y" ]; then
     curl -fsSL https://christitus.com/linux | sh
@@ -58,8 +59,7 @@ else
 fi
 
 # Ask the user if they want to fix .bashrc
-printf "Do you want to fix bashrc? (y/n): "
-read bashrc_response
+bashrc_response=$(get_user_input "Do you want to fix bashrc? (y/n): " "n")
 
 if [ "$bashrc_response" = "y" ]; then
     curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/fix_bashrc.sh | sh
@@ -68,8 +68,7 @@ else
 fi
 
 # Ask the user if they want to install Cockpit
-printf "Do you want to install Cockpit? (y/n): "
-read cockpit_response
+cockpit_response=$(get_user_input "Do you want to install Cockpit? (y/n): " "n")
 
 if [ "$cockpit_response" = "y" ]; then
     curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/cockpit.sh | sh
@@ -78,8 +77,7 @@ else
 fi
 
 # Ask the user if they want to install Docker and Portainer
-printf "Do you want to install Docker and Portainer? (y/n): "
-read docker_response
+docker_response=$(get_user_input "Do you want to install Docker and Portainer? (y/n): " "n")
 
 if [ "$docker_response" = "y" ]; then
     curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/docker.sh | sh
