@@ -62,7 +62,7 @@ fi
 response=$(get_user_input "Do you want to start the ChrisTitusTech script? (y/n): " "n")
 
 if [ "$response" = "y" ]; then
-    curl -fsSL https://christitus.com/linux | sh
+    bash -c "$(curl -fsSL https://christitus.com/linux)"
 else
     echo "ChrisTitusTech script not started."
 fi
@@ -71,7 +71,7 @@ fi
 bashrc_response=$(get_user_input "Do you want to fix bashrc? (y/n): " "n")
 
 if [ "$bashrc_response" = "y" ]; then
-    curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/fix_bashrc.sh | sh
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/fix_bashrc.sh)"
 else
     echo ".bashrc not fixed."
 fi
@@ -80,7 +80,7 @@ fi
 cockpit_response=$(get_user_input "Do you want to install Cockpit? (y/n): " "n")
 
 if [ "$cockpit_response" = "y" ]; then
-    curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/cockpit.sh | sh
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/cockpit.sh)"
 else
     echo "Cockpit not installed."
 fi
@@ -89,7 +89,7 @@ fi
 network_drive_response=$(get_user_input "Do you want to install a network drive? (y/n): " "n")
 
 if [ "$network_drive_response" = "y" ]; then
-    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/add_network_drive.sh)
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/add_network_drive.sh)"
 else
     echo "Network drive not installed."
 fi
@@ -98,7 +98,7 @@ fi
 docker_response=$(get_user_input "Do you want to install Docker and Portainer? (y/n): " "n")
 
 if [ "$docker_response" = "y" ]; then
-    curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/docker.sh | sh
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/docker.sh)"
 else
     echo "Docker and Portainer not installed."
 fi
