@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 
 # Define the lines to be added
 line4="# Determine if the shell is interactive"
-line5="if [[ \$iatest -gt 0 ]]; then"
+line5="if [ \$iatest -gt 0 ]; then"
 line_end="fi"
 
 # File path
@@ -14,7 +14,8 @@ insert_line_at_position() {
     local position="$2"
     local file="$3"
 
-    sed -i "${position}i $line" "$file"
+    sed -i "${position}i\\
+$line" "$file"
 }
 
 # Add the lines at specific positions
