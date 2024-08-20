@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Function to check if a command exists
 command_exists() {
@@ -23,7 +23,7 @@ if ! command_exists git; then
                 sudo yum install -y git -q
                 ;;
             arch)
-                sudo pacman -Sy git --noconfirm > /dev/null
+                sudo pacman -Sy git --noconfirm >/dev/null
                 ;;
             *)
                 echo "Unsupported distro. Please install git manually."
@@ -48,7 +48,8 @@ if [ -f /etc/os-release ]; then
 fi
 
 # Ask the user if they want to start the ChrisTitusTech script
-read -p "Do you want to start the ChrisTitusTech script? (y/n): " response
+echo "Do you want to start the ChrisTitusTech script? (y/n): \c"
+read response
 
 if [ "$response" = "y" ]; then
     curl -fsSL https://christitus.com/linux | sh
@@ -57,7 +58,8 @@ else
 fi
 
 # Ask the user if they want to fix .bashrc
-read -p "Do you want to fix bashrc? (y/n): " bashrc_response
+echo "Do you want to fix bashrc? (y/n): \c"
+read bashrc_response
 
 if [ "$bashrc_response" = "y" ]; then
     curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/fix_bashrc.sh | sh
@@ -66,7 +68,8 @@ else
 fi
 
 # Ask the user if they want to install Cockpit
-read -p "Do you want to install Cockpit? (y/n): " cockpit_response
+echo "Do you want to install Cockpit? (y/n): \c"
+read cockpit_response
 
 if [ "$cockpit_response" = "y" ]; then
     curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/cockpit.sh | sh
@@ -75,7 +78,8 @@ else
 fi
 
 # Ask the user if they want to install Docker and Portainer
-read -p "Do you want to install Docker and Portainer? (y/n): " docker_response
+echo "Do you want to install Docker and Portainer? (y/n): \c"
+read docker_response
 
 if [ "$docker_response" = "y" ]; then
     curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/docker.sh | sh
