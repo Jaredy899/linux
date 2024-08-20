@@ -30,6 +30,9 @@ if ! command_exists git; then
             fedora)
                 sudo dnf install -y git -q
                 ;;
+            opensuse|sles)
+                sudo zypper install -y git
+                ;;
             centos|rhel)
                 sudo yum install -y git -q
                 ;;
