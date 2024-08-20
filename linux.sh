@@ -27,14 +27,11 @@ if ! command_exists git; then
                 sudo apt-get update -qq
                 sudo apt-get install -y git -qq
                 ;;
-            fedora)
-                sudo dnf install -y git -q
+            fedora|rocky|alma|centos|rhel)
+                sudo dnf install -y git
                 ;;
             opensuse|sles)
                 sudo zypper install -y git
-                ;;
-            centos|rhel)
-                sudo yum install -y git -q
                 ;;
             arch)
                 sudo pacman -Sy git --noconfirm >/dev/null
