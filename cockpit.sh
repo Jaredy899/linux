@@ -36,9 +36,6 @@ install_cockpit() {
         fedora|rocky|alma|centos|rhel)
             sudo dnf install -y cockpit
             ;;
-        opensuse|sles)
-            sudo zypper install -y cockpit
-            ;;
         arch)
             sudo pacman -Sy --noconfirm cockpit
             ;;

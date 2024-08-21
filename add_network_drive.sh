@@ -13,20 +13,11 @@ check_package() {
                 echo "$package_name is already installed."
             fi
             ;;
-        fedora)
+        fedora|centos|rhel)
             package_name="cifs-utils"
             if ! rpm -qa | grep -q "$package_name"; then
                 echo "$package_name is not installed. Installing $package_name..."
                 sudo dnf install -y "$package_name"
-            else
-                echo "$package_name is already installed."
-            fi
-            ;;
-        centos|rhel)
-            package_name="cifs-utils"
-            if ! rpm -qa | grep -q "$package_name"; then
-                echo "$package_name is not installed. Installing $package_name..."
-                sudo yum install -y "$package_name"
             else
                 echo "$package_name is already installed."
             fi

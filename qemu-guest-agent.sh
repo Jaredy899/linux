@@ -17,11 +17,9 @@ install_qemu_guest_agent() {
         sudo apt-get update
         sudo apt-get install -y qemu-guest-agent
     elif [[ -f /etc/redhat-release ]]; then
-        sudo yum install -y qemu-guest-agent
+        sudo dnf install -y qemu-guest-agent
     elif [[ -f /etc/arch-release ]]; then
         sudo pacman -Syu --noconfirm qemu-guest-agent
-    elif [[ -f /etc/SuSE-release ]]; then
-        sudo zypper install -y qemu-guest-agent
     else
         echo "Unsupported distribution. Please install qemu-guest-agent manually."
         exit 1
