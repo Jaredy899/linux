@@ -86,7 +86,7 @@ fi
 tailscale_response=$(get_user_input "Do you want to install Tailscale? (y/n): " "n")
 
 if [ "$tailscale_response" = "y" ]; then
-    bash -c "$(curl -fsSL https://tailscale.com/install.sh | sh)"
+    curl -fsSL https://tailscale.com/install.sh | sh
 else
     echo "Tailscale not installed."
 fi
@@ -95,7 +95,9 @@ fi
 docker_response=$(get_user_input "Do you want to install Docker and Portainer? (y/n): " "n")
 
 if [ "$docker_response" = "y" ]; then
-    curl -fsSL https://tailscale.com/install.sh | sh
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/docker.sh)"
 else
     echo "Docker and Portainer not installed."
 fi
+
+
