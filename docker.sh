@@ -65,6 +65,6 @@ echo "  sudo usermod -aG docker $USER"
 echo "  newgrp docker"
 echo "After running these commands, you can use Docker without sudo."
 
-# To finish tailscale install
+# Display instrustions to manually enable tailscale
 echo "To finish tailscale install, please run the following command:"
 echo " sudo tailscale up"
