@@ -24,11 +24,16 @@ else
     echo "Git is already installed."
 fi
 
-# Check if the system is Ubuntu and add the PPA if it is
+# Check if the system is Ubuntu and add the PPA if it is not already added
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     if [ "$ID" = "ubuntu" ]; then
-        sudo add-apt-repository ppa:zhangsongcui3371/fastfetch -y >/dev/null 2>&1
+        if ! grep -q "^deb .*$ID/fastfetch" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
+            echo "Adding fastfetch PPA..."
+            sudo add-apt-repository ppa:zhangsongcui3371/fastfetch -y >/dev/null 2>&1
+        else
+            echo "fastfetch PPA is already added."
+        fi
     fi
 fi
 
