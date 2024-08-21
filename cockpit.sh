@@ -62,8 +62,8 @@ install_cockpit() {
 }
 
 # Check if Cockpit is already installed
-if ! is_cockpit_installed; then
-    install_cockpit
+if is_cockpit_installed; then
+    echo "Cockpit is already installed. Skipping installation."
 else
-    echo "No need to install Cockpit."
+    install_cockpit
 fi
