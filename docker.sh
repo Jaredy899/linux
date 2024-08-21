@@ -64,3 +64,7 @@ echo "To add your user to the Docker group and apply the changes, please run the
 echo "  sudo usermod -aG docker $USER"
 echo "  newgrp docker"
 echo "After running these commands, you can use Docker without sudo."
+
+# To finish tailscale install
+echo "To finish tailscale install, please run the following command:"
+echo " sudo tailscale up"

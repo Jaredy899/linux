@@ -85,3 +85,12 @@ if [ "$docker_response" = "y" ]; then
 else
     echo "Docker and Portainer not installed."
 fi
+
+# Ask the user if they want to install Tailscale
+tailscale_response=$(get_user_input "Do you want to install Tailscale? (y/n): " "n")
+
+if [ "$tailscale_response" = "y" ]; then
+    bash -c "$(curl -fsSL https://tailscale.com/install.sh | sh)"
+else
+    echo "Tailscale not installed."
+fi
