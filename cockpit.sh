@@ -2,17 +2,12 @@
 
 # Function to check if Cockpit is installed
 is_cockpit_installed() {
-    if command_exists cockpit; then
+    if command -v cockpit > /dev/null 2>&1; then
         echo "Cockpit is already installed."
         return 0
     else
         return 1
     fi
-}
-
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
 }
 
 # Function to install Cockpit
@@ -30,14 +25,14 @@ install_cockpit() {
 
     case "$DISTRO" in
         ubuntu|debian)
-            sudo apt update
-            sudo apt install -y cockpit
+            sudo apt update -qq
+            sudo apt install -y cockpit -qq
             ;;
         fedora|rocky|alma|centos|rhel)
-            sudo dnf install -y cockpit
+            sudo dnf install -y cockpit -q
             ;;
         arch)
-            sudo pacman -Sy --noconfirm cockpit
+            sudo pacman -Sy cockpit --noconfirm >/dev/null
             ;;
         *)
             echo "Unsupported Linux distribution: $DISTRO"
@@ -45,16 +40,21 @@ install_cockpit() {
             ;;
     esac
 
-    sudo systemctl start cockpit
-    sudo systemctl enable cockpit
+    # Start the Cockpit service if not already running
+    if ! systemctl is-active --quiet cockpit; then
+        sudo systemctl start cockpit
+        echo "Cockpit service has been started."
+    else
+        echo "Cockpit service is already running."
+    fi
 
-    # Configure UFW to allow Cockpit through the firewall
-    if command_exists ufw; then
+    # Open firewall port for Cockpit (port 9090) if UFW is installed
+    if command -v ufw > /dev/null 2>&1; then
         sudo ufw allow 9090/tcp
         sudo ufw reload
         echo "UFW configuration updated to allow Cockpit."
     else
-        echo "UFW is not installed or not found. Please ensure port 9090 is open for Cockpit."
+        echo "UFW is not installed. Please ensure port 9090 is open for Cockpit."
     fi
 
     echo "Cockpit installation complete."
@@ -62,9 +62,8 @@ install_cockpit() {
 }
 
 # Check if Cockpit is already installed
-if is_cockpit_installed; then
-    echo "No need to install Cockpit."
-else
-    # Run the install function
+if ! is_cockpit_installed; then
     install_cockpit
+else
+    echo "No need to install Cockpit."
 fi
