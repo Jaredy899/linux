@@ -19,32 +19,7 @@ get_user_input() {
 # Ensure git is installed
 if ! command_exists git; then
     echo "Git is not installed. Installing git..."
-    
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        case "$ID" in
-            ubuntu|debian)
-                sudo apt-get update -qq
-                sudo apt-get install -y git -qq
-                ;;
-            fedora|rocky|alma|centos|rhel)
-                sudo dnf install -y git
-                ;;
-            opensuse|sles)
-                sudo zypper install -y git
-                ;;
-            arch)
-                sudo pacman -Sy git --noconfirm >/dev/null
-                ;;
-            *)
-                echo "Unsupported distro. Please install git manually."
-                exit 1
-                ;;
-        esac
-    else
-        echo "Could not detect the operating system. Please install git manually."
-        exit 1
-    fi
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/install.git.sh)"
 else
     echo "Git is already installed."
 fi
@@ -53,8 +28,7 @@ fi
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     if [ "$ID" = "ubuntu" ]; then
-        echo "Ubuntu detected. Adding the PPA for fastfetch..."
-        sudo add-apt-repository ppa:zhangsongcui3371/fastfetch -y
+        sudo add-apt-repository ppa:zhangsongcui3371/fastfetch -y >/dev/null 2>&1
     fi
 fi
 
