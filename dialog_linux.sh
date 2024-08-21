@@ -48,7 +48,9 @@ while true; do
             ;;
         6)
             bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/docker.sh)"
-            dialog --msgbox "Docker and Portainer installed." 8 40 --title "Info"
+
+            # Reset the terminal session to apply Docker group changes
+            exec su -l $USER
             ;;
         7)
             break
