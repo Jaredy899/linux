@@ -1,5 +1,3 @@
-#!/bin/sh
-
 set -o errexit
 set -o nounset
 IFS=$(printf '\n\t')
@@ -65,11 +63,4 @@ install_portainer
 echo "To add your user to the Docker group and apply the changes, please run the following commands:"
 echo "  sudo usermod -aG docker $USER"
 echo "  newgrp docker"
-echo "After running these commands, press Enter to return to the dialog box."
-
-# Pause execution to wait for the user to apply the group change
-read -p "Press Enter after you have applied 'newgrp docker' to continue..."
-
-# Here you can place the code to return to the dialog box or any further steps
-# For example, this could be a call to your dialog menu script or any continuation logic
-# ./dialog_linux.sh
+echo "After running these commands, you can use Docker without sudo."
