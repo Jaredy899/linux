@@ -82,6 +82,18 @@ else
     echo "Custom fastfetch not replaced."
 fi
 
+# Ask the user if they want to install ncdu
+ncdu_response=$(get_user_input "Do you want to install the disk utility ncdu? (y/n): " "n")
+
+if [ "$ncdu_response" = "y" ]; then
+    echo "Installing ncdu..."
+    sudo apt-get update >/dev/null 2>&1
+    sudo apt-get install ncdu -y >/dev/null 2>&1
+    echo "ncdu installed successfully."
+else
+    echo "ncdu not installed."
+fi
+
 # Ask the user if they want to install Cockpit
 cockpit_response=$(get_user_input "Do you want to install Cockpit? (y/n): " "n")
 
@@ -126,5 +138,3 @@ if [ "$docker_response" = "y" ]; then
 else
     echo "Docker and Portainer not installed."
 fi
-
-
