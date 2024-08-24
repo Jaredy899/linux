@@ -55,6 +55,15 @@ else
     echo ".bashrc not fixed."
 fi
 
+# Ask the user if they want to use custom fastfetch
+fastfetch_response=$(get_user_input "Do you want to replace the fastfetch with Jared's custom one? (y/n): " "n")
+
+if [ "fastfetch_response" = "y" ]; then
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/replace_config.jsonc.sh)"
+else
+    echo "Custom fastfetch not replaced."
+fi
+    
 # Ask the user if they want to install Cockpit
 cockpit_response=$(get_user_input "Do you want to install Cockpit? (y/n): " "n")
 
