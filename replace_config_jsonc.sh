@@ -57,7 +57,7 @@ NEW_CONFIG_CONTENT='{
         },
         {
             "type": "os",
-            "key": "  "
+            "key": "  "
         },
         {
             "type": "kernel",
