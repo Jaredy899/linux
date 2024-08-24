@@ -24,15 +24,33 @@ else
     echo "Git is already installed."
 fi
 
-# Check if the system is Ubuntu and add the PPA if it is not already added
+# Check if the system is Ubuntu or Debian
 if [ -f /etc/os-release ]; then
     . /etc/os-release
+
+    # If the system is Ubuntu
     if [ "$ID" = "ubuntu" ]; then
         if ! grep -q "^deb .*$ID/fastfetch" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
-            echo "Adding fastfetch PPA..."
+            echo "Adding fastfetch PPA for Ubuntu..."
             sudo add-apt-repository ppa:zhangsongcui3371/fastfetch -y >/dev/null 2>&1
         else
-            echo "fastfetch PPA is already added."
+            echo "fastfetch PPA is already added for Ubuntu."
+        fi
+    fi
+
+    # If the system is Debian
+    if [ "$ID" = "debian" ]; then
+        # Fetch the latest fastfetch release URL for linux-amd64 deb file
+        FASTFETCH_URL=$(curl -s https://api.github.com/repos/fastfetch-cli/fastfetch/releases/latest | grep "browser_download_url.*linux-amd64.deb" | cut -d '"' -f 4)
+
+        if [ -n "$FASTFETCH_URL" ]; then
+            echo "Downloading the latest fastfetch release for Debian..."
+            curl -sL "$FASTFETCH_URL" -o /tmp/fastfetch_latest_amd64.deb
+
+            echo "Installing fastfetch on Debian..."
+            sudo apt-get install /tmp/fastfetch_latest_amd64.deb -y
+        else
+            echo "Failed to fetch the latest fastfetch release URL for Debian."
         fi
     fi
 fi
