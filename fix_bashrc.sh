@@ -10,6 +10,7 @@ file="$HOME/linuxtoolbox/mybash/.bashrc"
 
 # Define the alias line to be added
 alias_line="alias ff='fastfetch -c all'"
+alias_line="alias jc='bash -c "$(curl -fsSL jaredcervantes.com/linux)"'"
 
 # Function to insert lines at a specific position
 insert_line_at_position() {
