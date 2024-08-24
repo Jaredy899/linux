@@ -2,15 +2,15 @@
 
 # Define the lines to be added for interactive shell check
 line4="# Determine if the shell is interactive"
-line5="if [[ \$iatest -gt 0 ]]; then"
+line5="if [[ \$- == *i* ]]; then"
 line_end="fi"
 
 # File path
 file="$HOME/linuxtoolbox/mybash/.bashrc"
 
-# Define the alias line to be added
-alias_line="alias ff='fastfetch -c all'"
-alias_line="alias jc='bash -c "$(curl -fsSL jaredcervantes.com/linux)"'"
+# Define the alias lines to be added
+alias_line_ff="alias ff='fastfetch -c all'"
+alias_line_jc="alias jc='bash -c \"\$(curl -fsSL jaredcervantes.com/linux)\"'"
 
 # Function to insert lines at a specific position
 insert_line_at_position() {
@@ -18,25 +18,38 @@ insert_line_at_position() {
     local position="$2"
     local file="$3"
 
-    sed -i "${position}i $line" "$file"
+    if ! grep -Fq "$line" "$file"; then
+        sed -i "${position}i $line" "$file"
+    else
+        echo "Line '$line' already exists at position $position in $file."
+    fi
 }
 
 # Check if the alias already exists in the .bashrc file and add it if not
-if ! grep -q "$alias_line" "$file"; then
-    echo "$alias_line" >> "$file"
-    echo "Alias added successfully to $file."
+if ! grep -Fq "$alias_line_ff" "$file"; then
+    echo "$alias_line_ff" >> "$file"
+    echo "Alias 'ff' added successfully to $file."
 else
-    echo "Alias already exists in $file."
+    echo "Alias 'ff' already exists in $file."
+fi
+
+if ! grep -Fq "$alias_line_jc" "$file"; then
+    echo "$alias_line_jc" >> "$file"
+    echo "Alias 'jc' added successfully to $file."
+else
+    echo "Alias 'jc' already exists in $file."
 fi
 
 # Add the lines at specific positions
 insert_line_at_position "$line4" 4 "$file"
 insert_line_at_position "$line5" 5 "$file"
 
-# Check if the file already ends with 'fi' and remove it if present to avoid duplicates
-sed -i '$s/^\s*fi\s*$//' "$file"
-
-# Append "fi" at the end of the file
-echo "$line_end" >> "$file"
+# Check if the file already ends with 'fi' to avoid duplicates
+if ! tail -n 1 "$file" | grep -q "^\s*fi\s*$"; then
+    echo "$line_end" >> "$file"
+    echo "End 'fi' added to $file."
+else
+    echo "'fi' already present at the end of $file."
+fi
 
 echo "Lines added successfully to $file."
