@@ -59,7 +59,7 @@ fi
 fastfetch_response=$(get_user_input "Do you want to replace the fastfetch with Jared's custom one? (y/n): " "n")
 
 if [ "$fastfetch_response" = "y" ]; then
-    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/replace_config.jsonc.sh)"
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/replace_config_jsonc.sh)"
 else
     echo "Custom fastfetch not replaced."
 fi
