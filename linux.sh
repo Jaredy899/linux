@@ -82,6 +82,15 @@ else
     echo "Custom fastfetch not replaced."
 fi
 
+# Ask the user if they want to use custom starship
+starship_response=$(get_user_input "Do you want to replace the starship with Jared's custom one? (y/n): " "n")
+
+if [ "$starship_response" = "y" ]; then
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/replace_starship_toml.sh)"
+else
+    echo "Custom starship not replaced."
+fi
+
 # Ask the user if they want to install ncdu
 ncdu_response=$(get_user_input "Do you want to install the disk utility ncdu? (y/n): " "n")
 
