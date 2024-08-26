@@ -74,7 +74,8 @@ NEW_CONFIG_CONTENT='{
         },
         {
             "type": "processes",
-            "key": "  󰧑"
+            "key": "  󰧑",
+            "format": "{1} (Processes)"
         },
         {
             "type": "packages",
