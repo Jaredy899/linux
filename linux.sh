@@ -23,7 +23,9 @@ run_script() {
         bash "$local_path/$script_name"
     else
         echo "Running $script_name from GitHub..."
-        curl -fsSL "$url/$script_name" | bash
+        curl -fsSL "$url/$script_name" -o "/tmp/$script_name"
+        bash "/tmp/$script_name"
+        rm "/tmp/$script_name"
     fi
 }
 
@@ -49,9 +51,9 @@ fi
 
 # Menu loop
 while true; do
-    echo "###########################"
-    echo "##   Select an option:   ##"
-    echo "###########################"
+    echo "#############################"
+    echo "##   Select an option:     ##"
+    echo "#############################"
     echo "1) Run ChrisTitusTech script"
     echo "2) Fix .bashrc"
     echo "3) Replace fastfetch with Jared's custom one"
