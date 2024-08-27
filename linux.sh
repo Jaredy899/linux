@@ -1,23 +1,54 @@
 #!/bin/bash
 
+# Set the GITPATH variable to the directory where the script is located
+GITPATH="$(cd "$(dirname "$0")" && pwd)"
+echo "GITPATH is set to: $GITPATH"
+
+# GitHub URL base for the necessary configuration files
+GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/main"
+
 # Function to check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Function to capture user input
-get_user_input() {
-    prompt="$1"
-    default="$2"
-    read -r -p "$prompt" response
-    if [ -z "$response" ]; then
-        response="$default"
+# Function to run a script from local or GitHub
+run_script() {
+    script_name="$1"
+    local_path="$2"
+    url="$3"
+
+    if [[ -f "$local_path/$script_name" ]]; then
+        echo "Running $script_name from local directory..."
+        bash "$local_path/$script_name"
+    else
+        echo "Running $script_name from GitHub..."
+        curl -fsSL "$url/$script_name" | bash
     fi
-    echo "$response"
 }
 
-# Function to display a menu and handle user choices
-show_menu() {
+# Ensure git is installed
+if ! command_exists git; then
+    echo "Git is not installed. Installing git..."
+    run_script "install.git.sh" "$GITPATH" "$GITHUB_BASE_URL"
+else
+    echo "Git is already installed."
+fi
+
+# Check if the system is Ubuntu or Debian and install fastfetch
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    if [ "$ID" = "ubuntu" ]; then
+        echo "Checking fastfetch PPA for Ubuntu..."
+        run_script "ubuntu_fastfetch.sh" "$GITPATH" "$GITHUB_BASE_URL"
+    elif [ "$ID" = "debian" ]; then
+        echo "Installing fastfetch for Debian..."
+        run_script "debian_fastfetch.sh" "$GITPATH" "$GITHUB_BASE_URL"
+    fi
+fi
+
+# Menu loop
+while true; do
     echo "#############################"
     echo "##   Select an option:     ##"
     echo "#############################"
@@ -35,103 +66,20 @@ show_menu() {
     echo
 
     read -p "Enter your choice (0-10): " choice
-    return $choice
-}
-
-# Ensure git is installed
-if ! command_exists git; then
-    echo "Git is not installed. Installing git..."
-    bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/install.git.sh)"
-else
-    echo "Git is already installed."
-fi
-
-# Check if the system is Ubuntu or Debian
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-
-    # If the system is Ubuntu
-    if [ "$ID" = "ubuntu" ]; then
-        if ! grep -q "^deb .*$ID/fastfetch" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
-            echo "Adding fastfetch PPA for Ubuntu..."
-            sudo add-apt-repository ppa:zhangsongcui3371/fastfetch -y >/dev/null 2>&1
-        else
-            echo "fastfetch PPA is already added for Ubuntu."
-        fi
-    fi
-
-    # If the system is Debian
-    if [ "$ID" = "debian" ]; then
-        # Fetch the latest fastfetch release URL for linux-amd64 deb file
-        FASTFETCH_URL=$(curl -s https://api.github.com/repos/fastfetch-cli/fastfetch/releases/latest | grep "browser_download_url.*linux-amd64.deb" | cut -d '"' -f 4)
-
-        if [ -n "$FASTFETCH_URL" ]; then
-            echo "Downloading the latest fastfetch release for Debian..."
-            curl -sL "$FASTFETCH_URL" -o /tmp/fastfetch_latest_amd64.deb
-
-            echo "Installing fastfetch on Debian..."
-            sudo apt-get install /tmp/fastfetch_latest_amd64.deb -y
-        else
-            echo "Failed to fetch the latest fastfetch release URL for Debian."
-        fi
-    fi
-fi
-
-# Menu loop
-while true; do
-    show_menu
-    choice=$?
 
     case $choice in
-        1)
-            echo "Running ChrisTitusTech script..."
-            bash -c "$(curl -fsSL https://christitus.com/linux)"
-            ;;
-        2)
-            echo "Fixing .bashrc..."
-            bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/fix_bashrc.sh)"
-            ;;
-        3)
-            echo "Replacing fastfetch with Jared's custom one..."
-            bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/replace_config_jsonc.sh)"
-            ;;
-        4)
-            echo "Replacing starship with Jared's custom one..."
-            bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/replace_starship_toml.sh)"
-            ;;
-        5)
-            echo "Installing ncdu..."
-            sudo apt-get update >/dev/null 2>&1
-            sudo apt-get install ncdu -y >/dev/null 2>&1
-            echo "ncdu installed successfully."
-            ;;
-        6)
-            echo "Installing Cockpit..."
-            bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/cockpit.sh)"
-            ;;
-        7)
-            echo "Installing a network drive..."
-            bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/add_network_drive.sh)"
-            ;;
-        8)
-            echo "Installing qemu-guest-agent..."
-            bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/qemu-guest-agent.sh)"
-            ;;
-        9)
-            echo "Installing Tailscale..."
-            curl -fsSL https://tailscale.com/install.sh | sh
-            ;;
-        10)
-            echo "Installing Docker and Portainer..."
-            bash -c "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/main/docker.sh)"
-            ;;
-        0)
-            echo "Exiting script."
-            break
-            ;;
-        *)
-            echo "Invalid option. Please enter a number between 0 and 10."
-            ;;
+        1) run_script "ChrisTitusTech.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        2) run_script "fix_bashrc.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        3) run_script "replace_config_jsonc.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        4) run_script "replace_starship_toml.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        5) run_script "install_ncdu.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        6) run_script "cockpit.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        7) run_script "add_network_drive.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        8) run_script "qemu-guest-agent.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        9) run_script "tailscale_install.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        10) run_script "docker.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        0) echo "Exiting script."; break ;;
+        *) echo "Invalid option. Please enter a number between 0 and 10." ;;
     esac
 done
 
