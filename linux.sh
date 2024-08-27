@@ -49,9 +49,9 @@ fi
 
 # Menu loop
 while true; do
-    echo "#############################"
-    echo "##   Select an option:     ##"
-    echo "#############################"
+    echo "###########################"
+    echo "##   Select an option:   ##"
+    echo "###########################"
     echo "1) Run ChrisTitusTech script"
     echo "2) Fix .bashrc"
     echo "3) Replace fastfetch with Jared's custom one"
