@@ -70,7 +70,7 @@ while true; do
     read -p "Enter your choice (0-10): " choice
 
     case $choice in
-        1) run_script "ChrisTitusTech.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        1) run_script "ChrisTitusTech.sh" "$GITPATH" "curl -fsSL christitus.com/linux |sh" ;;
         2) run_script "fix_bashrc.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
         3) run_script "replace_config_jsonc.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
         4) run_script "replace_starship_toml.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
@@ -78,7 +78,7 @@ while true; do
         6) run_script "cockpit.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
         7) run_script "add_network_drive.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
         8) run_script "qemu-guest-agent.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
-        9) run_script "tailscale_install.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        9) run_script "tailscale_install.sh" "$GITPATH" "curl -fsSL https://tailscale.com/install.sh | sh" ;;
         10) run_script "docker.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
         0) echo "Exiting script."; break ;;
         *) echo "Invalid option. Please enter a number between 0 and 10." ;;

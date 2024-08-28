@@ -60,11 +60,13 @@ install_docker
 install_portainer
 
 # Display instructions to manually add user to Docker group
-echo "To add your user to the Docker group and apply the changes, please run the following commands:"
-echo "  sudo usermod -aG docker $USER"
-echo "  newgrp docker"
-echo "After running these commands, you can use Docker without sudo."
-
-# Display instrustions to manually enable tailscale
-echo "To finish tailscale install, please run the following command:"
-echo " sudo tailscale up"
+echo "######################################################################################################"
+echo "##                                                                                                  ##"  
+echo "##  To add your user to the Docker group and apply the changes, please run the following commands:  ##"
+echo "##                                                                                                  ##"
+echo "##                            sudo usermod -aG docker $USER                                         ##"
+echo "##                                     newgrp docker                                                ##"  
+echo "##                                                                                                  ##"
+echo "##             After running these commands, you can use Docker without sudo.                       ##"
+echo "##                                                                                                  ##"  
+echo "######################################################################################################"
