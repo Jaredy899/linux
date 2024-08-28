@@ -83,10 +83,7 @@ while true; do
             curl -fsSL christitus.com/linux | sh
             ;;
         2) run_script "fix_bashrc.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
-        3) 
-            echo "Replacing Fastfetch with Jared's custom one..."
-            run_script "install_fastfetch.sh" "$GITPATH" "$GITHUB_BASE_URL"
-            ;;
+        3) run_script "replace_config_jsonc.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
         4) run_script "replace_starship_toml.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
         5) run_script "install_ncdu.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
         6) run_script "cockpit.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
