@@ -133,7 +133,7 @@ format = "[ $symbol ($version) ]($style)"
 # Python configuration
 [python]
 style = "bg:#3B4252"
-format = "[ (\($virtualenv\) ) ]($style)"
+format = "[ (\\($virtualenv\\) ) ]($style)"
 
 # Rust configuration
 [rust]
