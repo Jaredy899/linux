@@ -44,8 +44,12 @@ fi
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     if [ "$ID" = "debian" ] || [ "$ID" = "ubuntu" ]; then
-        echo "Detected Debian/Ubuntu system. Proceeding to install fastfetch..."
-        run_script "install_fastfetch.sh" "$GITPATH" "$GITHUB_BASE_URL"
+        if command_exists fastfetch; then
+            echo "Fastfetch is already installed. Skipping installation."
+        else
+            echo "Fastfetch is not installed. Proceeding to install fastfetch..."
+            run_script "install_fastfetch.sh" "$GITPATH" "$GITHUB_BASE_URL"
+        fi
     else
         echo "This is not a Debian/Ubuntu system. Skipping fastfetch installation and proceeding..."
     fi
