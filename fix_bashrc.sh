@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# The following line is assumed to be present at line 2
-iatest=$(expr index "$-" i)
-
 # Add the iatest check below line 2
 if [[ $iatest -gt 0 ]]; then
 
