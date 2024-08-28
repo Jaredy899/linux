@@ -52,7 +52,7 @@ fi
 # Menu loop
 while true; do
     echo "#############################"
-    echo "##   Select an option:     ##"
+    echo "##    Select an option:    ##"
     echo "#############################"
     echo "1) Run ChrisTitusTech script"
     echo "2) Fix .bashrc"
