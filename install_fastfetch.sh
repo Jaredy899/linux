@@ -35,6 +35,3 @@ install_fastfetch() {
 
     echo "fastfetch has been successfully installed."
 }
-
-# Run the installation function
-install_fastfetch

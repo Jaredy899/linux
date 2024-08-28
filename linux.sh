@@ -37,16 +37,19 @@ else
     echo "Git is already installed."
 fi
 
-# Check if the system is Ubuntu or Debian and install fastfetch
+# Main logic to check the distribution and install fastfetch
 if [ -f /etc/os-release ]; then
     . /etc/os-release
-    if [ "$ID" = "ubuntu" ]; then
-        echo "Checking fastfetch PPA for Ubuntu..."
-        run_script "ubuntu_fastfetch.sh" "$GITPATH" "$GITHUB_BASE_URL"
-    elif [ "$ID" = "debian" ]; then
-        echo "Installing fastfetch for Debian..."
-        run_script "debian_fastfetch.sh" "$GITPATH" "$GITHUB_BASE_URL"
+    if [ "$ID" = "debian" ] || [ "$ID" = "ubuntu" ]; then
+        echo "Detected $ID system. Proceeding with fastfetch installation."
+        install_fastfetch
+    else
+        echo "This script is intended for Debian-based systems only (Debian/Ubuntu). Exiting."
+        exit 1
     fi
+else
+    echo "Cannot detect the operating system. /etc/os-release not found. Exiting."
+    exit 1
 fi
 
 # Menu loop
