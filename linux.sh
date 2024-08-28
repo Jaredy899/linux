@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -e  # Exit immediately if a command exits with a non-zero status
+IFS=$(printf '\n\t')
+
 # Set the GITPATH variable to the directory where the script is located
 GITPATH="$(cd "$(dirname "$0")" && pwd)"
 echo "GITPATH is set to: $GITPATH"
@@ -37,19 +40,17 @@ else
     echo "Git is already installed."
 fi
 
-# Main logic to check the distribution and install fastfetch
+# Check if the system is Debian or Ubuntu for fastfetch installation
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     if [ "$ID" = "debian" ] || [ "$ID" = "ubuntu" ]; then
-        echo "Detected $ID system. Proceeding with fastfetch installation."
-        install_fastfetch
+        echo "Detected Debian/Ubuntu system. Proceeding to install fastfetch..."
+        run_script "install_fastfetch.sh" "$GITPATH" "$GITHUB_BASE_URL"
     else
-        echo "This script is intended for Debian-based systems only (Debian/Ubuntu). Exiting."
-        exit 1
+        echo "This is not a Debian/Ubuntu system. Skipping fastfetch installation and proceeding..."
     fi
 else
-    echo "Cannot detect the operating system. /etc/os-release not found. Exiting."
-    exit 1
+    echo "Cannot detect the operating system. /etc/os-release not found. Skipping fastfetch installation and proceeding..."
 fi
 
 # Menu loop
@@ -73,15 +74,25 @@ while true; do
     read -p "Enter your choice (0-10): " choice
 
     case $choice in
-        1) run_script "ChrisTitusTech.sh" "$GITPATH" "curl -fsSL christitus.com/linux |sh" ;;
+        1) 
+            echo "Running Chris Titus Tech's script..."
+            curl -fsSL christitus.com/linux | sh
+            ;;
         2) run_script "fix_bashrc.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
-        3) run_script "replace_config_jsonc.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        3) 
+            echo "Replacing Fastfetch with Jared's custom one..."
+            run_script "install_fastfetch.sh" "$GITPATH" "$GITHUB_BASE_URL"
+            ;;
         4) run_script "replace_starship_toml.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
         5) run_script "install_ncdu.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
         6) run_script "cockpit.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
         7) run_script "add_network_drive.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
         8) run_script "qemu-guest-agent.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
-        9) run_script "tailscale_install.sh" "$GITPATH" "curl -fsSL https://tailscale.com/install.sh | sh" ;;
+        9) 
+            echo "Installing Tailscale..."
+            curl -fsSL https://tailscale.com/install.sh | sh
+            echo "Tailscale installed. Please run 'sudo tailscale up' to activate."
+            ;;
         10) run_script "docker.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
         0) echo "Exiting script."; break ;;
         *) echo "Invalid option. Please enter a number between 0 and 10." ;;
