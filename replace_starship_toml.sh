@@ -51,7 +51,7 @@ style = "bg:#434C5E"
 format = "[ $path ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
-home_symbol = "🏠" # This sets the symbol for the home directory
+home_symbol = "" # This sets the symbol for the home directory
 
 # Directory path substitutions (shortening)
 [directory.substitutions]
