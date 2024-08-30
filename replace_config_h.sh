@@ -167,9 +167,9 @@ static Button buttons[] = {
 '
 
 # Create the directory if it doesn't exist
-# mkdir -p "$(dirname "$CONFIG_FILE")"
+mkdir -p "$(dirname "$CONFIG_FILE")"
 
-# Replace the contents of the config.jsonc file with the new content
+# Replace the contents of the config.h file with the new content
 echo "$NEW_CONFIG_CONTENT" > "$CONFIG_FILE"
 
 echo "Configuration file updated successfully at $CONFIG_FILE"
