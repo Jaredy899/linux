@@ -163,7 +163,7 @@ format = "[ $time ]($style)"
 '
 
 # Create the directory if it doesn't exist
-mkdir -p "$(dirname "$CONFIG_FILE")"
+# mkdir -p "$(dirname "$CONFIG_FILE")"
 
 # Replace the contents of the config file with the new content
 echo "$NEW_CONFIG_CONTENT" > "$CONFIG_FILE"

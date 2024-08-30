@@ -63,40 +63,42 @@ while true; do
     echo "##    Select an option:    ##"
     echo "#############################"
     echo "1) Run ChrisTitusTech script"
-    echo "2) Fix .bashrc"
-    echo "3) Replace Fastfetch with Jared's custom one"
-    echo "4) Replace Starship with Jared's custom one"
-    echo "5) Install ncdu"
-    echo "6) Install Cockpit"
-    echo "7) Install a network drive"
-    echo "8) Install qemu-guest-agent"
-    echo "9) Install Tailscale"
-    echo "10) Install Docker and Portainer"
+    echo "2) Install ncdu"
+    echo "3) Install Cockpit"
+    echo "4) Install a network drive"
+    echo "5) Install qemu-guest-agent"
+    echo "6) Install Tailscale"
+    echo "7) Install Docker and Portainer"
+    echo "8) Replace all configurations (config.jsonc, starship.toml, config.h, .bashrc)"
     echo "0) Exit"
     echo
 
-    read -p "Enter your choice (0-10): " choice
+    read -p "Enter your choice (0-8): " choice
 
     case $choice in
         1) 
             echo "Running Chris Titus Tech's script..."
             curl -fsSL christitus.com/linux | sh
             ;;
-        2) run_script "fix_bashrc.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
-        3) run_script "replace_config_jsonc.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
-        4) run_script "replace_starship_toml.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
-        5) run_script "install_ncdu.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
-        6) run_script "cockpit.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
-        7) run_script "add_network_drive.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
-        8) run_script "qemu-guest-agent.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
-        9) 
+        2) run_script "install_ncdu.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        3) run_script "cockpit.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        4) run_script "add_network_drive.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        5) run_script "qemu-guest-agent.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        6) 
             echo "Installing Tailscale..."
             curl -fsSL https://tailscale.com/install.sh | sh
             echo "Tailscale installed. Please run 'sudo tailscale up' to activate."
             ;;
-        10) run_script "docker.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        7) run_script "docker.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        8) 
+            echo "Replacing all configurations..."
+            run_script "replace_config_jsonc.sh" "$GITPATH" "$GITHUB_BASE_URL"
+            run_script "replace_starship_toml.sh" "$GITPATH" "$GITHUB_BASE_URL"
+            run_script "replace_config_h.sh" "$GITPATH" "$GITHUB_BASE_URL"
+            run_script "replace_bashrc.sh" "$GITPATH" "$GITHUB_BASE_URL"
+            ;;
         0) echo "Exiting script."; break ;;
-        *) echo "Invalid option. Please enter a number between 0 and 10." ;;
+        *) echo "Invalid option. Please enter a number between 0 and 8." ;;
     esac
 done
 
