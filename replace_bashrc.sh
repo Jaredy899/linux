@@ -646,3 +646,12 @@ export PATH=$PATH:"$HOME/.local/bin:$HOME/.cargo/bin:/var/lib/flatpak/exports/bi
 eval "$(starship init bash)"
 eval "$(zoxide init bash)"
 fi
+'
+
+# Create the directory if it doesn't exist
+#mkdir -p "$(dirname "$CONFIG_FILE")"
+
+# Replace the contents of the config.jsonc file with the new content
+echo "$NEW_CONFIG_CONTENT" > "$CONFIG_FILE"
+
+echo "Configuration file updated successfully at $CONFIG_FILE"

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the target file path
-CONFIG_FILE="$HOME/dwm-titus/.config.h"
+CONFIG_FILE="$HOME/dwm-titus/config.h"
 
 # Define the new configuration content
 NEW_CONFIG_CONTENT='
@@ -167,7 +167,7 @@ static Button buttons[] = {
 '
 
 # Create the directory if it doesn't exist
-mkdir -p "$(dirname "$CONFIG_FILE")"
+# mkdir -p "$(dirname "$CONFIG_FILE")"
 
 # Replace the contents of the config.jsonc file with the new content
 echo "$NEW_CONFIG_CONTENT" > "$CONFIG_FILE"
