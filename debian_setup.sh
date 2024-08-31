@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Update package database and install essential packages including Alacritty and Kitty
-sudo pacman -Syu --noconfirm nano xorg xorg-xinit thunar vlc pulseaudio pulseaudio-alsa alsa-utils pavucontrol firefox ttf-firacode-nerd alacritty kitty
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y nano xorg thunar vlc pulseaudio alsa-utils pavucontrol firefox fonts-firacode alacritty kitty
 
 # Create .xinitrc file with exec dwm
 echo "exec dwm" > ~/.xinitrc
@@ -65,17 +66,11 @@ read -p "Do you want to install NVIDIA drivers? (y/n): " install_nvidia
 
 if [[ $install_nvidia == "y" || $install_nvidia == "Y" ]]; then
     # Install NVIDIA drivers
-    sudo pacman -S --noconfirm nvidia nvidia-settings nvidia-utils
-
-    # Check if dkms is installed (in case of using an LTS kernel)
-    if pacman -Qs dkms > /dev/null; then
-        echo "DKMS detected, rebuilding NVIDIA kernel modules."
-        sudo dkms install -m nvidia -v $(pacman -Q nvidia | awk '{print $2}')
-    fi
+    sudo apt install -y nvidia-driver-535 nvidia-settings
 
     # Regenerate initramfs
     echo "Regenerating initramfs..."
-    sudo mkinitcpio -P
+    sudo update-initramfs -u
 
     # Create or update X configuration file for NVIDIA
     echo "Creating /etc/X11/xorg.conf.d/20-nvidia.conf for NVIDIA settings..."
