@@ -32,6 +32,16 @@ if [[ $replace_configs == "y" || $replace_configs == "Y" ]]; then
     curl -o $DWM_TITUS_DIR/config.h "$BASE_URL/config.h"
 
     echo "Configuration files replaced."
+
+    # Compile and install dwm with the new config.h
+    if [[ -d $DWM_TITUS_DIR ]]; then
+        echo "Compiling and installing dwm with the new configuration..."
+        cd $DWM_TITUS_DIR
+        sudo make clean install
+    else
+        echo "Directory $DWM_TITUS_DIR not found, skipping dwm compilation."
+    fi
+
 else
     echo "Configuration files not replaced."
 fi
