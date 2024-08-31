@@ -101,7 +101,7 @@ export LESS_TERMCAP_us=$'\E[01;32m'
 #######################################################
 alias linutil='curl -fsSL christitus.com/linux | sh'
 alias ff='fastfetch -c all'
-alias jc='bash -c \"\$(curl -fsSL jaredcervantes.com/linux)\"'
+alias jc='bash -c "$(curl -fsSL jaredcervantes.com/linux)"'
 
 # Alias's for SSH
 # alias SERVERNAME='ssh YOURWEBSITE.com -l USERNAME -p PORTNUMBERHERE'
