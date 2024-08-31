@@ -1,21 +1,7 @@
 #!/bin/bash
 
-set -e  # Exit immediately if a command exits with a non-zero status
-IFS=$(printf '\n\t')
-
-# Detect the operating system
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    OS=$ID
-else
-    echo "Cannot detect the operating system. /etc/os-release not found."
-    exit 1
-fi
-
-# Define package installation commands based on the OS
-if [[ "$OS" == "arch" ]]; then
-    INSTALL_CMD="sudo pacman -Syu --noconfirm"
-    PACKAGES="nano xorg xorg-xinit thunar vlc pulseaudio pulseaudio-alsa alsa-utils pavucontrol firefox ttf-firacode-nerd kitty alacritty"
+# Update package database and install essential packages
+sudo pacman -Syu --noconfirm nano xorg xorg-xinit thunar vlc pulseaudio pulseaudio-alsa alsa-utils pavucontrol firefox ttf-firacode-nerd
 
 # Create .xinitrc file with exec dwm
 echo "exec dwm" > ~/.xinitrc
@@ -37,20 +23,6 @@ if [[ $replace_configs == "y" || $replace_configs == "Y" ]]; then
     curl -o $MYBASH_DIR/.bashrc "$BASE_URL/.bashrc"
     curl -o $MYBASH_DIR/config.jsonc "$BASE_URL/config.jsonc"
     curl -o $MYBASH_DIR/starship.toml "$BASE_URL/starship.toml"
-
-    # Replace kitty.conf in ~/.config/kitty/
-    KITTY_CONFIG_DIR=~/.config/kitty
-    if [[ ! -d $KITTY_CONFIG_DIR ]]; then
-        mkdir -p $KITTY_CONFIG_DIR
-    fi
-    curl -o $KITTY_CONFIG_DIR/kitty.conf "$BASE_URL/kitty.conf"
-
-    # Replace alacritty.toml in ~/.config/alacritty/
-    ALACRITTY_CONFIG_DIR=~/.config/alacritty
-    if [[ ! -d $ALACRITTY_CONFIG_DIR ]]; then
-        mkdir -p $ALACRITTY_CONFIG_DIR
-    fi
-    curl -o $ALACRITTY_CONFIG_DIR/alacritty.toml "$BASE_URL/alacritty.toml"
 
     # Replace config.h in /dwm-titus/
     DWM_TITUS_DIR=~/dwm-titus
@@ -78,27 +50,18 @@ fi
 read -p "Do you want to install NVIDIA drivers? (y/n): " install_nvidia
 
 if [[ $install_nvidia == "y" || $install_nvidia == "Y" ]]; then
-    if [[ "$OS" == "arch" ]]; then
-        # Install NVIDIA drivers for Arch
-        sudo pacman -S --noconfirm nvidia nvidia-settings nvidia-utils
+    # Install NVIDIA drivers
+    sudo pacman -S --noconfirm nvidia nvidia-settings nvidia-utils
 
-        # Check if dkms is installed (in case of using an LTS kernel)
-        if pacman -Qs dkms > /dev/null; then
-            echo "DKMS detected, rebuilding NVIDIA kernel modules."
-            sudo dkms install -m nvidia -v $(pacman -Q nvidia | awk '{print $2}')
-        fi
-
-        # Regenerate initramfs
-        echo "Regenerating initramfs..."
-        sudo mkinitcpio -P
-    elif [[ "$OS" == "debian" || "$OS" == "ubuntu" ]]; then
-        # Install NVIDIA drivers for Debian/Ubuntu
-        sudo apt install -y nvidia-driver nvidia-settings
-
-        # Update initramfs
-        echo "Updating initramfs..."
-        sudo update-initramfs -u
+    # Check if dkms is installed (in case of using an LTS kernel)
+    if pacman -Qs dkms > /dev/null; then
+        echo "DKMS detected, rebuilding NVIDIA kernel modules."
+        sudo dkms install -m nvidia -v $(pacman -Q nvidia | awk '{print $2}')
     fi
+
+    # Regenerate initramfs
+    echo "Regenerating initramfs..."
+    sudo mkinitcpio -P
 
     # Create or update X configuration file for NVIDIA
     echo "Creating /etc/X11/xorg.conf.d/20-nvidia.conf for NVIDIA settings..."
