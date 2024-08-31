@@ -17,8 +17,22 @@ if [[ "$OS" == "arch" ]]; then
     INSTALL_CMD="sudo pacman -Syu --noconfirm"
     PACKAGES="nano xorg xorg-xinit thunar vlc pulseaudio pulseaudio-alsa alsa-utils pavucontrol firefox ttf-firacode-nerd kitty alacritty"
 elif [[ "$OS" == "debian" || "$OS" == "ubuntu" ]]; then
-    INSTALL_CMD="sudo apt update && sudo apt install -y"
-    PACKAGES="nano xorg xorg-xinit thunar vlc pulseaudio pulseaudio-utils pavucontrol firefox fonts-firacode kitty alacritty"
+    # Enable the universe repository for Ubuntu
+    if [[ "$OS" == "ubuntu" ]]; then
+        sudo add-apt-repository universe
+    fi
+
+    UPDATE_CMD="sudo apt update"
+    INSTALL_CMD="sudo apt install -y"
+    
+    # Adjust package names for Debian/Ubuntu
+    PACKAGES="nano xorg xinit thunar vlc pulseaudio pavucontrol fonts-firacode kitty alacritty"
+    
+    # Handle Firefox installation for Debian/Ubuntu
+    if ! dpkg -l | grep -q firefox; then
+        PACKAGES="$PACKAGES firefox-esr"  # Use firefox-esr for Debian-based systems
+    fi
+
 else
     echo "Unsupported operating system: $OS"
     exit 1
@@ -29,8 +43,8 @@ echo "Installing essential packages..."
 if [[ "$OS" == "arch" ]]; then
     $INSTALL_CMD $PACKAGES
 elif [[ "$OS" == "debian" || "$OS" == "ubuntu" ]]; then
-    sudo apt update
-    sudo apt install -y $PACKAGES
+    $UPDATE_CMD
+    $INSTALL_CMD $PACKAGES
 fi
 
 # Create .xinitrc file with exec dwm
