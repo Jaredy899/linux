@@ -92,7 +92,7 @@ while true; do
         7) run_script "docker.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
         8)
             echo "Running Arch Setup Script..."
-            run_script "setup_arch.sh" "$GITPATH" "$GITHUB_BASE_URL"
+            run_script "arch_setup.sh" "$GITPATH" "$GITHUB_BASE_URL"
             ;;
         0) echo "Exiting script."; break ;;
         *) echo "Invalid option. Please enter a number between 0 and 8." ;;
