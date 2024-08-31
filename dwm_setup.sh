@@ -22,13 +22,9 @@ elif [[ "$OS" == "debian" || "$OS" == "ubuntu" ]]; then
         sudo add-apt-repository universe
     fi
 
-    UPDATE_CMD="sudo apt update"
-    INSTALL_CMD="sudo apt install -y"
-    
-    # Adjust package names for Debian/Ubuntu
     PACKAGES="nano xorg xinit thunar vlc pulseaudio pavucontrol fonts-firacode kitty alacritty"
     
-    # Handle Firefox installation for Debian/Ubuntu
+    # Check if Firefox is available or needs to be installed
     if ! dpkg -l | grep -q firefox; then
         PACKAGES="$PACKAGES firefox-esr"  # Use firefox-esr for Debian-based systems
     fi
@@ -43,8 +39,8 @@ echo "Installing essential packages..."
 if [[ "$OS" == "arch" ]]; then
     $INSTALL_CMD $PACKAGES
 elif [[ "$OS" == "debian" || "$OS" == "ubuntu" ]]; then
-    $UPDATE_CMD
-    $INSTALL_CMD $PACKAGES
+    sudo apt update
+    sudo apt install -y $PACKAGES
 fi
 
 # Create .xinitrc file with exec dwm
