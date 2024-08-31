@@ -42,18 +42,21 @@ fi
 
 # Check if the system is Debian, Ubuntu, or Arch
 SHOW_OPTIONS_8_9=false
+DWM_SETUP_SCRIPT=""
 if [ -f /etc/os-release ]; then
     . /etc/os-release
-    if [[ "$ID" == "debian" || "$ID" == "ubuntu" || "$ID" == "arch" ]]; then
+    if [[ "$ID" == "debian" || "$ID" == "ubuntu" ]]; then
         SHOW_OPTIONS_8_9=true
-        if [[ "$ID" == "debian" || "$ID" == "ubuntu" ]]; then
-            if command_exists fastfetch; then
-                echo "Fastfetch is already installed. Skipping installation."
-            else
-                echo "Fastfetch is not installed. Proceeding to install fastfetch..."
-                run_script "install_fastfetch.sh" "$GITPATH" "$GITHUB_BASE_URL"
-            fi
+        DWM_SETUP_SCRIPT="debian_dwm_setup.sh"
+        if command_exists fastfetch; then
+            echo "Fastfetch is already installed. Skipping installation."
+        else
+            echo "Fastfetch is not installed. Proceeding to install fastfetch..."
+            run_script "install_fastfetch.sh" "$GITPATH" "$GITHUB_BASE_URL"
         fi
+    elif [[ "$ID" == "arch" ]]; then
+        SHOW_OPTIONS_8_9=true
+        DWM_SETUP_SCRIPT="arch_dwm_setup.sh"
     else
         echo "This is not a Debian/Ubuntu/Arch system. Skipping specific installations and proceeding..."
     fi
@@ -106,7 +109,7 @@ while true; do
         8)
             if $SHOW_OPTIONS_8_9; then
                 echo "Running DWM Setup Script..."
-                run_script "dwm_setup.sh" "$GITPATH" "$GITHUB_BASE_URL"
+                run_script "$DWM_SETUP_SCRIPT" "$GITPATH" "$GITHUB_BASE_URL"
             else
                 echo "Invalid option. Please enter a number between 0 and 7."
             fi
