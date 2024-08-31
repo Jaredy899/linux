@@ -1,10 +1,3 @@
-#!/bin/bash
-
-# Define the target file path
-CONFIG_FILE="$HOME/.config/starship.toml"
-
-# Define the new configuration content
-NEW_CONFIG_CONTENT='
 # Global prompt format configuration
 format = """
 [](#3B4252)\
@@ -160,12 +153,3 @@ disabled = false
 time_format = "%R" # Hour:Minute Format
 style = "bg:#33658A"
 format = "[ $time ]($style)"
-'
-
-# Create the directory if it doesn't exist
-# mkdir -p "$(dirname "$CONFIG_FILE")"
-
-# Replace the contents of the config file with the new content
-echo "$NEW_CONFIG_CONTENT" > "$CONFIG_FILE"
-
-echo "Configuration file updated successfully at $CONFIG_FILE"

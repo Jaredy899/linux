@@ -1,10 +1,3 @@
-#!/bin/bash
-
-# Define the target file path
-CONFIG_FILE="$HOME/dwm-titus/config.h"
-
-# Define the new configuration content
-NEW_CONFIG_CONTENT='
 /* appearance */
 static const unsigned int refresh_rate        = 60;  /* matches dwm's mouse event processing to your monitor's refresh rate for smoother window interactions */
 static const unsigned int enable_noborder     = 1;   /* toggles noborder feature (0=disabled, 1=enabled) */
@@ -164,12 +157,3 @@ static Button buttons[] = {
     { ClkTagBar,            MODKEY,         Button1,        tag,            {0} },
     { ClkTagBar,            MODKEY,         Button3,        toggletag,      {0} },
 };
-'
-
-# Create the directory if it doesn't exist
-mkdir -p "$(dirname "$CONFIG_FILE")"
-
-# Replace the contents of the config.h file with the new content
-echo "$NEW_CONFIG_CONTENT" > "$CONFIG_FILE"
-
-echo "Configuration file updated successfully at $CONFIG_FILE"
