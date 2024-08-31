@@ -70,10 +70,11 @@ while true; do
     echo "6) Install Tailscale"
     echo "7) Install Docker and Portainer"
     echo "8) Run Arch Setup Script"
+    echo "9) Configure Auto-Login and StartX"
     echo "0) Exit"
     echo
 
-    read -p "Enter your choice (0-8): " choice
+    read -p "Enter your choice (0-9): " choice
 
     case $choice in
         1) 
@@ -94,8 +95,12 @@ while true; do
             echo "Running Arch Setup Script..."
             run_script "arch_setup.sh" "$GITPATH" "$GITHUB_BASE_URL"
             ;;
+        9)
+            echo "Configuring Auto-Login and StartX..."
+            run_script "auto_login.sh" "$GITPATH" "$GITHUB_BASE_URL"
+            ;;
         0) echo "Exiting script."; break ;;
-        *) echo "Invalid option. Please enter a number between 0 and 8." ;;
+        *) echo "Invalid option. Please enter a number between 0 and 9." ;;
     esac
 done
 
