@@ -40,21 +40,25 @@ else
     echo "Git is already installed."
 fi
 
-# Check if the system is Debian or Ubuntu for fastfetch installation
+# Check if the system is Debian, Ubuntu, or Arch
+SHOW_OPTIONS_8_9=false
 if [ -f /etc/os-release ]; then
     . /etc/os-release
-    if [ "$ID" = "debian" ] || [ "$ID" = "ubuntu" ]; then
-        if command_exists fastfetch; then
-            echo "Fastfetch is already installed. Skipping installation."
-        else
-            echo "Fastfetch is not installed. Proceeding to install fastfetch..."
-            run_script "install_fastfetch.sh" "$GITPATH" "$GITHUB_BASE_URL"
+    if [[ "$ID" == "debian" || "$ID" == "ubuntu" || "$ID" == "arch" ]]; then
+        SHOW_OPTIONS_8_9=true
+        if [[ "$ID" == "debian" || "$ID" == "ubuntu" ]]; then
+            if command_exists fastfetch; then
+                echo "Fastfetch is already installed. Skipping installation."
+            else
+                echo "Fastfetch is not installed. Proceeding to install fastfetch..."
+                run_script "install_fastfetch.sh" "$GITPATH" "$GITHUB_BASE_URL"
+            fi
         fi
     else
-        echo "This is not a Debian/Ubuntu system. Skipping fastfetch installation and proceeding..."
+        echo "This is not a Debian/Ubuntu/Arch system. Skipping specific installations and proceeding..."
     fi
 else
-    echo "Cannot detect the operating system. /etc/os-release not found. Skipping fastfetch installation and proceeding..."
+    echo "Cannot detect the operating system. /etc/os-release not found. Skipping specific installations and proceeding..."
 fi
 
 # Menu loop
@@ -69,12 +73,20 @@ while true; do
     echo "5) Install qemu-guest-agent"
     echo "6) Install Tailscale"
     echo "7) Install Docker and Portainer"
-    echo "8) Run Arch Setup Script"
-    echo "9) Configure Auto-Login and StartX"
+    
+    if $SHOW_OPTIONS_8_9; then
+        echo "8) Run DWM Setup Script"
+        echo "9) Configure Auto-Login and StartX"
+    fi
+
     echo "0) Exit"
     echo
 
-    read -p "Enter your choice (0-9): " choice
+    if $SHOW_OPTIONS_8_9; then
+        read -p "Enter your choice (0-9): " choice
+    else
+        read -p "Enter your choice (0-7): " choice
+    fi
 
     case $choice in
         1) 
@@ -92,15 +104,23 @@ while true; do
             ;;
         7) run_script "docker.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
         8)
-            echo "Running Arch Setup Script..."
-            run_script "arch_setup.sh" "$GITPATH" "$GITHUB_BASE_URL"
+            if $SHOW_OPTIONS_8_9; then
+                echo "Running DWM Setup Script..."
+                run_script "dwm_setup.sh" "$GITPATH" "$GITHUB_BASE_URL"
+            else
+                echo "Invalid option. Please enter a number between 0 and 7."
+            fi
             ;;
         9)
-            echo "Configuring Auto-Login and StartX..."
-            run_script "auto_login.sh" "$GITPATH" "$GITHUB_BASE_URL"
+            if $SHOW_OPTIONS_8_9; then
+                echo "Configuring Auto-Login and StartX..."
+                run_script "auto_login.sh" "$GITPATH" "$GITHUB_BASE_URL"
+            else
+                echo "Invalid option. Please enter a number between 0 and 7."
+            fi
             ;;
         0) echo "Exiting script."; break ;;
-        *) echo "Invalid option. Please enter a number between 0 and 9." ;;
+        *) echo "Invalid option. Please enter a number between 0 and $(if $SHOW_OPTIONS_8_9; then echo "9"; else echo "7"; fi)." ;;
     esac
 done
 
