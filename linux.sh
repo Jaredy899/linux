@@ -69,7 +69,7 @@ while true; do
     echo "5) Install qemu-guest-agent"
     echo "6) Install Tailscale"
     echo "7) Install Docker and Portainer"
-    echo "8) Run Arch Setup Script (setup_arch.sh)"
+    echo "8) Run Arch Setup Script"
     echo "0) Exit"
     echo
 
