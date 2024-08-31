@@ -16,47 +16,6 @@ fi
 if [[ "$OS" == "arch" ]]; then
     INSTALL_CMD="sudo pacman -Syu --noconfirm"
     PACKAGES="nano xorg xorg-xinit thunar vlc pulseaudio pulseaudio-alsa alsa-utils pavucontrol firefox ttf-firacode-nerd kitty alacritty"
-elif [[ "$OS" == "debian" || "$OS" == "ubuntu" ]]; then
-    # Ensure necessary repositories are enabled and updated for Ubuntu
-    if [[ "$OS" == "ubuntu" ]]; then
-        echo "Enabling universe and multiverse repositories..."
-        sudo add-apt-repository universe
-        sudo add-apt-repository multiverse
-        sudo apt update
-    fi
-
-    # Define package list
-    PACKAGES="nano xorg thunar vlc pulseaudio pavucontrol fonts-firacode kitty"
-
-    # Alacritty might not be available directly, install from PPA
-    echo "Checking for alacritty..."
-    if ! dpkg -l | grep -q alacritty; then
-        echo "Alacritty not found, adding PPA and installing..."
-        sudo add-apt-repository ppa:aslatter/ppa
-        sudo apt update
-        PACKAGES="$PACKAGES alacritty"
-    fi
-
-    # Use firefox instead of firefox-esr if not found
-    echo "Checking for Firefox..."
-    if ! dpkg -l | grep -q firefox-esr; then
-        PACKAGES="$PACKAGES firefox"
-    else
-        PACKAGES="$PACKAGES firefox-esr"
-    fi
-else
-    echo "Unsupported operating system: $OS"
-    exit 1
-fi
-
-# Update package database and install essential packages
-echo "Installing essential packages..."
-if [[ "$OS" == "arch" ]]; then
-    $INSTALL_CMD $PACKAGES
-elif [[ "$OS" == "debian" || "$OS" == "ubuntu" ]]; then
-    sudo apt update
-    sudo apt install -y $PACKAGES
-fi
 
 # Create .xinitrc file with exec dwm
 echo "exec dwm" > ~/.xinitrc
