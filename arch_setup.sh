@@ -1,13 +1,40 @@
 #!/bin/bash
 
 # Update package database and install essential packages
-sudo pacman -Syu --noconfirm nano xorg xorg-xinit thunar vlc
-
-# Install audio drivers (PulseAudio and ALSA)
-sudo pacman -S --noconfirm pulseaudio pulseaudio-alsa alsa-utils
+sudo pacman -Syu --noconfirm nano xorg xorg-xinit thunar vlc pulseaudio pulseaudio-alsa alsa-utils pavucontrol firefox ttf-firacode-nerd
 
 # Create .xinitrc file with exec dwm
 echo "exec dwm" > ~/.xinitrc
+
+# Ask if user wants to replace configuration files
+read -p "Do you want to replace configuration files from GitHub? (y/n): " replace_configs
+
+if [[ $replace_configs == "y" || $replace_configs == "Y" ]]; then
+    echo "Downloading and replacing configuration files from GitHub..."
+
+    # Define base URL
+    BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/main/config_changes"
+
+    # Replace .bashrc, config.jsonc, starship.toml in /linuxtoolbox/mybash/
+    MYBASH_DIR=~/linuxtoolbox/mybash
+    if [[ ! -d $MYBASH_DIR ]]; then
+        mkdir -p $MYBASH_DIR
+    fi
+    curl -o $MYBASH_DIR/.bashrc "$BASE_URL/.bashrc"
+    curl -o $MYBASH_DIR/config.jsonc "$BASE_URL/config.jsonc"
+    curl -o $MYBASH_DIR/starship.toml "$BASE_URL/starship.toml"
+
+    # Replace config.h in /dwm-titus/
+    DWM_TITUS_DIR=~/dwm-titus
+    if [[ ! -d $DWM_TITUS_DIR ]]; then
+        mkdir -p $DWM_TITUS_DIR
+    fi
+    curl -o $DWM_TITUS_DIR/config.h "$BASE_URL/config.h"
+
+    echo "Configuration files replaced."
+else
+    echo "Configuration files not replaced."
+fi
 
 # Ask user if they want to install NVIDIA drivers
 read -p "Do you want to install NVIDIA drivers? (y/n): " install_nvidia
