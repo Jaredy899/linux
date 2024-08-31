@@ -17,8 +17,7 @@ if [[ "$OS" == "arch" ]]; then
     INSTALL_CMD="sudo pacman -Syu --noconfirm"
     PACKAGES="nano xorg xorg-xinit thunar vlc pulseaudio pulseaudio-alsa alsa-utils pavucontrol firefox ttf-firacode-nerd kitty alacritty"
 elif [[ "$OS" == "debian" || "$OS" == "ubuntu" ]]; then
-    UPDATE_CMD="sudo apt update"
-    INSTALL_CMD="sudo apt install -y"
+    INSTALL_CMD="sudo apt update && sudo apt install -y"
     PACKAGES="nano xorg xorg-xinit thunar vlc pulseaudio pulseaudio-utils pavucontrol firefox fonts-firacode kitty alacritty"
 else
     echo "Unsupported operating system: $OS"
@@ -30,8 +29,8 @@ echo "Installing essential packages..."
 if [[ "$OS" == "arch" ]]; then
     $INSTALL_CMD $PACKAGES
 elif [[ "$OS" == "debian" || "$OS" == "ubuntu" ]]; then
-    $UPDATE_CMD
-    $INSTALL_CMD $PACKAGES
+    sudo apt update
+    sudo apt install -y $PACKAGES
 fi
 
 # Create .xinitrc file with exec dwm
