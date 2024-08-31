@@ -49,6 +49,20 @@ if [[ $replace_configs == "y" || $replace_configs == "Y" ]]; then
     curl -o $MYBASH_DIR/config.jsonc "$BASE_URL/config.jsonc"
     curl -o $MYBASH_DIR/starship.toml "$BASE_URL/starship.toml"
 
+    # Replace kitty.conf in ~/.config/kitty/
+    KITTY_CONFIG_DIR=~/.config/kitty
+    if [[ ! -d $KITTY_CONFIG_DIR ]]; then
+        mkdir -p $KITTY_CONFIG_DIR
+    fi
+    curl -o $KITTY_CONFIG_DIR/kitty.conf "$BASE_URL/kitty.conf"
+
+    # Replace alacritty.toml in ~/.config/alacritty/
+    ALACRITTY_CONFIG_DIR=~/.config/alacritty
+    if [[ ! -d $ALACRITTY_CONFIG_DIR ]]; then
+        mkdir -p $ALACRITTY_CONFIG_DIR
+    fi
+    curl -o $ALACRITTY_CONFIG_DIR/alacritty.toml "$BASE_URL/alacritty.toml"
+
     # Replace config.h in /dwm-titus/
     DWM_TITUS_DIR=~/dwm-titus
     if [[ ! -d $DWM_TITUS_DIR ]]; then
