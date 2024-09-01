@@ -37,7 +37,7 @@ if [[ $replace_configs == "y" || $replace_configs == "Y" ]]; then
     if [[ ! -d $ALACRITTY_CONFIG_DIR ]]; then
         mkdir -p $ALACRITTY_CONFIG_DIR
     fi
-    curl -o $ALACRITTY_CONFIG_DIR/alacritty.yml "$BASE_URL/alacritty.toml"
+    curl -o $ALACRITTY_CONFIG_DIR/alacritty.toml "$BASE_URL/alacritty.toml"
 
     # Replace Kitty configuration
     KITTY_CONFIG_DIR=~/.config/kitty
