@@ -2,25 +2,25 @@
 
 [font]
 # Normal font face
-normal = { family = "FiraCode Nerd Font", style = "Regular" }
+#normal = { family = "FiraCode Nerd Font", style = "Regular" }
 
 # Bold font face (inherits from normal if family is not specified)
-bold = { family = "FiraCode Nerd Font", style = "Bold" }
+#bold = { family = "FiraCode Nerd Font", style = "Bold" }
 
 # Italic font face (inherits from normal if family is not specified)
-italic = { family = "FiraCode Nerd Font", style = "Italic" }
+#italic = { family = "FiraCode Nerd Font", style = "Italic" }
 
 # Bold italic font face (inherits from normal if family is not specified)
-bold_italic = { family = "FiraCode Nerd Font", style = "Bold Italic" }
+#bold_italic = { family = "FiraCode Nerd Font", style = "Bold Italic" }
 
 # Font size in points
-size = 15.0
+#size = 12.0
 
 # Extra spacing around each character
-offset = { x = 0, y = 0 }
+#offset = { x = 0, y = 0 }
 
 # Glyph offset within their cells
-glyph_offset = { x = 0, y = 0 }
+#glyph_offset = { x = 0, y = 0 }
 
 # Use built-in font for box drawing and powerline symbols
-builtin_box_drawing = true
+#builtin_box_drawing = true
