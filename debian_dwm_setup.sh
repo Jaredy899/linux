@@ -2,7 +2,7 @@
 
 # Update package database and install essential packages including Alacritty and Kitty
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y nano xorg thunar vlc pulseaudio alsa-utils pavucontrol firefox-esr fonts-firacode alacritty kitty
+sudo apt install -y nano xorg xinit thunar vlc pulseaudio alsa-utils pavucontrol fonts-firacode alacritty kitty
 
 # Create .xinitrc file with exec dwm
 echo "exec dwm" > ~/.xinitrc
