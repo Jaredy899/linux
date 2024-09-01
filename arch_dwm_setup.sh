@@ -4,7 +4,7 @@
 sudo pacman -Syu --noconfirm nano xorg xorg-xinit thunar vlc pulseaudio pulseaudio-alsa alsa-utils pavucontrol firefox ttf-firacode-nerd alacritty kitty
 
 # Create .xinitrc file with exec dwm
-echo "exec dwm" > ~/.xinitrc
+echo "exec dwm" | sudo tee ~/.xinitrc
 
 # Ask if user wants to replace configuration files
 read -p "Do you want to replace configuration files from GitHub? (y/n): " replace_configs
