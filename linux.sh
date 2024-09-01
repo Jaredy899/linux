@@ -43,11 +43,14 @@ fi
 # Check if the system is Debian, Ubuntu, or Arch
 SHOW_OPTIONS_8_9=false
 DWM_SETUP_SCRIPT=""
+AUTO_LOGIN_SCRIPT=""
+
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     if [[ "$ID" == "debian" || "$ID" == "ubuntu" ]]; then
         SHOW_OPTIONS_8_9=true
         DWM_SETUP_SCRIPT="debian_dwm_setup.sh"
+        AUTO_LOGIN_SCRIPT="debian_ubuntu_auto_login.sh"
         if command_exists fastfetch; then
             echo "Fastfetch is already installed. Skipping installation."
         else
@@ -57,6 +60,7 @@ if [ -f /etc/os-release ]; then
     elif [[ "$ID" == "arch" ]]; then
         SHOW_OPTIONS_8_9=true
         DWM_SETUP_SCRIPT="arch_dwm_setup.sh"
+        AUTO_LOGIN_SCRIPT="arch_auto_login.sh"  # Renamed from auto_login.sh
     else
         echo "This is not a Debian/Ubuntu/Arch system. Skipping specific installations and proceeding..."
     fi
@@ -117,7 +121,7 @@ while true; do
         9)
             if $SHOW_OPTIONS_8_9; then
                 echo "Configuring Auto-Login and StartX..."
-                run_script "auto_login.sh" "$GITPATH" "$GITHUB_BASE_URL"
+                run_script "$AUTO_LOGIN_SCRIPT" "$GITPATH" "$GITHUB_BASE_URL"
             else
                 echo "Invalid option. Please enter a number between 0 and 7."
             fi
