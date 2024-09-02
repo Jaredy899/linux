@@ -42,7 +42,7 @@ install_cockpit() {
 
     # Start the Cockpit service if not already running
     if ! systemctl is-active --quiet cockpit; then
-        sudo systemctl start cockpit
+        sudo systemctl enable --now cockpit.socket
         echo "Cockpit service has been started."
     else
         echo "Cockpit service is already running."
