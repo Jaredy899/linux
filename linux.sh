@@ -40,6 +40,15 @@ else
     echo "Git is already installed."
 fi
 
+# Check if running in an Arch Linux ISO environment
+if [ -d /run/archiso/bootmnt ]; then
+    echo "Arch Linux ISO environment detected."
+    read -p "Do you want to run the arch_install.sh script? (y/n): " run_install
+    if [[ "$run_install" =~ ^[Yy]$ ]]; then
+        run_script "arch_install.sh" "$GITPATH" "$GITHUB_BASE_URL"
+    fi
+fi
+
 # Check if the system is Debian, Ubuntu, or Arch
 SHOW_OPTIONS_8_9=false
 DWM_SETUP_SCRIPT=""
