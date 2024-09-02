@@ -662,7 +662,7 @@ echo "  NetworkManager enabled"
 
 echo -ne "
 -------------------------------------------------------------------------
-                            Cleaning
+                               Cleaning
 -------------------------------------------------------------------------
 "
 # Remove no password sudo rights
@@ -676,7 +676,7 @@ EOF
 # Prompt to reboot the system
 echo -ne "
 --------------------------------------------------------------------------
-                     Rebooting your system now
+                         Rebooting your system now
 --------------------------------------------------------------------------    
 "            
 reboot
