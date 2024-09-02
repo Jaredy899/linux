@@ -29,7 +29,7 @@ install_qemu_guest_agent() {
 # Function to start the qemu-guest-agent service
 start_qemu_guest_agent_service() {
     if ! systemctl is-active --quiet qemu-guest-agent; then
-        sudo systemctl start qemu-guest-agent
+        sudo systemctl enable --now qemu-guest-agent
         echo "qemu-guest-agent service has been started."
     else
         echo "qemu-guest-agent service is already running."
