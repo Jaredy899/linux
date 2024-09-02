@@ -481,8 +481,9 @@ echo -ne "
                             Network Setup 
 -------------------------------------------------------------------------
 "
-pacman -S --noconfirm --needed networkmanager dhclient
+pacman -S --noconfirm --needed networkmanager dhclient openssh
 systemctl enable --now NetworkManager
+systemctl enable --now sshd
 echo -ne "
 -------------------------------------------------------------------------
                 Setting up mirrors for optimal download 
