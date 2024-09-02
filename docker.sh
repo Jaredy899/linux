@@ -39,8 +39,7 @@ install_docker() {
 
             # Enable and start Docker service
             echo "Enabling and starting Docker service..."
-            sudo systemctl enable docker
-            sudo systemctl start docker
+            sudo systemctl enable --now docker
 
             # Check if Docker service is running
             if ! sudo systemctl is-active --quiet docker; then
