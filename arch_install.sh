@@ -122,7 +122,7 @@ select_option() {
 logo () {
 # This will be shown on every set as user is progressing
 echo -ne "
--------------------------------------------------------------------------
+------------------------------------------------------------------------
                      █████╗ ██████╗  ██████╗██╗  ██╗
                     ██╔══██╗██╔══██╗██╔════╝██║  ██║
                     ███████║██████╔╝██║     ███████║ 
@@ -320,13 +320,13 @@ if [ ! -d "/mnt" ]; then
 fi
 echo -ne "
 -------------------------------------------------------------------------
-                    Installing Prerequisites
+                        Installing Prerequisites
 -------------------------------------------------------------------------
 "
 pacman -S --noconfirm --needed gptfdisk btrfs-progs glibc
 echo -ne "
 -------------------------------------------------------------------------
-                        Formating Disk
+                            Formating Disk
 -------------------------------------------------------------------------
 "
 umount -A --recursive /mnt # make sure everything is unmounted before we start
@@ -346,7 +346,7 @@ partprobe ${DISK} # reread partition table to ensure it is correct
 # make filesystems
 echo -ne "
 -------------------------------------------------------------------------
-                    Creating Filesystems
+                        Creating Filesystems
 -------------------------------------------------------------------------
 "
 # @description Creates the btrfs subvolumes. 
@@ -427,7 +427,7 @@ if ! grep -qs '/mnt' /proc/mounts; then
 fi
 echo -ne "
 -------------------------------------------------------------------------
-                    Arch Install on Main Drive
+                        Arch Install on Main Drive
 -------------------------------------------------------------------------
 "
 if [[ ! -d "/sys/firmware/efi" ]]; then
@@ -445,7 +445,7 @@ echo "
 cat /mnt/etc/fstab
 echo -ne "
 -------------------------------------------------------------------------
-                GRUB BIOS Bootloader Install & Check
+                  GRUB BIOS Bootloader Install & Check
 -------------------------------------------------------------------------
 "
 if [[ ! -d "/sys/firmware/efi" ]]; then
@@ -453,7 +453,7 @@ if [[ ! -d "/sys/firmware/efi" ]]; then
 fi
 echo -ne "
 -------------------------------------------------------------------------
-                Checking for low memory systems <8G
+                  Checking for low memory systems <8G
 -------------------------------------------------------------------------
 "
 TOTAL_MEM=$(cat /proc/meminfo | grep -i 'memtotal' | grep -o '[[:digit:]]*')
@@ -533,7 +533,7 @@ pacman -Sy --noconfirm --needed
 
 echo -ne "
 -------------------------------------------------------------------------
-                    Installing Microcode
+                          Installing Microcode
 -------------------------------------------------------------------------
 "
 # determine processor type and install microcode
