@@ -676,6 +676,7 @@ EOF
 # Prompt to reboot the system
 echo -ne "
 --------------------------------------------------------------------------
-                     Reboot your system now
+                     Rebooting your system now
 --------------------------------------------------------------------------    
 "            
+reboot
