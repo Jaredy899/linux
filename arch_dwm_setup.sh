@@ -31,6 +31,13 @@ if [[ $replace_configs == "y" || $replace_configs == "Y" ]]; then
     fi
     curl -o $DWM_TITUS_DIR/config.h "$BASE_URL/config.h"
 
+    #Replace dwm.c in /dwm-titus/
+    DWM_TITUS_DIR=~/dwm-titus
+    if [[ ! -d $DWM_TITUS_DIR ]]; then
+        mkdir -p $DWM_TITUS_DIR
+    fi
+    curl -o $DWM_TITUS_DIR/dwm.c "$BASE_URL/dwm.c"
+
     # Replace Alacritty configuration
     ALACRITTY_CONFIG_DIR=~/.config/alacritty
     if [[ ! -d $ALACRITTY_CONFIG_DIR ]]; then
