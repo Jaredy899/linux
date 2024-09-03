@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Update package database and install essential packages including Alacritty and Kitty
-sudo pacman -Syu --noconfirm nano xorg xorg-xinit thunar vlc pulseaudio pulseaudio-alsa alsa-utils pavucontrol firefox ttf-firacode-nerd alacritty kitty
+sudo pacman -Syu --noconfirm nano thunar vlc pulseaudio pulseaudio-alsa alsa-utils pavucontrol firefox ttf-firacode-nerd nm-connection-editor
 
 # Create .xinitrc file with exec dwm
-echo "exec dwm" | sudo tee ~/.xinitrc
+# echo "exec dwm" | sudo tee ~/.xinitrc
 
 # Ask if user wants to replace configuration files
 read -p "Do you want to replace configuration files from GitHub? (y/n): " replace_configs
@@ -32,18 +32,18 @@ if [[ $replace_configs == "y" || $replace_configs == "Y" ]]; then
     curl -o $DWM_TITUS_DIR/config.h "$BASE_URL/config.h"
 
     #Replace dwm.c in /dwm-titus/
-    DWM_TITUS_DIR=~/dwm-titus
-    if [[ ! -d $DWM_TITUS_DIR ]]; then
-        mkdir -p $DWM_TITUS_DIR
-    fi
-    curl -o $DWM_TITUS_DIR/dwm.c "$BASE_URL/dwm.c"
+#    DWM_TITUS_DIR=~/dwm-titus
+#    if [[ ! -d $DWM_TITUS_DIR ]]; then
+#        mkdir -p $DWM_TITUS_DIR
+#    fi
+#    curl -o $DWM_TITUS_DIR/dwm.c "$BASE_URL/dwm.c"
 
     # Replace Alacritty configuration
-    ALACRITTY_CONFIG_DIR=~/.config/alacritty
-    if [[ ! -d $ALACRITTY_CONFIG_DIR ]]; then
-        mkdir -p $ALACRITTY_CONFIG_DIR
-    fi
-    curl -o $ALACRITTY_CONFIG_DIR/alacritty.toml "$BASE_URL/alacritty.toml"
+#    ALACRITTY_CONFIG_DIR=~/.config/alacritty
+#    if [[ ! -d $ALACRITTY_CONFIG_DIR ]]; then
+#        mkdir -p $ALACRITTY_CONFIG_DIR
+#    fi
+#    curl -o $ALACRITTY_CONFIG_DIR/alacritty.toml "$BASE_URL/alacritty.toml"
 
     # Replace Kitty configuration
     KITTY_CONFIG_DIR=~/.config/kitty
