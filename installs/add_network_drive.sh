@@ -14,19 +14,44 @@ source ./common.sh
 # Run environment checks using common.sh
 checkEnv
 
-# Function to check if a package is installed using the common.sh package manager
+# Function to check if a package is installed using the common.sh utilities
 check_package() {
     package_name="$1"
     
-    if ! command_exists "$package_name"; then
-        echo "$package_name is not installed. Installing $package_name..."
-        $ESCALATION_TOOL $PACKAGER install -y "$package_name"
-    else
-        echo "$package_name is already installed."
-    fi
+    case "$DTYPE" in
+        ubuntu|debian)
+            if ! dpkg -l | grep -q "$package_name"; then
+                echo "$package_name is not installed. Installing $package_name..."
+                $ESCALATION_TOOL $PACKAGER update -y
+                $ESCALATION_TOOL $PACKAGER install -y "$package_name"
+            else
+                echo "$package_name is already installed."
+            fi
+            ;;
+        fedora|centos|rhel|rocky|alma)
+            if ! rpm -qa | grep -q "$package_name"; then
+                echo "$package_name is not installed. Installing $package_name..."
+                $ESCALATION_TOOL $PACKAGER install -y "$package_name"
+            else
+                echo "$package_name is already installed."
+            fi
+            ;;
+        arch)
+            if ! pacman -Qi "$package_name" > /dev/null; then
+                echo "$package_name is not installed. Installing $package_name..."
+                $ESCALATION_TOOL $PACKAGER -Sy --noconfirm "$package_name"
+            else
+                echo "$package_name is already installed."
+            fi
+            ;;
+        *)
+            echo "Unsupported distribution. Please install $package_name manually."
+            exit 1
+            ;;
+    esac
 }
 
-# Detect the Linux distribution using the checkDistro function from common.sh
+# Detect the Linux distribution using common.sh
 checkDistro
 distro="$DTYPE"
 

@@ -2,6 +2,22 @@
 
 set -e  # Exit immediately if a command exits with a non-zero status
 
+# GitHub URL base for the necessary configuration files
+GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/main"
+
+# Source the common.sh script
+COMMON_SCRIPT_URL="${GITHUB_BASE_URL}/common.sh"
+
+# Download and source the common.sh script if it's not already present
+if [ ! -f "common.sh" ]; then
+    echo "Downloading common.sh..."
+    curl -s -O "${COMMON_SCRIPT_URL}"
+fi
+source "./common.sh"
+
+# Run environment checks using common.sh
+checkEnv
+
 # Function to fetch the latest release of fastfetch from GitHub
 install_fastfetch() {
     echo "Installing fastfetch..."
@@ -25,7 +41,7 @@ install_fastfetch() {
             ARCH_DEB="linux-riscv64.deb"
             ;;
         *)
-            echo "Unsupported architecture: $ARCH. Exiting." > /dev/null
+            echo "Unsupported architecture: $ARCH. Exiting."
             exit 1
             ;;
     esac
@@ -35,32 +51,32 @@ install_fastfetch() {
 
     # Check if the URL was successfully retrieved
     if [ -z "$FASTFETCH_URL" ]; then
-        echo "Failed to retrieve the latest release URL for fastfetch. Exiting." > /dev/null
+        echo "Failed to retrieve the latest release URL for fastfetch. Exiting."
         exit 1
     fi
 
     # Download the .deb package to /tmp using curl with retry
-    curl -s -L --retry 3 -o /tmp/fastfetch_latest_$ARCH.deb "$FASTFETCH_URL" > /dev/null 2>&1
+    curl -s -L --retry 3 -o /tmp/fastfetch_latest_$ARCH.deb "$FASTFETCH_URL"
 
     # Check if the download was successful
     if [ ! -s /tmp/fastfetch_latest_$ARCH.deb ]; then
-        echo "Downloaded file is empty or corrupted. Exiting." > /dev/null
+        echo "Downloaded file is empty or corrupted. Exiting."
         rm -f /tmp/fastfetch_latest_$ARCH.deb  # Remove corrupted file
         exit 1
     fi
 
     # Verify the downloaded package
     if ! dpkg-deb --info /tmp/fastfetch_latest_$ARCH.deb > /dev/null 2>&1; then
-        echo "The .deb file is corrupted or invalid. Exiting." > /dev/null
+        echo "The .deb file is corrupted or invalid. Exiting."
         rm -f /tmp/fastfetch_latest_$ARCH.deb  # Remove corrupted file
         exit 1
     fi
 
-    # Install the .deb package
-    sudo dpkg -i /tmp/fastfetch_latest_$ARCH.deb > /dev/null 2>&1 || sudo apt-get install -f -y > /dev/null 2>&1
+    # Install the .deb package using the escalation tool from common.sh
+    $ESCALATION_TOOL dpkg -i /tmp/fastfetch_latest_$ARCH.deb || $ESCALATION_TOOL apt-get install -f -y
 
     # Remove the downloaded .deb file
-    rm /tmp/fastfetch_latest_$ARCH.deb > /dev/null 2>&1
+    rm /tmp/fastfetch_latest_$ARCH.deb
 
     echo "fastfetch has been successfully installed."
 }
