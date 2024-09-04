@@ -8,12 +8,30 @@ GITPATH="$(cd "$(dirname "$0")" && pwd)"
 echo "GITPATH is set to: $GITPATH"
 
 # GitHub URL base for the necessary configuration files
-GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/main"
+GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/dev"
+INSTALLS_URL="$GITHUB_BASE_URL/installs"
 
 # Function to check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
+
+# Function to detect the Linux distribution
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    else
+        echo "unknown"
+    fi
+}
+
+# Detect the Linux distribution
+distro=$(detect_distro)
+if [ "$distro" = "unknown" ]; then
+    echo "Unable to detect Linux distribution. Exiting."
+    exit 1
+fi
 
 # Function to run a script from local or GitHub
 run_script() {
@@ -32,49 +50,31 @@ run_script() {
     fi
 }
 
+# Check if running in an Arch Linux ISO environment
+if [ -d /run/archiso/bootmnt ]; then
+    echo "Arch Linux ISO environment detected."
+    read -p "Do you want to run the Arch install script? (y/n): " run_install
+    if [[ "$run_install" =~ ^[Yy]$ ]]; then
+        run_script "arch_install.sh" "$GITPATH/installs" "$INSTALLS_URL"
+    fi
+fi
+
 # Ensure git is installed
 if ! command_exists git; then
     echo "Git is not installed. Installing git..."
-    run_script "install.git.sh" "$GITPATH" "$GITHUB_BASE_URL"
+    run_script "install_git.sh" "$GITPATH/installs" "$INSTALLS_URL"
 else
     echo "Git is already installed."
 fi
 
-# Check if running in an Arch Linux ISO environment
-if [ -d /run/archiso/bootmnt ]; then
-    echo "Arch Linux ISO environment detected."
-    read -p "Do you want to run the arch_install.sh script? (y/n): " run_install
-    if [[ "$run_install" =~ ^[Yy]$ ]]; then
-        run_script "arch_install.sh" "$GITPATH" "$GITHUB_BASE_URL"
-    fi
-fi
-
-# Check if the system is Debian, Ubuntu, or Arch
-SHOW_OPTIONS_8_9=false
-DWM_SETUP_SCRIPT=""
-AUTO_LOGIN_SCRIPT=""
-
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    if [[ "$ID" == "debian" || "$ID" == "ubuntu" ]]; then
-        SHOW_OPTIONS_8_9=true
-        DWM_SETUP_SCRIPT="debian_dwm_setup.sh"
-        AUTO_LOGIN_SCRIPT="debian_ubuntu_auto_login.sh"
-        if command_exists fastfetch; then
-            echo "Fastfetch is already installed. Skipping installation."
-        else
-            echo "Fastfetch is not installed. Proceeding to install fastfetch..."
-            run_script "install_fastfetch.sh" "$GITPATH" "$GITHUB_BASE_URL"
-        fi
-    elif [[ "$ID" == "arch" ]]; then
-        SHOW_OPTIONS_8_9=true
-        DWM_SETUP_SCRIPT="arch_dwm_setup.sh"
-        AUTO_LOGIN_SCRIPT="arch_auto_login.sh"  # Renamed from auto_login.sh
+# Check if the system is Debian/Ubuntu or Arch and install fastfetch if necessary
+if [[ "$distro" == "debian" || "$distro" == "ubuntu" ]]; then
+    if command_exists fastfetch; then
+        echo "Fastfetch is already installed. Skipping installation."
     else
-        echo "This is not a Debian/Ubuntu/Arch system. Skipping specific installations and proceeding..."
+        echo "Fastfetch is not installed. Proceeding to install fastfetch..."
+        run_script "install_fastfetch.sh" "$GITPATH/installs" "$INSTALLS_URL"
     fi
-else
-    echo "Cannot detect the operating system. /etc/os-release not found. Skipping specific installations and proceeding..."
 fi
 
 # Menu loop
@@ -89,54 +89,33 @@ while true; do
     echo "5) Install qemu-guest-agent"
     echo "6) Install Tailscale"
     echo "7) Install Docker and Portainer"
-    
-    if $SHOW_OPTIONS_8_9; then
-        echo "8) Run DWM Setup Script"
-        echo "9) Configure Auto-Login and StartX"
-    fi
-
+    echo "8) Run DWM Setup Script"
     echo "0) Exit"
     echo
 
-    if $SHOW_OPTIONS_8_9; then
-        read -p "Enter your choice (0-9): " choice
-    else
-        read -p "Enter your choice (0-7): " choice
-    fi
+    read -p "Enter your choice (0-8): " choice
 
     case $choice in
         1) 
             echo "Running Chris Titus Tech's script..."
             curl -fsSL christitus.com/linux | sh
             ;;
-        2) run_script "install_ncdu.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
-        3) run_script "cockpit.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
-        4) run_script "add_network_drive.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
-        5) run_script "qemu-guest-agent.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        2) run_script "install_ncdu.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        3) run_script "cockpit.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        4) run_script "add_network_drive.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        5) run_script "qemu-guest-agent.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         6) 
             echo "Installing Tailscale..."
             curl -fsSL https://tailscale.com/install.sh | sh
             echo "Tailscale installed. Please run 'sudo tailscale up' to activate."
             ;;
-        7) run_script "docker.sh" "$GITPATH" "$GITHUB_BASE_URL" ;;
+        7) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         8)
-            if $SHOW_OPTIONS_8_9; then
-                echo "Running DWM Setup Script..."
-                run_script "$DWM_SETUP_SCRIPT" "$GITPATH" "$GITHUB_BASE_URL"
-            else
-                echo "Invalid option. Please enter a number between 0 and 7."
-            fi
-            ;;
-        9)
-            if $SHOW_OPTIONS_8_9; then
-                echo "Configuring Auto-Login and StartX..."
-                run_script "$AUTO_LOGIN_SCRIPT" "$GITPATH" "$GITHUB_BASE_URL"
-            else
-                echo "Invalid option. Please enter a number between 0 and 7."
-            fi
+            echo "Running DWM Setup Script..."
+            run_script "dwm_setup.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         0) echo "Exiting script."; break ;;
-        *) echo "Invalid option. Please enter a number between 0 and $(if $SHOW_OPTIONS_8_9; then echo "9"; else echo "7"; fi)." ;;
+        *) echo "Invalid option. Please enter a number between 0 and 8." ;;
     esac
 done
 

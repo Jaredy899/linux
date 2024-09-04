@@ -4,33 +4,41 @@ set -o errexit
 set -o nounset
 IFS=$(printf '\n\t')
 
-# Function to detect the distribution and install Docker
-install_docker() {
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Function to determine the Linux distribution
+detect_distro() {
     if [ -f /etc/os-release ]; then
         . /etc/os-release
-        DISTRO=$ID
+        echo "$ID"
     else
-        echo "Unsupported distribution"
-        exit 1
+        echo "unknown"
     fi
+}
 
+# Detect the Linux distribution
+DISTRO=$(detect_distro)
+if [ "$DISTRO" = "unknown" ]; then
+    echo "Unable to detect Linux distribution. Exiting."
+    exit 1
+fi
+
+# Function to install Docker
+install_docker() {
     case "$DISTRO" in
-        ubuntu|debian)
-            echo "Detected Debian/Ubuntu system"
-            curl -fsSL https://get.docker.com | sh
-            ;;
-        fedora)
-            echo "Detected Fedora system"
-            curl -fsSL https://get.docker.com | sh
-
-            # SELinux adjustment for Docker on Fedora
-            echo "Adjusting SELinux for Docker on Fedora..."
-            sudo setenforce 0
-            sudo sed -i --follow-symlinks 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
-            ;;
-        centos|rhel|rocky|alma)
+        ubuntu|debian|fedora|centos|rhel|rocky|alma)
             echo "Detected $DISTRO system"
-            curl -fsSL https://get.docker.com | sh
+            curl -fsSL https://get.docker.com | sudo sh
+            
+            # If Fedora, adjust SELinux settings
+            if [ "$DISTRO" = "fedora" ]; then
+                echo "Adjusting SELinux for Docker on Fedora..."
+                sudo setenforce 0
+                sudo sed -i --follow-symlinks 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+            fi
             ;;
         arch)
             echo "Detected Arch-based system"
@@ -42,7 +50,7 @@ install_docker() {
             sudo systemctl enable --now docker
 
             # Check if Docker service is running
-            if ! sudo systemctl is-active --quiet docker; then
+            if ! systemctl is-active --quiet docker; then
                 echo "Docker service failed to start on Arch-based system"
                 exit 1
             fi
@@ -64,7 +72,7 @@ install_portainer() {
     sudo systemctl enable docker
 
     # Check if Docker is active
-    if ! sudo systemctl is-active --quiet docker; then
+    if ! systemctl is-active --quiet docker; then
         echo "Docker service is not running. Exiting."
         exit 1
     fi
@@ -125,7 +133,7 @@ echo "##########################################################################
 echo "##                                                                                                  ##"  
 echo "##  To add your user to the Docker group and apply the changes, please run the following commands:  ##"
 echo "##                                                                                                  ##"
-echo "##                            sudo usermod -aG docker $USER                                         ##"
+echo "##                            sudo usermod -aG docker \$USER                                         ##"
 echo "##                                     newgrp docker                                                ##"  
 echo "##                                                                                                  ##"
 echo "##             After running these commands, you can use Docker without sudo.                       ##"

@@ -1,8 +1,32 @@
 #!/bin/sh
 
+set -e  # Exit immediately if a command exits with a non-zero status
+
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Function to determine the Linux distribution
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    else
+        echo "unknown"
+    fi
+}
+
+# Detect the Linux distribution
+DISTRO=$(detect_distro)
+if [ "$DISTRO" = "unknown" ]; then
+    echo "Unable to detect Linux distribution. Exiting."
+    exit 1
+fi
+
 # Function to check if Cockpit is installed
 is_cockpit_installed() {
-    if command -v cockpit > /dev/null 2>&1; then
+    if command_exists cockpit; then
         echo "Cockpit is already installed."
         return 0
     else
@@ -14,19 +38,10 @@ is_cockpit_installed() {
 install_cockpit() {
     echo "Installing Cockpit..."
 
-    # Detect the Linux distribution
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        DISTRO=$ID
-    else
-        echo "Unsupported Linux distribution."
-        exit 1
-    fi
-
     case "$DISTRO" in
         ubuntu|debian)
-            sudo apt update -qq
-            sudo apt install -y cockpit -qq
+            sudo apt-get update -qq
+            sudo apt-get install -y cockpit -qq
             ;;
         fedora|rocky|alma|centos|rhel)
             sudo dnf install -y cockpit -q
@@ -49,7 +64,7 @@ install_cockpit() {
     fi
 
     # Open firewall port for Cockpit (port 9090) if UFW is installed
-    if command -v ufw > /dev/null 2>&1; then
+    if command_exists ufw; then
         sudo ufw allow 9090/tcp
         sudo ufw reload
         echo "UFW configuration updated to allow Cockpit."
