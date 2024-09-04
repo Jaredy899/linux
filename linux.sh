@@ -53,9 +53,9 @@ run_script() {
 # Check if running in an Arch Linux ISO environment
 if [ -d /run/archiso/bootmnt ]; then
     echo "Arch Linux ISO environment detected."
-    read -p "Do you want to run the dwm_setup.sh script? (y/n): " run_install
+    read -p "Do you want to run the Arch install script? (y/n): " run_install
     if [[ "$run_install" =~ ^[Yy]$ ]]; then
-        run_script "dwm_setup.sh" "$GITPATH/installs" "$INSTALLS_URL"
+        run_script "arch_install.sh" "$GITPATH/installs" "$INSTALLS_URL"
     fi
 fi
 
