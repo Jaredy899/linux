@@ -8,7 +8,7 @@ GITPATH="$(cd "$(dirname "$0")" && pwd)"
 echo "GITPATH is set to: $GITPATH"
 
 # GitHub URL base for the necessary configuration files
-GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/main"
+GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/dev"
 INSTALLS_URL="$GITHUB_BASE_URL/installs"
 
 # Source the common.sh script
