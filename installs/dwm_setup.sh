@@ -66,7 +66,7 @@ Pin-Priority: 1000
         sudo apt-get install -y $packages firefox
         ;;
     fedora|centos|rhel)
-        packages="nano thunar vlc pulseaudio alsa-utils pavucontrol fira-code-fonts NetworkManager-tui firefox"
+        packages="nano thunar vlc pipewire pipewire-alsa pipewire-pulseaudio alsa-utils pavucontrol fira-code-fonts NetworkManager-tui firefox"
         echo "Updating package database and installing essential packages..."
         sudo dnf update -y
         sudo dnf install -y $packages
