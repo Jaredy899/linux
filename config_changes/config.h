@@ -37,14 +37,14 @@ static const char *const autostart[] = {
     "flameshot", NULL,
     "dunst", NULL,
     "picom", "-b", NULL,
-    "sh", "-c", "feh --randomize --bg-fill ~/Pictures/backgrounds/*", NULL,
+    "sh", "-c", "feh --randomize --bg-fill ~/Pictures/*", NULL,
     "synergy", NULL,
     "slstatus", NULL,
     NULL /* terminate */
 };
 
 /* tagging */
-static const char *tags[] = { "", "", "", "", "" };
+static const char *tags[] = { "", "", "󰊖", "", "" };
 
 static const char ptagf[] = "[%s %s]";  /* format of a tag label */
 static const char etagf[] = "[%s]";     /* format of an empty tag */
@@ -76,7 +76,7 @@ static const Layout layouts[] = {
 };
 
 /* key definitions */
-#define MODKEY Mod1Mask  /* Set MODKEY to Alt key */
+#define MODKEY Mod1Mask
 #define TAGKEYS(KEY,TAG) \
     { MODKEY,                       KEY,      view,           {.ui = 1 << TAG} }, \
     { MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
@@ -93,15 +93,15 @@ static const char *termcmd[]     = { "alacritty", NULL };
 static Key keys[] = {
     /* modifier                     key                        function        argument */
     { MODKEY,                       XK_space,                  spawn,          {.v = launchercmd} }, /* Alt + Spacebar opens launcher */
-    { MODKEY,                       XK_x,                      spawn,          {.v = termcmd } },   /* Alt + x opens kitty terminal */
     { MODKEY|ControlMask,           XK_r,                      spawn,          SHCMD ("protonrestart")},
+    { MODKEY,                       XK_x,                      spawn,          {.v = termcmd } },
     { MODKEY,                       XK_b,                      spawn,          SHCMD ("xdg-open https://")},
     { MODKEY,                       XK_p,                      spawn,          SHCMD ("flameshot full -p /media/drive/Screenshots/")},
     { MODKEY|ShiftMask,             XK_p,                      spawn,          SHCMD ("flameshot gui -p /media/drive/Screenshots/")},
     { MODKEY|ControlMask,           XK_p,                      spawn,          SHCMD ("flameshot gui --clipboard")},
     { MODKEY,                       XK_e,                      spawn,          SHCMD ("thunar")},
     { MODKEY,                       XK_w,                      spawn,          SHCMD ("looking-glass-client -F")},
-    { MODKEY|ShiftMask,             XK_w,                      spawn,          SHCMD ("feh --randomize --bg-fill ~/Pictures/backgrounds/*")},
+    { MODKEY|ShiftMask,             XK_w,                      spawn,          SHCMD ("feh --randomize --bg-fill ~/Pictures/*")},
     { 0,                            XF86XK_MonBrightnessUp,    spawn,          SHCMD ("xbacklight -inc 10")},
     { 0,                            XF86XK_MonBrightnessDown,  spawn,          SHCMD ("xbacklight -dec 10")},
     { 0,                            XF86XK_AudioLowerVolume,   spawn,          SHCMD ("amixer sset Master 5%- unmute")},
@@ -125,7 +125,7 @@ static Key keys[] = {
     { MODKEY,                       XK_t,                      setlayout,      {.v = &layouts[0]} },
     { MODKEY,                       XK_f,                      setlayout,      {.v = &layouts[1]} },
     { MODKEY,                       XK_m,                      fullscreen,     {0} },
-    { MODKEY,                       XK_space,                  setlayout,      {0} },
+    { MODKEY,                       XK_r,                      setlayout,      {0} },
     { MODKEY|ShiftMask,             XK_m,                      togglefloating, {0} },
     { MODKEY|ShiftMask,             XK_y,                      togglefakefullscreen, {0} },
     { MODKEY,                       XK_0,                      view,           {.ui = ~0 } },
