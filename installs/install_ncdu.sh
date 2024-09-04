@@ -1,37 +1,44 @@
 #!/bin/bash
 
-# Source the common.sh script
-GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/main"
-COMMON_SCRIPT_URL="${GITHUB_BASE_URL}/common.sh"
+set -e  # Exit immediately if a command exits with a non-zero status
 
-# Download and source the common.sh script if it's not already present
-if [ ! -f "common.sh" ]; then
-    echo "Downloading common.sh..."
-    curl -s -O "${COMMON_SCRIPT_URL}"
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Function to detect the Linux distribution
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    else
+        echo "unknown"
+    fi
+}
+
+# Detect the Linux distribution
+DISTRO=$(detect_distro)
+if [ "$DISTRO" = "unknown" ]; then
+    echo "Unable to detect Linux distribution. Exiting."
+    exit 1
 fi
-source ./common.sh
-
-# Run environment checks using common.sh
-checkEnv
 
 # Function to install ncdu using the detected package manager
 install_ncdu() {
-    checkDistro
-    DISTRO="$DTYPE"
-
     case "$DISTRO" in
         arch)
             echo "Detected Arch Linux. Installing ncdu..."
-            $ESCALATION_TOOL $PACKAGER -Syu ncdu --noconfirm
+            sudo pacman -Syu ncdu --noconfirm
             ;;
         fedora|centos|rhel|rocky|alma)
             echo "Detected Fedora-based system. Installing ncdu..."
-            $ESCALATION_TOOL $PACKAGER install ncdu -y
+            sudo dnf install ncdu -y
             ;;
         debian|ubuntu)
             echo "Detected Debian/Ubuntu. Installing ncdu..."
-            $ESCALATION_TOOL $PACKAGER update -y
-            $ESCALATION_TOOL $PACKAGER install ncdu -y
+            sudo apt-get update -y
+            sudo apt-get install ncdu -y
             ;;
         *)
             echo "Unsupported distribution: $DISTRO"

@@ -2,21 +2,32 @@
 
 set -e  # Exit immediately if a command exits with a non-zero status
 
-# GitHub URL base for the necessary configuration files
-GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/main"
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
 
-# Source the common.sh script
-COMMON_SCRIPT_URL="${GITHUB_BASE_URL}/common.sh"
-
-# Download and source the common.sh script if it's not already present
-if [ ! -f "common.sh" ]; then
-    echo "Downloading common.sh..."
-    curl -s -O "${COMMON_SCRIPT_URL}"
-fi
-source "./common.sh"
-
-# Run environment checks using common.sh
-checkEnv
+# Function to detect the system architecture
+detect_arch() {
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64)
+            echo "linux-amd64.deb"
+            ;;
+        aarch64)
+            echo "linux-aarch64.deb"
+            ;;
+        armv7l)
+            echo "linux-armv7l.deb"
+            ;;
+        riscv64)
+            echo "linux-riscv64.deb"
+            ;;
+        *)
+            echo "unsupported"
+            ;;
+    esac
+}
 
 # Function to fetch the latest release of fastfetch from GitHub
 install_fastfetch() {
@@ -26,25 +37,11 @@ install_fastfetch() {
     GITHUB_API_URL="https://api.github.com/repos/fastfetch-cli/fastfetch/releases/latest"
 
     # Detect the system architecture
-    ARCH=$(uname -m)
-    case "$ARCH" in
-        x86_64)
-            ARCH_DEB="linux-amd64.deb"
-            ;;
-        aarch64)
-            ARCH_DEB="linux-aarch64.deb"
-            ;;
-        armv7l)
-            ARCH_DEB="linux-armv7l.deb"
-            ;;
-        riscv64)
-            ARCH_DEB="linux-riscv64.deb"
-            ;;
-        *)
-            echo "Unsupported architecture: $ARCH. Exiting."
-            exit 1
-            ;;
-    esac
+    ARCH_DEB=$(detect_arch)
+    if [ "$ARCH_DEB" = "unsupported" ]; then
+        echo "Unsupported architecture. Exiting."
+        exit 1
+    fi
 
     # Get the download URL for the latest Debian package (.deb) release for the detected architecture
     FASTFETCH_URL=$(curl -s $GITHUB_API_URL | grep "browser_download_url.*$ARCH_DEB" | cut -d '"' -f 4)
@@ -72,8 +69,8 @@ install_fastfetch() {
         exit 1
     fi
 
-    # Install the .deb package using the escalation tool from common.sh
-    $ESCALATION_TOOL dpkg -i /tmp/fastfetch_latest_$ARCH.deb || $ESCALATION_TOOL apt-get install -f -y
+    # Install the .deb package
+    sudo dpkg -i /tmp/fastfetch_latest_$ARCH.deb || sudo apt-get install -f -y
 
     # Remove the downloaded .deb file
     rm /tmp/fastfetch_latest_$ARCH.deb

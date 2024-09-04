@@ -11,18 +11,27 @@ echo "GITPATH is set to: $GITPATH"
 GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/dev"
 INSTALLS_URL="$GITHUB_BASE_URL/installs"
 
-# Source the common.sh script
-COMMON_SCRIPT_URL="${GITHUB_BASE_URL}/common.sh"
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
 
-# Download and source the common.sh script if it's not already present
-if [ ! -f "$GITPATH/common.sh" ]; then
-    echo "Downloading common.sh..."
-    curl -s -O "${COMMON_SCRIPT_URL}"
+# Function to detect the Linux distribution
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    else
+        echo "unknown"
+    fi
+}
+
+# Detect the Linux distribution
+distro=$(detect_distro)
+if [ "$distro" = "unknown" ]; then
+    echo "Unable to detect Linux distribution. Exiting."
+    exit 1
 fi
-source "$GITPATH/common.sh"
-
-# Run environment checks using common.sh
-checkEnv
 
 # Function to run a script from local or GitHub
 run_script() {
@@ -44,24 +53,21 @@ run_script() {
 # Check if running in an Arch Linux ISO environment
 if [ -d /run/archiso/bootmnt ]; then
     echo "Arch Linux ISO environment detected."
-    read -p "Do you want to run the arch_install.sh script? (y/n): " run_install
+    read -p "Do you want to run the dwm_setup.sh script? (y/n): " run_install
     if [[ "$run_install" =~ ^[Yy]$ ]]; then
-        run_script "arch_install.sh" "$GITPATH/installs" "$INSTALLS_URL"
+        run_script "dwm_setup.sh" "$GITPATH/installs" "$INSTALLS_URL"
     fi
 fi
 
 # Ensure git is installed
 if ! command_exists git; then
     echo "Git is not installed. Installing git..."
-    run_script "install.git.sh" "$GITPATH" "$INSTALLS_URL"
+    run_script "install_git.sh" "$GITPATH/installs" "$INSTALLS_URL"
 else
     echo "Git is already installed."
 fi
 
-# Check if the system is Debian/Ubuntu or Arch
-checkDistro
-distro="$DTYPE"
-
+# Check if the system is Debian/Ubuntu or Arch and install fastfetch if necessary
 if [[ "$distro" == "debian" || "$distro" == "ubuntu" ]]; then
     if command_exists fastfetch; then
         echo "Fastfetch is already installed. Skipping installation."

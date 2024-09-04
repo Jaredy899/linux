@@ -1,39 +1,46 @@
 #!/bin/bash
 
-# Source the common.sh script
-GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/main"
-COMMON_SCRIPT_URL="${GITHUB_BASE_URL}/common.sh"
+set -e  # Exit immediately if a command exits with a non-zero status
 
-# Download and source the common.sh script if it's not already present
-if [ ! -f "common.sh" ]; then
-    echo "Downloading common.sh..."
-    curl -s -O "${COMMON_SCRIPT_URL}"
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Function to detect the Linux distribution
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    else
+        echo "unknown"
+    fi
+}
+
+# Detect the Linux distribution
+DISTRO=$(detect_distro)
+if [ "$DISTRO" = "unknown" ]; then
+    echo "Unable to detect Linux distribution. Exiting."
+    exit 1
 fi
-source ./common.sh
-
-# Run environment checks using common.sh
-checkEnv
 
 # Ensure git is installed
 if ! command_exists git; then
     echo "Git is not installed. Installing git..."
-    
-    checkDistro
-    DISTRO="$DTYPE"
 
     case "$DISTRO" in
         ubuntu|debian)
             echo "Detected Debian/Ubuntu system. Installing git..."
-            $ESCALATION_TOOL $PACKAGER update -qq
-            $ESCALATION_TOOL $PACKAGER install -y git -qq
+            sudo apt-get update -qq
+            sudo apt-get install -y git -qq
             ;;
         fedora|centos|rhel|rocky|alma)
             echo "Detected Fedora/CentOS/RHEL-based system. Installing git..."
-            $ESCALATION_TOOL $PACKAGER install -y git -q
+            sudo dnf install -y git -q
             ;;
         arch)
             echo "Detected Arch-based system. Installing git..."
-            $ESCALATION_TOOL $PACKAGER -Sy git --noconfirm >/dev/null
+            sudo pacman -Sy git --noconfirm >/dev/null
             ;;
         *)
             echo "Unsupported distribution: $DISTRO. Please install git manually."

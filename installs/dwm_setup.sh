@@ -1,22 +1,28 @@
 #!/bin/bash
 
-# Source the common.sh script
-GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/main"
-COMMON_SCRIPT_URL="${GITHUB_BASE_URL}/common.sh"
+set -e  # Exit immediately if a command exits with a non-zero status
 
-# Download and source the common.sh script if it's not already present
-if [ ! -f "common.sh" ]; then
-    echo "Downloading common.sh..."
-    curl -s -O "${COMMON_SCRIPT_URL}"
-fi
-source ./common.sh
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
 
-# Run environment checks using common.sh
-checkEnv
+# Function to determine the Linux distribution
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    else
+        echo "unknown"
+    fi
+}
 
 # Detect the Linux distribution
-checkDistro
-distro="$DTYPE"
+distro=$(detect_distro)
+if [ "$distro" = "unknown" ]; then
+    echo "Unable to detect Linux distribution. Exiting."
+    exit 1
+fi
 
 # Define packages for different distributions
 case "$distro" in
@@ -27,13 +33,13 @@ case "$distro" in
         # Install wget if not already installed (required for adding the Mozilla APT repository)
         if ! command_exists wget; then
             echo "Installing wget..."
-            $ESCALATION_TOOL $PACKAGER install -y wget
+            sudo apt-get install -y wget
         fi
 
         # Add Mozilla APT repository for Firefox installation
         echo "Adding Mozilla APT repository for Firefox installation..."
-        $ESCALATION_TOOL install -d -m 0755 /etc/apt/keyrings
-        wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | $ESCALATION_TOOL tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null
+        sudo install -d -m 0755 /etc/apt/keyrings
+        wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | sudo tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null
         
         # Verify the key fingerprint
         fingerprint_check=$(gpg -n -q --import --import-options import-show /etc/apt/keyrings/packages.mozilla.org.asc | awk '/pub/{getline; gsub(/^ +| +$/,""); if($0 == "35BAA0B33E9EB396F59CA838C0BA5CE6DC6315A3") print "match"; else print "no_match"}')
@@ -45,30 +51,30 @@ case "$distro" in
         fi
         
         # Add Mozilla APT repository to sources list
-        echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | $ESCALATION_TOOL tee /etc/apt/sources.list.d/mozilla.list > /dev/null
+        echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | sudo tee /etc/apt/sources.list.d/mozilla.list > /dev/null
         
         # Configure APT to prioritize packages from the Mozilla repository
         echo '
 Package: *
 Pin: origin packages.mozilla.org
 Pin-Priority: 1000
-' | $ESCALATION_TOOL tee /etc/apt/preferences.d/mozilla > /dev/null
+' | sudo tee /etc/apt/preferences.d/mozilla > /dev/null
         
         # Update package list and install Firefox
         echo "Updating package list and installing Firefox..."
-        $ESCALATION_TOOL $PACKAGER update -y
-        $ESCALATION_TOOL $PACKAGER install -y $packages firefox
+        sudo apt-get update -y
+        sudo apt-get install -y $packages firefox
         ;;
     fedora|centos|rhel)
         packages="nano thunar vlc pulseaudio alsa-utils pavucontrol fira-code-fonts NetworkManager-tui firefox"
         echo "Updating package database and installing essential packages..."
-        $ESCALATION_TOOL $PACKAGER update -y
-        $ESCALATION_TOOL $PACKAGER install -y $packages
+        sudo dnf update -y
+        sudo dnf install -y $packages
         ;;
     arch)
         packages="nano thunar vlc pulseaudio pulseaudio-alsa alsa-utils pavucontrol ttf-firacode-nerd nm-connection-editor firefox"
         echo "Updating package database and installing essential packages..."
-        $ESCALATION_TOOL $PACKAGER -Syu --noconfirm $packages
+        sudo pacman -Syu --noconfirm $packages
         ;;
     *)
         echo "Unsupported distribution: $distro"
@@ -76,7 +82,7 @@ Pin-Priority: 1000
         ;;
 esac
 
-# Ask if user wants to replace configuration files
+# Ask if the user wants to replace configuration files
 read -p "Do you want to replace configuration files from GitHub? (y/n): " replace_configs
 
 if [[ $replace_configs == "y" || $replace_configs == "Y" ]]; then
@@ -105,7 +111,7 @@ if [[ $replace_configs == "y" || $replace_configs == "Y" ]]; then
     if [[ -d $DWM_TITUS_DIR ]]; then
         echo "Compiling and installing dwm with the new configuration..."
         cd $DWM_TITUS_DIR
-        $ESCALATION_TOOL make clean install
+        sudo make clean install
     else
         echo "Directory $DWM_TITUS_DIR not found, skipping dwm compilation."
     fi
@@ -115,7 +121,7 @@ if [[ $replace_configs == "y" || $replace_configs == "Y" ]]; then
     if [[ -d $SLSTATUS_DIR ]]; then
         echo "Compiling and installing slstatus..."
         cd $SLSTATUS_DIR
-        $ESCALATION_TOOL make clean install
+        sudo make clean install
     else
         echo "Directory $SLSTATUS_DIR not found, skipping slstatus installation."
     fi
