@@ -83,39 +83,41 @@ while true; do
     echo "##    Select an option:    ##"
     echo "#############################"
     echo "1) Run ChrisTitusTech script"
-    echo "2) Install ncdu"
-    echo "3) Install Cockpit"
-    echo "4) Install a network drive"
-    echo "5) Install qemu-guest-agent"
-    echo "6) Install Tailscale"
-    echo "7) Install Docker and Portainer"
-    echo "8) Run DWM Setup Script"
+    echo "2) Add SSH Key"
+    echo "3) Install ncdu"
+    echo "4) Install Cockpit"
+    echo "5) Install a network drive"
+    echo "6) Install qemu-guest-agent"
+    echo "7) Install Tailscale"
+    echo "8) Install Docker and Portainer"
+    echo "9) Run DWM Setup Script"
     echo "0) Exit"
     echo
 
-    read -p "Enter your choice (0-8): " choice
+    read -p "Enter your choice (0-9): " choice
 
     case $choice in
         1) 
             echo "Running Chris Titus Tech's script..."
             curl -fsSL christitus.com/linux | sh
             ;;
-        2) run_script "install_ncdu.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
-        3) run_script "cockpit.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
-        4) run_script "add_network_drive.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
-        5) run_script "qemu-guest-agent.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
-        6) 
+        2) run_script "add_ssh_key.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        3) run_script "install_ncdu.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        4) run_script "cockpit.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        5) run_script "add_network_drive.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        6) run_script "qemu-guest-agent.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        7) 
             echo "Installing Tailscale..."
             curl -fsSL https://tailscale.com/install.sh | sh
             echo "Tailscale installed. Please run 'sudo tailscale up' to activate."
             ;;
-        7) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
-        8)
+        8) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        9)
             echo "Running DWM Setup Script..."
             run_script "dwm_setup.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         0) echo "Exiting script."; break ;;
-        *) echo "Invalid option. Please enter a number between 0 and 8." ;;
+        *) echo "Invalid option. Please enter a number between 0 and 9." ;;
     esac
 done
 

@@ -28,7 +28,7 @@ fi
 case "$distro" in
     ubuntu|debian)
         # Essential packages
-        packages="nano thunar vlc pulseaudio alsa-utils pavucontrol fonts-firacode network-manager-gnome"
+        packages="nano thunar vlc pulseaudio alsa-utils pavucontrol fonts-firacode network-manager-gnome feh"
         
         # Install wget if not already installed (required for adding the Mozilla APT repository)
         if ! command_exists wget; then
@@ -66,13 +66,13 @@ Pin-Priority: 1000
         sudo apt-get install -y $packages firefox
         ;;
     fedora|centos|rhel)
-        packages="nano thunar vlc pipewire pipewire-alsa pipewire-pulseaudio alsa-utils pavucontrol fira-code-fonts NetworkManager-tui firefox"
+        packages="nano thunar vlc pipewire pipewire-alsa pipewire-pulseaudio alsa-utils pavucontrol fira-code-fonts NetworkManager-tui firefox feh"
         echo "Updating package database and installing essential packages..."
         sudo dnf update -y
         sudo dnf install -y $packages
         ;;
     arch)
-        packages="nano thunar vlc pulseaudio pulseaudio-alsa alsa-utils pavucontrol ttf-firacode-nerd nm-connection-editor firefox"
+        packages="nano thunar vlc pulseaudio pulseaudio-alsa alsa-utils pavucontrol ttf-firacode-nerd nm-connection-editor firefox feh"
         echo "Updating package database and installing essential packages..."
         sudo pacman -Syu --noconfirm $packages
         ;;
