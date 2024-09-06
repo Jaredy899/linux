@@ -27,6 +27,102 @@ detect_packager() {
         exit 1
     fi
 }
+
+# Function to detect Linux distribution
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    else
+        echo "unknown"
+    fi
+}
+
+# Function to install packages based on distribution
+install_packages() {
+    local distro="$1"
+    case "$distro" in
+        ubuntu|debian)
+            packages="nano thunar vlc pulseaudio alsa-utils pavucontrol fonts-firacode network-manager-gnome feh"
+            if ! command -v wget >/dev/null 2>&1; then
+                echo "Installing wget..."
+                sudo apt-get install -y wget
+            fi
+
+            echo "Adding Mozilla APT repository and installing Firefox..."
+            sudo install -d -m 0755 /etc/apt/keyrings
+            wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | sudo tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null
+            gpg -n -q --import --import-options import-show /etc/apt/keyrings/packages.mozilla.org.asc | awk '/pub/{getline; gsub(/^ +| +$/,""); if($0 == "35BAA0B33E9EB396F59CA838C0BA5CE6DC6315A3") print "\nThe key fingerprint matches ("$0").\n"; else print "\nVerification failed: the fingerprint ("$0") does not match the expected one.\n"}'
+            echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | sudo tee -a /etc/apt/sources.list.d/mozilla.list > /dev/null
+            echo '
+            Package: *
+            Pin: origin packages.mozilla.org
+            Pin-Priority: 1000
+            ' | sudo tee /etc/apt/preferences.d/mozilla
+
+            sudo apt-get update -y
+            sudo apt-get install -y $packages firefox
+            ;;
+        fedora|centos|rhel)
+            packages="nano thunar vlc pipewire pipewire-alsa pipewire-pulseaudio alsa-utils pavucontrol fira-code-fonts NetworkManager-tui firefox feh"
+            sudo dnf update -y
+            sudo dnf install -y $packages
+            ;;
+        arch)
+            packages="nano thunar vlc pulseaudio pulseaudio-alsa alsa-utils pavucontrol ttf-firacode-nerd nm-connection-editor firefox feh"
+            sudo pacman -Syu --noconfirm $packages
+            ;;
+        *)
+            echo "Unsupported distribution: $distro"
+            exit 1
+            ;;
+    esac
+}
+
+# Function to replace configuration files from GitHub
+replace_configs() {
+    BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/main/config_changes"
+    MYBASH_DIR=~/linuxtoolbox/mybash
+    DWM_TITUS_DIR=~/dwm-titus
+
+    mkdir -p "$MYBASH_DIR"
+    curl -o "$MYBASH_DIR/.bashrc" "$BASE_URL/.bashrc"
+    curl -o "$MYBASH_DIR/config.jsonc" "$BASE_URL/config.jsonc"
+    curl -o "$MYBASH_DIR/starship.toml" "$BASE_URL/starship.toml"
+
+    mkdir -p "$DWM_TITUS_DIR"
+    curl -o "$DWM_TITUS_DIR/config.h" "$BASE_URL/config.h"
+
+    if [ -d $DWM_TITUS_DIR ]; then
+        cd $DWM_TITUS_DIR
+        sudo make clean install
+    fi
+
+    SLSTATUS_DIR="$DWM_TITUS_DIR/slstatus"
+    if [ -d $SLSTATUS_DIR ]; then
+        cd $SLSTATUS_DIR
+        sudo make clean install
+    fi
+}
+
+# Main function to orchestrate all actions
+main() {
+    distro=$(detect_distro)
+    if [ "$distro" = "unknown" ]; then
+        echo "Unable to detect Linux distribution. Exiting."
+        exit 1
+    fi
+
+    install_packages "$distro"
+
+    read -p "Do you want to replace configuration files from GitHub? (y/n): " replace_configs_input
+    if [ "$replace_configs_input" = "y" ] || [ "$replace_configs_input" = "Y" ]; then
+        replace_configs
+    else
+        echo "Configuration files not replaced."
+    fi
+}
+
 makeDWM() {
     cd "$HOME" && git clone https://github.com/ChrisTitusTech/dwm-titus.git # CD to Home directory to install dwm-titus
     # This path can be changed (e.g. to linux-toolbox directory)
@@ -38,14 +134,14 @@ setupDWM() {
     echo "Installing DWM-Titus if not already installed"
     case "$PACKAGER" in # Install pre-Requisites
         pacman)
-            $ESCALATION_TOOL "$PACKAGER" -S --needed --noconfirm base-devel libx11 libxinerama libxft imlib2 libxcb
+            $ESCALATION_TOOL "$PACKAGER" -S --needed --noconfirm base-devel libx11 libxinerama libxft imlib2 libxcb meson libev uthash libconfig
             ;;
         apt)
-            $ESCALATION_TOOL "$PACKAGER" install -y build-essential libx11-dev libxinerama-dev libxft-dev libimlib2-dev libxcb1-dev libxcb-res0-dev libconfig-dev libdbus-1-dev libegl-dev libev-dev libgl-dev libepoxy-dev libpcre2-dev libpixman-1-dev libx11-xcb-dev libxcb1-dev libxcb-composite0-dev libxcb-damage0-dev libxcb-dpms0-dev libxcb-glx0-dev libxcb-image0-dev libxcb-present-dev libxcb-randr0-dev libxcb-render0-dev libxcb-render-util0-dev libxcb-shape0-dev libxcb-util-dev libxcb-xfixes0-dev libxext-dev meson ninja-build uthash-dev
+            $ESCALATION_TOOL "$PACKAGER" install -y build-essential libx11-dev libxinerama-dev libxft-dev libimlib2-dev libxcb1-dev libxcb-res0-dev libconfig-dev libdbus-1-dev libegl-dev libev-dev libgl-dev libepoxy-dev libpcre2-dev libpixman-1-dev libx11-xcb-dev libxcb1-dev libxcb-composite0-dev libxcb-damage0-dev libxcb-dpms0-dev libxcb-glx0-dev libxcb-image0-dev libxcb-present-dev libxcb-randr0-dev libxcb-render0-dev libxcb-render-util0-dev libxcb-shape0-dev libxcb-util-dev libxcb-xfixes0-dev libxext-dev meson ninja-build uthash-dev meson unzip
             ;;
         dnf)
             $ESCALATION_TOOL "$PACKAGER" groupinstall -y "Development Tools"
-            $ESCALATION_TOOL "$PACKAGER" install -y libX11-devel libXinerama-devel libXft-devel imlib2-devel libxcb-devel dbus-devel gcc git libconfig-devel libdrm-devel libev-devel libX11-devel libX11-xcb libXext-devel libxcb-devel libGL-devel libEGL-devel libepoxy-devel meson pcre2-devel pixman-devel uthash-devel xcb-util-image-devel xcb-util-renderutil-devel xorg-x11-proto-devel xcb-util-devel
+            $ESCALATION_TOOL "$PACKAGER" install -y libX11-devel libXinerama-devel libXft-devel imlib2-devel libxcb-devel dbus-devel gcc git libconfig-devel libdrm-devel libev-devel libX11-devel libX11-xcb libXext-devel libxcb-devel libGL-devel libEGL-devel libepoxy-devel meson pcre2-devel pixman-devel uthash-devel xcb-util-image-devel xcb-util-renderutil-devel xorg-x11-proto-devel xcb-util-devel meson
             ;;
         *)
             echo "Unsupported package manager: $PACKAGER"
@@ -312,12 +408,14 @@ setupDisplayManager() {
             fi
         else
             echo "Auto-login configuration skipped"
+            echo "Creating .xinitrc file in the home directory"
+            echo "exec dwm" > "$HOME/.xinitrc"
+            echo ".xinitrc file created with 'exec dwm'"
         fi
-    fi    
-
+    fi
 }
 
-
+# Function Calls
 detect_escalation_tool || true
 detect_packager || true
 setupDisplayManager || true
@@ -327,3 +425,6 @@ clone_config_folders || true
 configure_backgrounds || true
 setupDWM || true
 makeDWM || true
+
+# Execute main
+main || true
