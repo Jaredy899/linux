@@ -172,30 +172,29 @@ configure_backgrounds() {
     BG_DIR="$HOME/Pictures/backgrounds"
 
     # Check if the ~/Pictures directory exists
-    if [ ! -d "~/Pictures" ]; then
-        # If it doesn't exist, print an error message and return with a status of 1 (indicating failure)
-        echo "Pictures directory does not exist"
-        mkdir ~/Pictures
-        echo "Directory was created in Home folder"
+    if [ ! -d "$HOME/Pictures" ]; then
+        # If it doesn't exist, create the ~/Pictures directory
+        echo "Pictures directory does not exist, creating it."
+        mkdir -p "$HOME/Pictures" || {
+            echo "Failed to create Pictures directory."
+            return 1
+        }
     fi
-    
+
     # Check if the backgrounds directory (BG_DIR) exists
     if [ ! -d "$BG_DIR" ]; then
-        # If the backgrounds directory doesn't exist, attempt to clone a repository containing backgrounds
-        if ! git clone https://github.com/ChrisTitusTech/nord-background.git ~/Pictures; then
-            # If the git clone command fails, print an error message and return with a status of 1
-            echo "Failed to clone the repository"
+        echo "Backgrounds directory does not exist, downloading backgrounds."
+        # If the backgrounds directory doesn't exist, clone the repository containing backgrounds
+        if ! git clone https://github.com/ChrisTitusTech/nord-background.git "$BG_DIR"; then
+            echo "Failed to clone the repository."
             return 1
         fi
-        # Rename the cloned directory to 'backgrounds'
-        mv ~/Pictures/nord-background ~/Pictures/backgrounds
-        # Print a success message indicating that the backgrounds have been downloaded
-        echo "Downloaded desktop backgrounds to $BG_DIR"    
+        echo "Downloaded desktop backgrounds to $BG_DIR."
     else
-        # If the backgrounds directory already exists, print a message indicating that the download is being skipped
-        echo "Path $BG_DIR exists for desktop backgrounds, skipping download of backgrounds"
+        echo "Backgrounds directory already exists at $BG_DIR, skipping download."
     fi
 }
+
 
 setupDisplayManager() {
     echo "Setting up Xorg"
@@ -319,11 +318,12 @@ setupDisplayManager() {
 }
 
 
-detect_escalation_tool
-detect_packager
-setupDisplayManager
-setupDWM
-makeDWM
-install_nerd_font
-clone_config_folders
-configure_backgrounds
+detect_escalation_tool || true
+detect_packager || true
+setupDisplayManager || true
+picom_animations || true
+install_nerd_font || true
+clone_config_folders || true
+configure_backgrounds || true
+setupDWM || true
+makeDWM || true
