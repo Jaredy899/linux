@@ -419,11 +419,11 @@ setupDisplayManager() {
 detect_escalation_tool || true
 detect_packager || true
 setupDisplayManager || true
-picom_animations || true
 install_nerd_font || true
 clone_config_folders || true
 configure_backgrounds || true
 setupDWM || true
+picom_animations || true
 makeDWM || true
 
 # Execute main
