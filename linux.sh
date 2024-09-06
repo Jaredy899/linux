@@ -114,7 +114,7 @@ while true; do
         8) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         9)
             echo "Running DWM Setup Script..."
-            run_script "dwm_setup.sh" "$GITPATH/installs" "$INSTALLS_URL"
+            run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         0) echo "Exiting script."; break ;;
         *) echo "Invalid option. Please enter a number between 0 and 9." ;;
