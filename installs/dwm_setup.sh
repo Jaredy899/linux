@@ -55,10 +55,10 @@ case "$distro" in
         
         # Configure APT to prioritize packages from the Mozilla repository
         echo '
-Package: *
-Pin: origin packages.mozilla.org
-Pin-Priority: 1000
-' | sudo tee /etc/apt/preferences.d/mozilla > /dev/null
+        Package: *
+        Pin: origin packages.mozilla.org
+        Pin-Priority: 1000
+        ' | sudo tee /etc/apt/preferences.d/mozilla > /dev/null
         
         # Update package list and install Firefox
         echo "Updating package list and installing Firefox..."
