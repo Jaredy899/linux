@@ -5,7 +5,7 @@ IFS=$(printf '\n\t')
 
 # Set the GITPATH variable to the directory where the script is located
 GITPATH="$(cd "$(dirname "$0")" && pwd)"
-echo "GITPATH is set to: $GITPATH"
+printf "GITPATH is set to: %s\n" "$GITPATH"
 
 # GitHub URL base for the necessary configuration files
 GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/main"
@@ -20,16 +20,16 @@ command_exists() {
 detect_distro() {
     if [ -f /etc/os-release ]; then
         . /etc/os-release
-        echo "$ID"
+        printf "%s\n" "$ID"
     else
-        echo "unknown"
+        printf "unknown\n"
     fi
 }
 
 # Detect the Linux distribution
 distro=$(detect_distro)
 if [ "$distro" = "unknown" ]; then
-    echo "Unable to detect Linux distribution. Exiting."
+    printf "Unable to detect Linux distribution. Exiting.\n"
     exit 1
 fi
 
@@ -40,10 +40,10 @@ run_script() {
     url="$3"
 
     if [ -f "$local_path/$script_name" ]; then
-        echo "Running $script_name from local directory..."
+        printf "Running %s from local directory...\n" "$script_name"
         sh "$local_path/$script_name"
     else
-        echo "Running $script_name from GitHub..."
+        printf "Running %s from GitHub...\n" "$script_name"
         curl -fsSL "$url/$script_name" -o "/tmp/$script_name"
         sh "/tmp/$script_name"
         rm "/tmp/$script_name"
@@ -52,8 +52,9 @@ run_script() {
 
 # Check if running in an Arch Linux ISO environment
 if [ -d /run/archiso/bootmnt ]; then
-    echo "Arch Linux ISO environment detected."
-    echo "Do you want to run the Arch install script? (y/n): "
+    printf "Arch Linux ISO environment detected.\n"
+    printf "Do you want to run the Arch install script? (y/n): "
+    stty sane  # Ensure terminal settings are sane
     read run_install
     if [ "$run_install" = "y" ] || [ "$run_install" = "Y" ]; then
         run_script "arch_install.sh" "$GITPATH/installs" "$INSTALLS_URL"
@@ -62,45 +63,46 @@ fi
 
 # Ensure git is installed
 if ! command_exists git; then
-    echo "Git is not installed. Installing git..."
+    printf "Git is not installed. Installing git...\n"
     run_script "install_git.sh" "$GITPATH/installs" "$INSTALLS_URL"
 else
-    echo "Git is already installed."
+    printf "Git is already installed.\n"
 fi
 
 # Check if the system is Debian/Ubuntu or Arch and install fastfetch if necessary
 if [ "$distro" = "debian" ] || [ "$distro" = "ubuntu" ]; then
     if command_exists fastfetch; then
-        echo "Fastfetch is already installed. Skipping installation."
+        printf "Fastfetch is already installed. Skipping installation.\n"
     else
-        echo "Fastfetch is not installed. Proceeding to install fastfetch..."
+        printf "Fastfetch is not installed. Proceeding to install fastfetch...\n"
         run_script "install_fastfetch.sh" "$GITPATH/installs" "$INSTALLS_URL"
     fi
 fi
 
 # Menu loop
 while true; do
-    echo "#############################"
-    echo "##    Select an option:    ##"
-    echo "#############################"
-    echo "1) Run ChrisTitusTech script"
-    echo "2) Add SSH Key"
-    echo "3) Install ncdu"
-    echo "4) Install Cockpit"
-    echo "5) Install a network drive"
-    echo "6) Install qemu-guest-agent"
-    echo "7) Install Tailscale"
-    echo "8) Install Docker and Portainer"
-    echo "9) Run DWM Setup Script"
-    echo "0) Exit"
-    echo
+    printf "#############################\n"
+    printf "##    Select an option:    ##\n"
+    printf "#############################\n"
+    printf "1) Run ChrisTitusTech script\n"
+    printf "2) Add SSH Key\n"
+    printf "3) Install ncdu\n"
+    printf "4) Install Cockpit\n"
+    printf "5) Install a network drive\n"
+    printf "6) Install qemu-guest-agent\n"
+    printf "7) Install Tailscale\n"
+    printf "8) Install Docker and Portainer\n"
+    printf "9) Run DWM Setup Script\n"
+    printf "0) Exit\n"
+    printf "\n"
 
-    echo "Enter your choice (0-9): "
+    printf "Enter your choice (0-9): "
+    stty sane  # Ensure terminal settings are sane for input
     read choice
 
     case $choice in
         1)
-            echo "Running Chris Titus Tech's script..."
+            printf "Running Chris Titus Tech's script...\n"
             curl -fsSL christitus.com/linux | sh
             ;;
         2) run_script "add_ssh_key.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
@@ -109,27 +111,27 @@ while true; do
         5) run_script "add_network_drive.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         6) run_script "qemu-guest-agent.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         7)
-            echo "Installing Tailscale..."
+            printf "Installing Tailscale...\n"
             curl -fsSL https://tailscale.com/install.sh | sh
-            echo "Tailscale installed. Please run 'sudo tailscale up' to activate."
+            printf "Tailscale installed. Please run 'sudo tailscale up' to activate.\n"
             ;;
         8) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         9)
-            echo "Running DWM Setup Script..."
+            printf "Running DWM Setup Script...\n"
             run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         0)
-            echo "Exiting script."
+            printf "Exiting script.\n"
             break
             ;;
         *)
-            echo "Invalid option. Please enter a number between 0 and 9."
+            printf "Invalid option. Please enter a number between 0 and 9.\n"
             ;;
     esac
 done
 
-echo "#############################"
-echo "##                         ##"
-echo "## Setup script completed. ##"
-echo "##                         ##"
-echo "#############################"
+printf "#############################\n"
+printf "##                         ##\n"
+printf "## Setup script completed. ##\n"
+printf "##                         ##\n"
+printf "#############################\n"
