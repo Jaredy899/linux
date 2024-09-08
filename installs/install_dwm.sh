@@ -161,7 +161,7 @@ setupDWM() {
             ;;
         zypper)
             $ESCALATION_TOOL "$PACKAGER" install -t pattern devel_basis
-            $ESCALATION_TOOL "$PACKAGER" install -y libX11-devel libXinerama-devel libXft-devel imlib2-devel libxcb-devel dbus-1-devel gcc git libconfig-devel libdrm-devel libev-devel meson pcre2-devel pixman-devel uthash-devel xcb-util-devel xcb-util-image-devel xcb-util-renderutil-devel
+            $ESCALATION_TOOL "$PACKAGER" install -y libpixman-1-0 libpixman-1-0-devel meson ninja libX11-devel libXinerama-devel libXft-devel libXrandr-devel libXrender-devel libXext-devel xcb-util-image-devel xcb-util-renderutil-devel xcb-util-devel uthash-devel libconfig-devel pcre2-devel libepoxy-devel dbus-1-devel
             ;;
         *)
             echo "Unsupported package manager: $PACKAGER"
