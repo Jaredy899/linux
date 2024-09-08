@@ -324,12 +324,16 @@ setupDisplayManager() {
         dnf)
             $ESCALATION_TOOL "$PACKAGER" install -y xorg-x11-xinit xorg-x11-server-Xorg
             ;;
+        zypper)
+            $ESCALATION_TOOL "$PACKAGER" install -y xinit xorg-x11-server
+            ;;
         *)
             echo "Unsupported package manager: $PACKAGER"
             exit 1
             ;;
     esac
     echo "Xorg installed successfully"
+    
     echo "Setting up Display Manager"
     currentdm="none"
     for dm in gdm sddm lightdm; do
@@ -350,6 +354,9 @@ setupDisplayManager() {
                 $ESCALATION_TOOL "$PACKAGER" install -y $DM
                 ;;
             dnf)
+                $ESCALATION_TOOL "$PACKAGER" install -y $DM
+                ;;
+            zypper)
                 $ESCALATION_TOOL "$PACKAGER" install -y $DM
                 ;;
             *)
@@ -375,13 +382,11 @@ setupDisplayManager() {
             case $choice in
                 1)
                     echo "You selected Yes"
-                    # Add code for enabling auto-login here
                     enable_autologin="yes"
                     break
                     ;;
                 2)
                     echo "You selected No"
-                    # Add code for skipping auto-login here
                     enable_autologin="no"
                     break
                     ;;
@@ -394,7 +399,7 @@ setupDisplayManager() {
         if [ "$enable_autologin" = "yes" ]; then
             echo "Configuring SDDM for autologin"
             SDDM_CONF="/etc/sddm.conf"
-    
+
             # Check if the SDDM configuration file exists
             if [ ! -f "$SDDM_CONF" ]; then
                 echo "[Autologin]" | sudo tee -a "$SDDM_CONF"
@@ -421,7 +426,6 @@ setupDisplayManager() {
             USER_UID_1000=$(getent passwd 1000 | cut -d: -f1)
             if [ -n "$USER_UID_1000" ]; then
                 sudo usermod -aG autologin "$USER_UID_1000"
-                sudo systemctl set-default graphical.target
                 echo "User $USER_UID_1000 added to autologin group"
             else
                 echo "No user with UID 1000 found - Auto login not possible"
@@ -434,6 +438,7 @@ setupDisplayManager() {
         fi
     fi
 }
+
 
 # Function Calls
 detect_escalation_tool || true
