@@ -40,6 +40,11 @@ install_ncdu() {
             sudo apt-get update -y
             sudo apt-get install ncdu -y
             ;;
+        opensuse|suse)
+            echo "Detected openSUSE. Installing ncdu..."
+            sudo zypper refresh
+            sudo zypper install -y ncdu
+            ;;
         *)
             echo "Unsupported distribution: $DISTRO"
             echo "Please install ncdu manually."

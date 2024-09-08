@@ -67,13 +67,27 @@ else
     echo "Git is already installed."
 fi
 
-# Check if the system is Debian/Ubuntu or Arch and install fastfetch if necessary
+# Check if the system is Debian/Ubuntu, Arch, or openSUSE, and install fastfetch if necessary
 if [[ "$distro" == "debian" || "$distro" == "ubuntu" ]]; then
     if command_exists fastfetch; then
         echo "Fastfetch is already installed. Skipping installation."
     else
         echo "Fastfetch is not installed. Proceeding to install fastfetch..."
         run_script "install_fastfetch.sh" "$GITPATH/installs" "$INSTALLS_URL"
+    fi
+elif [[ "$distro" == "opensuse" ]]; then
+    if command_exists fastfetch; then
+        echo "Fastfetch is already installed on openSUSE. Skipping installation."
+    else
+        echo "Fastfetch is not installed on openSUSE. Installing..."
+        sudo zypper install fastfetch
+    fi
+elif [[ "$distro" == "arch" ]]; then
+    if command_exists fastfetch; then
+        echo "Fastfetch is already installed on Arch. Skipping installation."
+    else
+        echo "Fastfetch is not installed on Arch. Installing..."
+        sudo pacman -S fastfetch --noconfirm
     fi
 fi
 

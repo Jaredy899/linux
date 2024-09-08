@@ -55,6 +55,21 @@ install_docker() {
                 exit 1
             fi
             ;;
+        opensuse|suse)
+            echo "Detected openSUSE system"
+            sudo zypper refresh
+            sudo zypper install -y docker
+
+            # Enable and start Docker service
+            echo "Enabling and starting Docker service..."
+            sudo systemctl enable --now docker
+
+            # Check if Docker service is running
+            if ! systemctl is-active --quiet docker; then
+                echo "Docker service failed to start on openSUSE system"
+                exit 1
+            fi
+            ;;
         *)
             echo "Unsupported distribution: $DISTRO"
             exit 1
