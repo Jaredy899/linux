@@ -43,7 +43,7 @@ install_packages() {
     local distro="$1"
     case "$distro" in
         ubuntu|debian)
-            packages="nano thunar vlc pulseaudio alsa-utils pavucontrol fonts-firacode network-manager-gnome feh"
+            packages="nano thunar vlc feh pavucontrol pipewire pipewire-audio-client-libraries pipewire-pulse pipewire-alsa"
             if ! command -v wget >/dev/null 2>&1; then
                 echo "Installing wget..."
                 sudo apt-get install -y wget
@@ -60,16 +60,15 @@ install_packages() {
             Pin-Priority: 1000
             ' | sudo tee /etc/apt/preferences.d/mozilla
 
-            sudo apt-get update -y
-            sudo apt-get install -y $packages firefox
+            sudo apt-get update && apt-get install firefox
             ;;
         fedora|centos|rhel)
-            packages="nano thunar vlc pipewire pipewire-alsa pipewire-pulseaudio alsa-utils pavucontrol fira-code-fonts NetworkManager-tui firefox feh"
+            packages="nano thunar vlc pavucontrol NetworkManager-tui firefox feh"
             sudo dnf update -y
             sudo dnf install -y $packages
             ;;
         arch)
-            packages="nano thunar vlc pulseaudio pulseaudio-alsa alsa-utils pavucontrol ttf-firacode-nerd nm-connection-editor firefox feh"
+            packages="nano thunar vlc nm-connection-editor firefox feh pavucontrol pipewire pipewire-pulse pipewire-alsa"
             sudo pacman -Syu --noconfirm $packages
             ;;
         *)
