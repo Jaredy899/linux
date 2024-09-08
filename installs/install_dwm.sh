@@ -22,6 +22,8 @@ detect_packager() {
         PACKAGER="dnf"
     elif command -v apt >/dev/null 2>&1; then
         PACKAGER="apt"
+    elif command -v zypper >/dev/null 2>&1; then
+        PACKAGER="zypper"
     else
         echo "No supported package manager found."
         exit 1
@@ -43,7 +45,7 @@ install_packages() {
     local distro="$1"
     case "$distro" in
         ubuntu|debian)
-            packages="nano thunar vlc feh pavucontrol pipewire pipewire-audio-client-libraries pipewire-pulse pipewire-alsa"
+            packages="nano thunar vlc feh NetworkManager-gnome pavucontrol pipewire pipewire-audio-client-libraries pipewire-pulse pipewire-alsa"
             if ! command -v wget >/dev/null 2>&1; then
                 echo "Installing wget..."
                 sudo apt-get install -y wget
@@ -63,7 +65,7 @@ install_packages() {
             sudo apt-get update && apt-get install firefox
             ;;
         fedora|centos|rhel)
-            packages="nano thunar vlc pavucontrol NetworkManager-tui firefox feh"
+            packages="nano thunar vlc NetworkManager network-manager-applet firefox feh pavucontrol"
             sudo dnf update -y
             sudo dnf install -y $packages
             ;;
@@ -71,11 +73,27 @@ install_packages() {
             packages="nano thunar vlc nm-connection-editor firefox feh pavucontrol pipewire pipewire-pulse pipewire-alsa"
             sudo pacman -Syu --noconfirm $packages
             ;;
+        opensuse)
+            packages="nano thunar vlc NetworkManager NetworkManager-connection-editor firefox feh pavucontrol pipewire pipewire-alsa pipewire-pulse"
+            sudo zypper refresh
+            sudo zypper install -y $packages
+            ;;
         *)
             echo "Unsupported distribution: $distro"
             exit 1
             ;;
     esac
+
+    # Create or update the .xprofile file to autostart nm-applet for all distros
+    if [ ! -f "$HOME/.xprofile" ]; then
+        echo "Creating .xprofile and adding nm-applet autostart..."
+        echo "nm-applet &" > "$HOME/.xprofile"
+    else
+        if ! grep -q "nm-applet &" "$HOME/.xprofile"; then
+            echo "Adding nm-applet autostart to existing .xprofile..."
+            echo "nm-applet &" >> "$HOME/.xprofile"
+        fi
+    fi
 }
 
 # Function to replace configuration files from GitHub
@@ -124,14 +142,13 @@ main() {
 
 makeDWM() {
     cd "$HOME" && git clone https://github.com/ChrisTitusTech/dwm-titus.git # CD to Home directory to install dwm-titus
-    # This path can be changed (e.g. to linux-toolbox directory)
-    cd dwm-titus/ # Hardcoded path, maybe not the best.
-    $ESCALATION_TOOL make clean install # Run make clean install
+    cd dwm-titus/
+    $ESCALATION_TOOL make clean install
 }
 
 setupDWM() {
     echo "Installing DWM-Titus if not already installed"
-    case "$PACKAGER" in # Install pre-Requisites
+    case "$PACKAGER" in
         pacman)
             $ESCALATION_TOOL "$PACKAGER" -S --needed --noconfirm base-devel libx11 libxinerama libxft imlib2 libxcb meson libev uthash libconfig
             ;;
@@ -141,6 +158,10 @@ setupDWM() {
         dnf)
             $ESCALATION_TOOL "$PACKAGER" groupinstall -y "Development Tools"
             $ESCALATION_TOOL "$PACKAGER" install -y libX11-devel libXinerama-devel libXft-devel imlib2-devel libxcb-devel dbus-devel gcc git libconfig-devel libdrm-devel libev-devel libX11-devel libX11-xcb libXext-devel libxcb-devel libGL-devel libEGL-devel libepoxy-devel meson pcre2-devel pixman-devel uthash-devel xcb-util-image-devel xcb-util-renderutil-devel xorg-x11-proto-devel xcb-util-devel meson
+            ;;
+        zypper)
+            $ESCALATION_TOOL "$PACKAGER" install -t pattern devel_basis
+            $ESCALATION_TOOL "$PACKAGER" install -y libX11-devel libXinerama-devel libXft-devel imlib2-devel libxcb-devel dbus-1-devel gcc git libconfig-devel libdrm-devel libev-devel meson pcre2-devel pixman-devel uthash-devel xcb-util-devel xcb-util-image-devel xcb-util-renderutil-devel
             ;;
         *)
             echo "Unsupported package manager: $PACKAGER"
