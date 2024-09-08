@@ -45,12 +45,21 @@ install_packages() {
     local distro="$1"
     case "$distro" in
         ubuntu|debian)
+            # List of packages to install first
             packages="nano thunar vlc feh NetworkManager-gnome pavucontrol pipewire pipewire-audio-client-libraries pipewire-pulse pipewire-alsa"
+
+            # Install the initial set of packages
+            echo "Installing basic packages..."
+            sudo apt-get update
+            sudo apt-get install -y $packages
+
+            # Check if wget is installed, if not install it
             if ! command -v wget >/dev/null 2>&1; then
                 echo "Installing wget..."
                 sudo apt-get install -y wget
             fi
 
+            # Proceed with adding Mozilla APT repository and installing Firefox
             echo "Adding Mozilla APT repository and installing Firefox..."
             sudo install -d -m 0755 /etc/apt/keyrings
             wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | sudo tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null
@@ -62,7 +71,9 @@ install_packages() {
             Pin-Priority: 1000
             ' | sudo tee /etc/apt/preferences.d/mozilla
 
-            sudo apt-get update && apt-get install firefox
+            # Update and install Firefox
+            sudo apt-get update
+            sudo apt-get install firefox
             ;;
         fedora|centos|rhel)
             packages="nano thunar vlc NetworkManager network-manager-applet firefox feh pavucontrol"
@@ -161,7 +172,7 @@ setupDWM() {
             ;;
         zypper)
             $ESCALATION_TOOL "$PACKAGER" install -t pattern devel_basis
-            $ESCALATION_TOOL "$PACKAGER" install -y libpixman-1-0 libpixman-1-0-devel meson ninja libX11-devel libXinerama-devel libXft-devel libXrandr-devel libXrender-devel libXext-devel xcb-util-image-devel xcb-util-renderutil-devel xcb-util-devel uthash-devel libconfig-devel pcre2-devel libepoxy-devel dbus-1-devel
+            $ESCALATION_TOOL "$PACKAGER" install -y libpixman-1-0 libpixman-1-0-devel meson ninja libX11-devel libXinerama-devel libXft-devel libXrandr-devel libXrender-devel libXext-devel xcb-util-image-devel xcb-util-renderutil-devel xcb-util-devel uthash-devel libconfig-devel pcre2-devel libepoxy-devel dbus-1-devel imlib2-devel
             ;;
         *)
             echo "Unsupported package manager: $PACKAGER"
