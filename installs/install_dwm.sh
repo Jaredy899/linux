@@ -22,8 +22,6 @@ detect_packager() {
         PACKAGER="dnf"
     elif command -v apt >/dev/null 2>&1; then
         PACKAGER="apt"
-    elif command -v zypper >/dev/null 2>&1; then
-        PACKAGER="zypper"
     else
         echo "No supported package manager found."
         exit 1
@@ -46,7 +44,7 @@ install_packages() {
     case "$distro" in
         ubuntu|debian)
             # List of packages to install first
-            packages="nano thunar vlc feh NetworkManager-gnome pavucontrol pipewire pipewire-audio-client-libraries pipewire-pulse pipewire-alsa"
+            packages="nano thunar vlc feh pavucontrol pipewire pipewire-audio-client-libraries pipewire-pulse pipewire-alsa"
 
             # Install the initial set of packages
             echo "Installing basic packages..."
@@ -83,11 +81,6 @@ install_packages() {
         arch)
             packages="nano thunar vlc nm-connection-editor firefox feh pavucontrol pipewire pipewire-pulse pipewire-alsa"
             sudo pacman -Syu --noconfirm $packages
-            ;;
-        opensuse)
-            packages="nano thunar vlc NetworkManager NetworkManager-connection-editor firefox feh pavucontrol pipewire pipewire-alsa pipewire-pulse"
-            sudo zypper refresh
-            sudo zypper install -y $packages
             ;;
         *)
             echo "Unsupported distribution: $distro"
@@ -161,18 +154,14 @@ setupDWM() {
     echo "Installing DWM-Titus if not already installed"
     case "$PACKAGER" in
         pacman)
-            $ESCALATION_TOOL "$PACKAGER" -S --needed --noconfirm base-devel libx11 libxinerama libxft imlib2 libxcb meson libev uthash libconfig
+            $ESCALATION_TOOL "$PACKAGER" -S --needed --noconfirm xorg-xinit xorg-server base-devel libx11 libxinerama libxft imlib2 libxcb meson libev uthash libconfig
             ;;
         apt)
-            $ESCALATION_TOOL "$PACKAGER" install -y build-essential libx11-dev libxinerama-dev libxft-dev libimlib2-dev libxcb1-dev libxcb-res0-dev libconfig-dev libdbus-1-dev libegl-dev libev-dev libgl-dev libepoxy-dev libpcre2-dev libpixman-1-dev libx11-xcb-dev libxcb1-dev libxcb-composite0-dev libxcb-damage0-dev libxcb-dpms0-dev libxcb-glx0-dev libxcb-image0-dev libxcb-present-dev libxcb-randr0-dev libxcb-render0-dev libxcb-render-util0-dev libxcb-shape0-dev libxcb-util-dev libxcb-xfixes0-dev libxext-dev meson ninja-build uthash-dev meson unzip
+            $ESCALATION_TOOL "$PACKAGER" install -y xorg xinit build-essential libx11-dev libxinerama-dev libxft-dev libimlib2-dev libxcb1-dev libxcb-res0-dev libconfig-dev libdbus-1-dev libegl-dev libev-dev libgl-dev libepoxy-dev libpcre2-dev libpixman-1-dev libx11-xcb-dev libxcb1-dev libxcb-composite0-dev libxcb-damage0-dev libxcb-dpms0-dev libxcb-glx0-dev libxcb-image0-dev libxcb-present-dev libxcb-randr0-dev libxcb-render0-dev libxcb-render-util0-dev libxcb-shape0-dev libxcb-util-dev libxcb-xfixes0-dev libxext-dev meson ninja-build uthash-dev meson unzip
             ;;
         dnf)
             $ESCALATION_TOOL "$PACKAGER" groupinstall -y "Development Tools"
-            $ESCALATION_TOOL "$PACKAGER" install -y libX11-devel libXinerama-devel libXft-devel imlib2-devel libxcb-devel dbus-devel gcc git libconfig-devel libdrm-devel libev-devel libX11-devel libX11-xcb libXext-devel libxcb-devel libGL-devel libEGL-devel libepoxy-devel meson pcre2-devel pixman-devel uthash-devel xcb-util-image-devel xcb-util-renderutil-devel xorg-x11-proto-devel xcb-util-devel meson
-            ;;
-        zypper)
-            $ESCALATION_TOOL "$PACKAGER" install -t pattern devel_basis
-            $ESCALATION_TOOL "$PACKAGER" install -y libpixman-1-0 libpixman-1-0-devel meson ninja libX11-devel libXinerama-devel libXft-devel libXrandr-devel libXrender-devel libXext-devel xcb-util-image-devel xcb-util-renderutil-devel xcb-util-devel uthash-devel libconfig-devel pcre2-devel libepoxy-devel dbus-1-devel imlib2-devel
+            $ESCALATION_TOOL "$PACKAGER" install -y xorg-x11-xinit xorg-x11-server-Xorg libX11-devel libXinerama-devel libXft-devel imlib2-devel libxcb-devel dbus-devel gcc git libconfig-devel libdrm-devel libev-devel libX11-devel libX11-xcb libXext-devel libxcb-devel libGL-devel libEGL-devel libepoxy-devel meson pcre2-devel pixman-devel uthash-devel xcb-util-image-devel xcb-util-renderutil-devel xorg-x11-proto-devel xcb-util-devel meson
             ;;
         *)
             echo "Unsupported package manager: $PACKAGER"
@@ -322,30 +311,9 @@ configure_backgrounds() {
     fi
 }
 
-
 setupDisplayManager() {
-    echo "Setting up Xorg"
-    case "$PACKAGER" in
-        pacman)
-            $ESCALATION_TOOL "$PACKAGER" -S --needed --noconfirm xorg-xinit xorg-server
-            ;;
-        apt)
-            $ESCALATION_TOOL "$PACKAGER" install -y xorg xinit
-            ;;
-        dnf)
-            $ESCALATION_TOOL "$PACKAGER" install -y xorg-x11-xinit xorg-x11-server-Xorg
-            ;;
-        zypper)
-            $ESCALATION_TOOL "$PACKAGER" install -y xinit xorg-x11-server
-            ;;
-        *)
-            echo "Unsupported package manager: $PACKAGER"
-            exit 1
-            ;;
-    esac
-    echo "Xorg installed successfully"
-    
     echo "Setting up Display Manager"
+
     currentdm="none"
     for dm in gdm sddm lightdm; do
         if systemctl is-active --quiet $dm.service; then
@@ -354,6 +322,7 @@ setupDisplayManager() {
         fi
     done
     echo "Current display manager: $currentdm"
+
     if [ "$currentdm" = "none" ]; then
         DM="sddm"
         echo "No display manager found, installing $DM"
@@ -367,9 +336,6 @@ setupDisplayManager() {
             dnf)
                 $ESCALATION_TOOL "$PACKAGER" install -y $DM
                 ;;
-            zypper)
-                $ESCALATION_TOOL "$PACKAGER" install -y $DM
-                ;;
             *)
                 echo "Unsupported package manager: $PACKAGER"
                 exit 1
@@ -377,79 +343,69 @@ setupDisplayManager() {
         esac
         echo "$DM installed successfully"
         sudo systemctl enable $DM
+    fi
 
-        # Clear the screen
-        clear
+    # Clear the screen
+    clear
 
-        # Prompt user for auto-login
-        echo "Do you want to enable auto-login?"
+    # Prompt user for auto-login
+    echo "Do you want to enable auto-login?"
 
-        # Provide a basic menu for Yes/No options
-        while true; do
-            echo "1) Yes"
-            echo "2) No"
-            read -p "Select an option [1/2]: " choice
+    # Provide a basic menu for Yes/No options
+    while true; do
+        echo "1) Yes"
+        echo "2) No"
+        read -p "Select an option [1/2]: " choice
 
-            case $choice in
-                1)
-                    echo "You selected Yes"
-                    enable_autologin="yes"
-                    break
-                    ;;
-                2)
-                    echo "You selected No"
-                    enable_autologin="no"
-                    break
-                    ;;
-                *)
-                    echo "Invalid option. Please choose 1 or 2."
-                    ;;
-            esac
-        done
+        case $choice in
+            1)
+                echo "You selected Yes"
+                enable_autologin="yes"
+                break
+                ;;
+            2)
+                echo "You selected No"
+                enable_autologin="no"
+                break
+                ;;
+            *)
+                echo "Invalid option. Please choose 1 or 2."
+                ;;
+        esac
+    done
 
-        if [ "$enable_autologin" = "yes" ]; then
-            echo "Configuring SDDM for autologin"
-            SDDM_CONF="/etc/sddm.conf"
+    if [ "$enable_autologin" = "yes" ]; then
+        echo "Configuring SDDM for autologin"
+        SDDM_CONF="/etc/sddm.conf"
 
-            # Check if the SDDM configuration file exists
-            if [ ! -f "$SDDM_CONF" ]; then
-                echo "[Autologin]" | sudo tee -a "$SDDM_CONF"
-                echo "User=$USER" | sudo tee -a "$SDDM_CONF"
-                echo "Session=dwm" | sudo tee -a "$SDDM_CONF"
-            else
-                sudo sed -i '/^\[Autologin\]/d' "$SDDM_CONF"
-                sudo sed -i '/^User=/d' "$SDDM_CONF"
-                sudo sed -i '/^Session=/d' "$SDDM_CONF"
-                echo "[Autologin]" | sudo tee -a "$SDDM_CONF"
-                echo "User=$USER" | sudo tee -a "$SDDM_CONF"
-                echo "Session=dwm" | sudo tee -a "$SDDM_CONF"
-            fi
-
-            echo "Checking if autologin group exists"
-            if ! getent group autologin > /dev/null; then
-                echo "Creating autologin group"
-                sudo groupadd autologin
-            else
-                echo "Autologin group already exists"
-            fi
-
-            echo "Adding user with UID 1000 to autologin group"
-            USER_UID_1000=$(getent passwd 1000 | cut -d: -f1)
-            if [ -n "$USER_UID_1000" ]; then
-                sudo usermod -aG autologin "$USER_UID_1000"
-                echo "User $USER_UID_1000 added to autologin group"
-            else
-                echo "No user with UID 1000 found - Auto login not possible"
-            fi
+        # Check if the SDDM configuration file exists
+        if [ ! -f "$SDDM_CONF" ]; then
+            echo "[Autologin]" | sudo tee -a "$SDDM_CONF"
+            echo "User=$USER" | sudo tee -a "$SDDM_CONF"
+            echo "Session=dwm" | sudo tee -a "$SDDM_CONF"
         else
-            echo "Auto-login configuration skipped"
-            echo "Creating .xinitrc file in the home directory"
-            echo "exec dwm" > "$HOME/.xinitrc"
-            echo ".xinitrc file created with 'exec dwm'"
+            sudo sed -i '/^\[Autologin\]/d' "$SDDM_CONF"
+            sudo sed -i '/^User=/d' "$SDDM_CONF"
+            sudo sed -i '/^Session=/d' "$SDDM_CONF"
+            echo "[Autologin]" | sudo tee -a "$SDDM_CONF"
+            echo "User=$USER" | sudo tee -a "$SDDM_CONF"
+            echo "Session=dwm" | sudo tee -a "$SDDM_CONF"
         fi
+
+        # Enable graphical.target for auto-login
+        echo "Setting system to boot into graphical.target"
+        sudo systemctl set-default graphical.target
+    else
+        # Set the default target to multi-user.target (console mode)
+        echo "Auto-login disabled. Setting system to boot into console (multi-user.target)"
+        sudo systemctl set-default multi-user.target
+
+        # Create a .xinitrc file if console mode is chosen, to allow starting dwm manually
+        echo "Creating .xinitrc file in the home directory"
+        echo "exec dwm" > "$HOME/.xinitrc"
+        echo ".xinitrc file created with 'exec dwm'"
     fi
 }
-
 
 # Function Calls
 detect_escalation_tool || true
