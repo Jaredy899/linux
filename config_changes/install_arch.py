@@ -1,18 +1,11 @@
 from pathlib import Path
 from archinstall import Installer, profile, disk, models
 from archinstall.default_profiles.minimal import MinimalProfile
-import requests
 import subprocess
 import os
 import getpass
-
-# Function to automatically detect the timezone
-def get_timezone():
-    try:
-        response = requests.get("https://ipapi.co/timezone")
-        return response.text.strip()
-    except:
-        return "UTC"  # Default to UTC if timezone can't be detected
+import urllib.request
+import json
 
 # Function to clear the screen and display the banner
 def clear_screen_with_banner():
@@ -30,13 +23,69 @@ def clear_screen_with_banner():
     -------------------------------------------------------------------------
     """)
 
+# Function to get timezone and country information
+def get_timezone_and_country():
+    try:
+        response = urllib.request.urlopen("https://ipapi.co/json")
+        data = json.load(response)
+        return {
+            "timezone": data["timezone"],
+            "country_code": data["country_code"]
+        }
+    except Exception as e:
+        print(f"Failed to detect timezone and country: {e}")
+        return {
+            "timezone": "UTC",
+            "country_code": "US"  # Default to "US" if detection fails
+        }
+
+# Function to set up the mirrors using reflector
+def setup_mirrors():
+    print("Setting up mirrors for optimal download")
+    
+    # Get country ISO code based on public IP
+    try:
+        iso = subprocess.check_output("curl -4 ifconfig.co/country-iso", shell=True).decode().strip()
+        print(f"Detected country ISO: {iso}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error detecting country ISO: {e}")
+        iso = "US"  # Fallback to US if detection fails
+
+    # Sync system time
+    subprocess.run(['timedatectl', 'set-ntp', 'true'])
+
+    # Update keyrings and install necessary packages
+    subprocess.run(['pacman', '-S', '--noconfirm', 'archlinux-keyring'])
+
+    # Enable parallel downloads
+    subprocess.run(["sed", "-i", "'s/^#ParallelDownloads/ParallelDownloads/'", "/etc/pacman.conf"])
+
+    # Install reflector and other packages
+    subprocess.run(['pacman', '-S', '--noconfirm', '--needed', 'reflector', 'rsync', 'grub'])
+
+    # Backup mirrorlist
+    subprocess.run(['cp', '/etc/pacman.d/mirrorlist', '/etc/pacman.d/mirrorlist.backup'])
+
+    print(f"\nSetting up {iso} mirrors for faster downloads...\n")
+
+    # Use reflector to update the mirrorlist with the best mirrors based on country ISO
+    subprocess.run([
+        'reflector', '-a', '48', '-c', iso, '-f', '5', '-l', '20', '--sort', 'rate', '--save', '/etc/pacman.d/mirrorlist'
+    ])
+
+    if not os.path.exists('/mnt'):
+        os.makedirs('/mnt')
+
+# Call mirror setup before installation
+setup_mirrors()
+
 # Ask the user for the desired filesystem
 clear_screen_with_banner()
 print("Choose filesystem:")
 print("1) Btrfs")
 print("2) ext4")
 print("3) XFS")
-fs_choice = input("Enter the number (1, 2, or 3): ")
+fs_choice = input("Enter the number (1, 2, or 3): ").strip()
 
 # Determine the filesystem type based on user input
 if fs_choice == "1":
@@ -91,13 +140,25 @@ disk_config = disk.DiskLayoutConfiguration(
 fs_handler = disk.FilesystemHandler(disk_config)
 fs_handler.perform_filesystem_operations(show_countdown=False)
 
-# Get the timezone automatically
+# Get the timezone and country automatically
 clear_screen_with_banner()
-timezone = get_timezone()
+location_info = get_timezone_and_country()
+timezone = location_info["timezone"]
+country_code = location_info["country_code"]
+
 print(f"Detected timezone: {timezone}")
 confirm_tz = input("Is this timezone correct? (Y/n): ").strip().lower()
 if confirm_tz not in ["y", "yes", ""]:
     timezone = input("Enter your preferred timezone (e.g., America/New_York): ").strip()
+
+# Set the timezone in the mounted system
+try:
+    timezone_path = Path('/mnt/etc/localtime')
+    timezone_symlink = f"/usr/share/zoneinfo/{timezone}"
+    subprocess.run(['ln', '-sf', timezone_symlink, str(timezone_path)], check=True)
+    print(f"Timezone set to {timezone}.")
+except Exception as e:
+    print(f"Failed to set timezone: {e}")
 
 # Keyboard layout options
 clear_screen_with_banner()
@@ -116,9 +177,27 @@ keymap_choice = input("Enter the number (1-5) or press Enter to use 'us': ").str
 # Set the keyboard layout
 keymap = keyboard_layouts.get(keymap_choice, "us")
 
+# Configure the keymap in the mounted system
+try:
+    keymap_path = Path('/mnt/etc/vconsole.conf')
+    with open(keymap_path, "w") as kbd_file:
+        kbd_file.write(f"KEYMAP={keymap}\n")
+    print(f"Keyboard layout set to {keymap}.")
+except Exception as e:
+    print(f"Failed to set keyboard layout: {e}")
+
 # Ask for the hostname
 clear_screen_with_banner()
 hostname = input("Enter the hostname: ").strip()
+
+# Configure the hostname in the mounted system
+try:
+    hostname_path = Path('/mnt/etc/hostname')
+    with open(hostname_path, "w") as host_file:
+        host_file.write(f"{hostname}\n")
+    print(f"Hostname set to {hostname}.")
+except Exception as e:
+    print(f"Failed to set hostname: {e}")
 
 # Ask for the username and password
 clear_screen_with_banner()
@@ -177,9 +256,9 @@ subprocess.run(['arch-chroot', str(mountpoint), 'bash', '-c', "echo '%wheel ALL=
 
 print("User created and added to sudoers.")
 
-# Install NetworkManager and GPU drivers during chroot
+# Install NetworkManager, GPU drivers, and Terminus font in chroot
 clear_screen_with_banner()
-print("Installing NetworkManager and GPU drivers...")
+print("Installing NetworkManager, GPU drivers, and setting Terminus font...")
 
 subprocess.run(['arch-chroot', str(mountpoint), 'bash', '-c', '''
 #!/bin/bash
@@ -198,12 +277,17 @@ if echo "${gpu_type}" | grep -E "NVIDIA|GeForce"; then
 elif echo "${gpu_type}" | grep 'VGA' | grep -E "Radeon|AMD"; then
     pacman -S --noconfirm --needed xf86-video-amdgpu
 elif echo "${gpu_type}" | grep -E "Integrated Graphics Controller"; then
-    pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-intel-driver libva-utils lib32-mesa
+    pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-utils lib32-mesa
 elif echo "${gpu_type}" | grep -E "Intel Corporation UHD"; then
-    pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-intel-driver libva-utils lib32-mesa
+    pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-utils lib32-mesa
 else
     echo "No supported GPU detected or no drivers required."
 fi
+
+# Install Terminus font and set it permanently
+pacman -Sy --noconfirm --needed pacman-contrib terminus-font
+setfont ter-v18b
+echo "FONT=ter-v18b" >> /etc/vconsole.conf
 '''])
 
 # Final message

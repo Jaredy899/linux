@@ -1,5 +1,9 @@
 # #!/bin/bash
 
+pacman -Sy --noconfirm archlinux-keyring #update keyrings to latest to prevent packages failing to install
+pacman -Sy --noconfirm --needed pacman-contrib terminus-font
+setfont ter-v18b
+
 # Download the Python install script from GitHub
 echo "Downloading Arch installation Python script..."
 curl -o /mnt/install_arch.py https://raw.githubusercontent.com/Jaredy899/linux/main/config_changes/install_arch.py
