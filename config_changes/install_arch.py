@@ -116,7 +116,7 @@ if fs_type == 'btrfs':
         status=disk.ModificationStatus.Create,
         type=disk.PartitionType.Primary,
         start=disk.Size(513, disk.Unit.MiB, device.device_info.sector_size),
-        length=device.device_info.size - disk.Size(513, disk.Unit.MiB, device.device_info.sector_size),
+        length=device.device_info.total_size - disk.Size(513, disk.Unit.MiB, device.device_info.sector_size),
         mountpoint=Path('/'),
         fs_type=disk.FilesystemType('btrfs'),
         mount_options=[]
@@ -149,7 +149,7 @@ else:
         status=disk.ModificationStatus.Create,
         type=disk.PartitionType.Primary,
         start=disk.Size(513, disk.Unit.MiB, device.device_info.sector_size),
-        length=device.device_info.size - disk.Size(513, disk.Unit.MiB, device.device_info.sector_size),
+        length=device.device_info.total_size - disk.Size(513, disk.Unit.MiB, device.device_info.sector_size),
         mountpoint=Path('/'),
         fs_type=disk.FilesystemType(fs_type),
         mount_options=[]
@@ -160,7 +160,7 @@ else:
         status=disk.ModificationStatus.Create,
         type=disk.PartitionType.Primary,
         start=disk.Size(513 + root_partition.length, disk.Unit.MiB, device.device_info.sector_size),
-        length=device.device_info.size - root_partition.length - disk.Size(513, disk.Unit.MiB, device.device_info.sector_size),
+        length=device.device_info.total_size - root_partition.length - disk.Size(513, disk.Unit.MiB, device.device_info.sector_size),
         mountpoint=Path('/home'),
         fs_type=disk.FilesystemType(fs_type),
         mount_options=[]
@@ -176,10 +176,6 @@ else:
     # Filesystem handler to format and prepare disks
     fs_handler = disk.FilesystemHandler(disk_config)
     fs_handler.perform_filesystem_operations(show_countdown=False)
-
-# Filesystem handler to format and prepare disks
-fs_handler = disk.FilesystemHandler(disk_config)
-fs_handler.perform_filesystem_operations(show_countdown=False)
 
 # Get the timezone and country automatically
 clear_screen_with_banner()
