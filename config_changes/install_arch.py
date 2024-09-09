@@ -336,7 +336,7 @@ else
 fi
 
 # Install Terminus font and set it permanently
-pacman -Sy --noconfirm --needed pacman-contrib terminus-font
+pacman -S --noconfirm --needed pacman-contrib terminus-font
 setfont ter-v18b
 echo "FONT=ter-v18b" >> /etc/vconsole.conf
 '''])
