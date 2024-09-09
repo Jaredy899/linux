@@ -262,15 +262,16 @@ clear_screen_with_banner()
 print("Installing GRUB and necessary packages...")
 subprocess.run(['arch-chroot', str(mountpoint), 'pacman', '-S', '--noconfirm', 'grub', 'efibootmgr', 'os-prober'])
 
-# Install GRUB bootloader
+# Install GRUB bootloader on the selected disk
 print("Installing GRUB bootloader...")
 subprocess.run([
     'arch-chroot', str(mountpoint), 'grub-install', '--target=x86_64-efi',
-    '--efi-directory=/boot', '--bootloader-id=GRUB'
+    '--efi-directory=/boot', '--bootloader-id=GRUB', '--recheck', disk_path
 ])
 subprocess.run([
     'arch-chroot', str(mountpoint), 'grub-mkconfig', '-o', '/boot/grub/grub.cfg'
 ])
+
 
 # Create the user inside the chroot environment
 clear_screen_with_banner()
