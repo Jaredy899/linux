@@ -39,7 +39,6 @@ def get_timezone_and_country():
             "country_code": "US"  # Default to "US" if detection fails
         }
 
-# Function to allow the user to select the disk by number
 def select_disk():
     clear_screen_with_banner()
     print("Available disks:")
@@ -64,9 +63,14 @@ def select_disk():
         else:
             print("Invalid choice. Please enter a valid number.")
 
+    # Make sure the selected device exists
     disk_path = f"/dev/{selected_disk}"
+    if not os.path.exists(disk_path):
+        raise ValueError(f"Device {disk_path} does not exist. Please check your disk selection.")
+    
     print(f"Selected disk: {disk_path}")
     return disk_path
+
 
 # Select disk for installation
 disk_path = select_disk()
