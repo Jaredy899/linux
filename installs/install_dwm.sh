@@ -58,28 +58,28 @@ install_packages() {
             fi
 
             # Proceed with adding Mozilla APT repository and installing Firefox
-            echo "Adding Mozilla APT repository and installing Firefox..."
-            sudo install -d -m 0755 /etc/apt/keyrings
-            wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | sudo tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null
-            gpg -n -q --import --import-options import-show /etc/apt/keyrings/packages.mozilla.org.asc | awk '/pub/{getline; gsub(/^ +| +$/,""); if($0 == "35BAA0B33E9EB396F59CA838C0BA5CE6DC6315A3") print "\nThe key fingerprint matches ("$0").\n"; else print "\nVerification failed: the fingerprint ("$0") does not match the expected one.\n"}'
-            echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | sudo tee -a /etc/apt/sources.list.d/mozilla.list > /dev/null
-            echo '
-            Package: *
-            Pin: origin packages.mozilla.org
-            Pin-Priority: 1000
-            ' | sudo tee /etc/apt/preferences.d/mozilla
+            # echo "Adding Mozilla APT repository and installing Firefox..."
+            # sudo install -d -m 0755 /etc/apt/keyrings
+            # wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | sudo tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null
+            # gpg -n -q --import --import-options import-show /etc/apt/keyrings/packages.mozilla.org.asc | awk '/pub/{getline; gsub(/^ +| +$/,""); if($0 == "35BAA0B33E9EB396F59CA838C0BA5CE6DC6315A3") print "\nThe key fingerprint matches ("$0").\n"; else print "\nVerification failed: the fingerprint ("$0") does not match the expected one.\n"}'
+            # echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | sudo tee -a /etc/apt/sources.list.d/mozilla.list > /dev/null
+            # echo '
+            # Package: *
+            # Pin: origin packages.mozilla.org
+            # Pin-Priority: 1000
+            # ' | sudo tee /etc/apt/preferences.d/mozilla
 
-            # Update and install Firefox
-            sudo apt-get update
-            sudo apt-get install firefox
+            # # Update and install Firefox
+            # sudo apt-get update
+            # sudo apt-get install firefox
             ;;
         fedora|centos|rhel)
-            packages="nano thunar vlc NetworkManager network-manager-applet firefox feh pavucontrol"
+            packages="nano thunar vlc NetworkManager network-manager-applet firefox chromium feh pavucontrol"
             sudo dnf update -y
             sudo dnf install -y $packages
             ;;
         arch)
-            packages="nano thunar vlc nm-connection-editor firefox feh pavucontrol pipewire pipewire-pulse pipewire-alsa"
+            packages="nano thunar vlc networkmanager nm-connection-editor firefox chromium feh pavucontrol pipewire pipewire-pulse pipewire-alsa"
             sudo pacman -Syu --noconfirm $packages
             ;;
         *)
