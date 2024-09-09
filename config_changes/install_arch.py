@@ -262,6 +262,24 @@ clear_screen_with_banner()
 print("Installing GRUB and necessary packages...")
 subprocess.run(['arch-chroot', str(mountpoint), 'pacman', '-S', '--noconfirm', 'grub', 'efibootmgr', 'os-prober'])
 
+# Set the timezone and synchronize the system clock in the chroot environment
+clear_screen_with_banner()
+print(f"Setting the timezone to {timezone} and syncing system time...")
+
+try:
+    # Set the timezone inside the chroot environment
+    subprocess.run(['arch-chroot', str(mountpoint), 'ln', '-sf', f'/usr/share/zoneinfo/{timezone}', '/etc/localtime'], check=True)
+
+    # Sync hardware clock inside the chroot environment
+    subprocess.run(['arch-chroot', str(mountpoint), 'hwclock', '--systohc'], check=True)
+
+    # Enable network time synchronization
+    subprocess.run(['arch-chroot', str(mountpoint), 'timedatectl', 'set-ntp', 'true'], check=True)
+
+    print("Timezone and system clock have been set successfully.")
+except subprocess.CalledProcessError as e:
+    print(f"Error setting timezone or syncing clock: {e}")
+
 # Install GRUB bootloader on the selected disk
 print("Installing GRUB bootloader...")
 subprocess.run([
