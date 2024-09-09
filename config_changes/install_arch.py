@@ -187,14 +187,14 @@ subprocess.run(['arch-chroot', str(mountpoint), 'bash', '-c', '''
 pacman -Syu --noconfirm
 
 # Install NetworkManager and enable it
-pacman -S --noconfirm networkmanager 
+pacman -S --noconfirm networkmanager nm-connection-editor
 systemctl enable NetworkManager
 systemctl start NetworkManager
 
 # Detect GPU and install appropriate drivers
 gpu_type=$(lspci | grep -E "VGA|3D")
 if echo "${gpu_type}" | grep -E "NVIDIA|GeForce"; then
-    pacman -S --noconfirm --needed nvidia
+    pacman -S --noconfirm --needed nvidia nvidia-settings
 elif echo "${gpu_type}" | grep 'VGA' | grep -E "Radeon|AMD"; then
     pacman -S --noconfirm --needed xf86-video-amdgpu
 elif echo "${gpu_type}" | grep -E "Integrated Graphics Controller"; then
