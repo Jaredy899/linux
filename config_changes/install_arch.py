@@ -68,45 +68,45 @@ def select_disk():
     print(f"Selected disk: {disk_path}")
     return disk_path
 
-# Function to set up the mirrors using reflector
-def setup_mirrors():
-    print("Setting up mirrors for optimal download")
+# # Function to set up the mirrors using reflector
+# def setup_mirrors():
+#     print("Setting up mirrors for optimal download")
     
-    # Get country ISO code based on public IP
-    try:
-        iso = subprocess.check_output("curl -4 ifconfig.co/country-iso", shell=True).decode().strip()
-        print(f"Detected country ISO: {iso}")
-    except subprocess.CalledProcessError as e:
-        print(f"Error detecting country ISO: {e}")
-        iso = "US"  # Fallback to US if detection fails
+#     # Get country ISO code based on public IP
+#     try:
+#         iso = subprocess.check_output("curl -4 ifconfig.co/country-iso", shell=True).decode().strip()
+#         print(f"Detected country ISO: {iso}")
+#     except subprocess.CalledProcessError as e:
+#         print(f"Error detecting country ISO: {e}")
+#         iso = "US"  # Fallback to US if detection fails
 
-    # Sync system time
-    subprocess.run(['timedatectl', 'set-ntp', 'true'])
+#     # Sync system time
+#     subprocess.run(['timedatectl', 'set-ntp', 'true'])
 
-    # Update keyrings and install necessary packages
-    subprocess.run(['pacman', '-S', '--noconfirm', 'archlinux-keyring'])
+#     # Update keyrings and install necessary packages
+#     subprocess.run(['pacman', '-S', '--noconfirm', 'archlinux-keyring'])
 
-    # Enable parallel downloads
-    subprocess.run(["sed", "-i", "'s/^#ParallelDownloads/ParallelDownloads/'", "/etc/pacman.conf"])
+#     # Enable parallel downloads
+#     subprocess.run(["sed", "-i", "'s/^#ParallelDownloads/ParallelDownloads/'", "/etc/pacman.conf"])
 
-    # Install reflector and other packages
-    subprocess.run(['pacman', '-S', '--noconfirm', '--needed', 'reflector', 'rsync', 'grub'])
+#     # Install reflector and other packages
+#     subprocess.run(['pacman', '-S', '--noconfirm', '--needed', 'reflector', 'rsync', 'grub'])
 
-    # Backup mirrorlist
-    subprocess.run(['cp', '/etc/pacman.d/mirrorlist', '/etc/pacman.d/mirrorlist.backup'])
+#     # Backup mirrorlist
+#     subprocess.run(['cp', '/etc/pacman.d/mirrorlist', '/etc/pacman.d/mirrorlist.backup'])
 
-    print(f"\nSetting up {iso} mirrors for faster downloads...\n")
+#     print(f"\nSetting up {iso} mirrors for faster downloads...\n")
 
-    # Use reflector to update the mirrorlist with the best mirrors based on country ISO
-    subprocess.run([
-        'reflector', '-a', '48', '-c', iso, '-f', '5', '-l', '20', '--sort', 'rate', '--save', '/etc/pacman.d/mirrorlist'
-    ])
+#     # Use reflector to update the mirrorlist with the best mirrors based on country ISO
+#     subprocess.run([
+#         'reflector', '-a', '48', '-c', iso, '-f', '5', '-l', '20', '--sort', 'rate', '--save', '/etc/pacman.d/mirrorlist'
+#     ])
 
-    if not os.path.exists('/mnt'):
-        os.makedirs('/mnt')
+#     if not os.path.exists('/mnt'):
+#         os.makedirs('/mnt')
 
-# Call mirror setup before installation
-setup_mirrors()
+# # Call mirror setup before installation
+# setup_mirrors()
 
 # Select disk for installation
 disk_path = select_disk()
