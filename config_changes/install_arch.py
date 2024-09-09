@@ -39,6 +39,35 @@ def get_timezone_and_country():
             "country_code": "US"  # Default to "US" if detection fails
         }
 
+# Function to allow the user to select the disk by number
+def select_disk():
+    clear_screen_with_banner()
+    print("Available disks:")
+    
+    # List all available disks using lsblk and extract the device names and sizes
+    result = subprocess.run(['lsblk', '-dn', '-o', 'NAME,SIZE,TYPE', '--json'], capture_output=True, text=True)
+    devices = json.loads(result.stdout)["blockdevices"]
+
+    # Filter out non-disk devices
+    disks = [dev for dev in devices if dev["type"] == "disk"]
+    
+    # Display disks with numbers
+    for index, disk in enumerate(disks):
+        print(f"{index + 1}) {disk['name']} - {disk['size']}")
+
+    # Prompt the user to select a disk
+    while True:
+        disk_choice = input(f"Select a disk by number (1-{len(disks)}): ").strip()
+        if disk_choice.isdigit() and 1 <= int(disk_choice) <= len(disks):
+            selected_disk = disks[int(disk_choice) - 1]["name"]
+            break
+        else:
+            print("Invalid choice. Please enter a valid number.")
+
+    disk_path = f"/dev/{selected_disk}"
+    print(f"Selected disk: {disk_path}")
+    return disk_path
+
 # Function to set up the mirrors using reflector
 def setup_mirrors():
     print("Setting up mirrors for optimal download")
@@ -79,6 +108,9 @@ def setup_mirrors():
 # Call mirror setup before installation
 setup_mirrors()
 
+# Select disk for installation
+disk_path = select_disk()
+
 # Ask the user for the desired filesystem
 clear_screen_with_banner()
 print("Choose filesystem:")
@@ -99,10 +131,9 @@ else:
     fs_type = disk.FilesystemType('ext4')
 
 # Get the physical disk device
-device_path = Path('/dev/sda')
-device = disk.device_handler.get_device(device_path)
+device = disk.device_handler.get_device(Path(disk_path))
 if not device:
-    raise ValueError(f"No device found for path {device_path}")
+    raise ValueError(f"No device found for path {disk_path}")
 
 # Disk modification configuration
 device_modification = disk.DeviceModification(device, wipe=True)
