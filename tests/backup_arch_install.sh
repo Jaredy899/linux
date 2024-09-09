@@ -1,29 +1,29 @@
 #!/bin/bash
 
-# Function to clear the screen and display the question
-function ask {
-    clear
-    echo "$1"
-}
-
-# Function to detect the active network interface
-detect_iface() {
-    iface=$(ip route | grep default | awk '{print $5}' | head -n 1)
-    echo "Detected network interface: $iface"
-    export IFACE=$iface
-}
-
-# Disk selection function with confirmation and warning
-diskpart() {
+# Function to display banner and handle disk selection
+function banner_and_diskpart {
     echo -ne "
-------------------------------------------------------------------------
-    THIS WILL FORMAT AND DELETE ALL DATA ON THE DISK
-    Please make sure you know what you are doing because
-    after formatting your disk, there is no way to get data back.
-    *****BACKUP YOUR DATA BEFORE CONTINUING*****
-    ***I AM NOT RESPONSIBLE FOR ANY DATA LOSS***
-------------------------------------------------------------------------
-"
+    -------------------------------------------------------------------------
+                         █████╗ ██████╗  ██████╗██╗  ██╗
+                        ██╔══██╗██╔══██╗██╔════╝██║  ██║
+                        ███████║██████╔╝██║     ███████║ 
+                        ██╔══██║██╔══██╗██║     ██╔══██║ 
+                        ██║  ██║██║  ██║╚██████╗██║  ██║ 
+                        ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝ 
+    -------------------------------------------------------------------------
+                        Automated Arch Linux Installer
+    -------------------------------------------------------------------------
+    "
+
+    echo -ne "
+    ------------------------------------------------------------------------
+        THIS WILL FORMAT AND DELETE ALL DATA ON THE DISK
+        Please make sure you know what you are doing because
+        after formatting your disk, there is no way to get data back.
+        *****BACKUP YOUR DATA BEFORE CONTINUING*****
+        ***I AM NOT RESPONSIBLE FOR ANY DATA LOSS***
+    ------------------------------------------------------------------------
+    "
     PS3='Select the disk to install on: '
     options=($(lsblk -n --output TYPE,KNAME,SIZE | awk '$1=="disk"{print "/dev/"$2"|"$3}'))
 
@@ -33,76 +33,154 @@ diskpart() {
         export DISK=$disk
         break
     done
+
+    clear
 }
 
-# Detect the active network interface
-detect_iface
+# Function to detect the active network interface
+function detect_iface {
+    iface=$(ip route | grep default | awk '{print $5}' | head -n 1)
+    echo "Detected network interface: $iface"
+    export IFACE=$iface
+    clear
+}
 
-# Call diskpart for disk selection
-diskpart
+# Function to prompt for username
+function get_username {
+    echo "Enter the username: "
+    read username
+    export USERNAME=$username
+    clear
+}
 
-# Get username
-ask "Enter the username: "
-read username
+# Function to prompt for password and confirm it
+function get_password {
+    while true; do
+        echo "Enter the password: "
+        read -s password
+        echo
+        echo "Confirm the password: "
+        read -s password_confirm
+        echo
+        if [ "$password" == "$password_confirm" ]; then
+            export PASSWORD=$password
+            break
+        else
+            echo "Passwords do not match. Please try again."
+        fi
+    done
+    clear
+}
 
-# Get password and confirm it
-while true; do
-    ask "Enter the password: "
-    read -s password
-    echo
-    ask "Confirm the password: "
-    read -s password_confirm
-    echo
-    if [ "$password" == "$password_confirm" ]; then
-        break
-    else
-        echo "Passwords do not match. Please try again."
+# Function to prompt for hostname
+function get_hostname {
+    echo "Enter the hostname: "
+    read hostname
+    export HOSTNAME=$hostname
+    clear
+}
+
+# Function to select filesystem
+function select_filesystem {
+    echo "Choose filesystem (for root partition):"
+    echo "1) Btrfs"
+    echo "2) ext4"
+    echo "3) xfs"
+    read -p "Enter the number (1, 2, or 3): " fs_choice
+    case $fs_choice in
+        1) filesystem="btrfs" ;;
+        2) filesystem="ext4" ;;
+        *) filesystem="xfs" ;;
+    esac
+    export FILESYSTEM=$filesystem
+    clear
+}
+
+# Function to detect timezone and confirm
+function get_timezone {
+    timezone=$(curl --silent https://ipapi.co/timezone)
+    echo "Detected timezone: $timezone. Do you want to use this timezone? (Y/n): "
+    read -r confirm_tz
+    if [[ "$confirm_tz" != "Y" && "$confirm_tz" != "y" && "$confirm_tz" != "" ]]; then
+        echo "Enter your preferred timezone (e.g., America/New_York): "
+        read timezone
     fi
-done
+    export TIMEZONE=$timezone
+    clear
+}
 
-# Get hostname
-ask "Enter the hostname: "
-read hostname
+# Function to select keyboard layout (default: us)
+function select_keymap {
+    echo "Select keyboard layout (default: us):"
+    echo "1) us"
+    echo "2) uk"
+    echo "3) de"
+    echo "4) fr"
+    echo "5) es"
+    read -p "Enter the number (1-5) or press Enter to use 'us': " keymap_choice
+    case $keymap_choice in
+        2) keymap="uk" ;;
+        3) keymap="de" ;;
+        4) keymap="fr" ;;
+        5) keymap="es" ;;
+        *) keymap="us" ;;
+    esac
+    export KEYMAP=$keymap
+    clear
+}
 
-# Get filesystem choice
-ask "Choose filesystem (for root partition):"
-echo "1) Btrfs"
-echo "2) ext4"
-echo "3) xfs"
-read -p "Enter the number (1, 2, or 3): " fs_choice
-if [ "$fs_choice" -eq 1 ]; then
-  filesystem="btrfs"
-elif [ "$fs_choice" -eq 2 ]; then
-  filesystem="ext4"
-else
-  filesystem="xfs"
-fi
+# Function to use reflector and update the mirrorlist based on the guide
+function update_mirrorlist {
+    echo "Updating /etc/pacman.d/mirrorlist with the 20 most recently synchronized HTTPS mirrors..."
 
-# Get timezone (automatic detection)
-timezone=$(curl --silent https://ipapi.co/timezone)
-ask "Detected timezone: $timezone. Do you want to use this timezone? (Y/n): "
-read -r confirm_tz
-if [[ "$confirm_tz" != "Y" && "$confirm_tz" != "y" && "$confirm_tz" != "" ]]; then
-  ask "Enter your preferred timezone (e.g., America/New_York): "
-  read timezone
-fi
+    # Ensure reflector is installed
+    if ! command -v reflector &> /dev/null; then
+        echo "Reflector is not installed. Installing it now..."
+        pacman -Syu --noconfirm reflector
+    fi
 
-# Keyboard layout selection (default to 'us')
-ask "Select keyboard layout (default: us):"
-echo "1) us"
-echo "2) uk"
-echo "3) de"
-echo "4) fr"
-echo "5) es"
-read -p "Enter the number (1-5) or press Enter to use 'us': " keymap_choice
+    # Use reflector to get 20 most recent, HTTPS mirrors, sorted by download rate
+    reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
 
-case $keymap_choice in
-  2) keymap="uk" ;;
-  3) keymap="de" ;;
-  4) keymap="fr" ;;
-  5) keymap="es" ;;
-  *) keymap="us" ;;
-esac
+    # Check if reflector succeeded
+    if [ $? -ne 0 ]; then
+        echo "Reflector failed to update mirrors. Restoring backup mirrorlist..."
+        cp /etc/pacman.d/mirrorlist.bak /etc/pacman.d/mirrorlist
+    else
+        echo "Mirrorlist updated successfully."
+    fi
+
+    # Display the updated mirrorlist for user inspection
+    echo "Here are the top mirrors:"
+    head -n 20 /etc/pacman.d/mirrorlist
+}
+
+# Main function to run the entire script
+function main {
+    banner_and_diskpart
+    detect_iface
+    get_username
+    get_password
+    get_hostname
+    select_filesystem
+    get_timezone
+    select_keymap
+
+    # Update mirrorlist before proceeding with the installation
+    update_mirrorlist
+
+    echo -e "\nSummary:"
+    echo "Username: $USERNAME"
+    echo "Password: (hidden)"
+    echo "Hostname: $HOSTNAME"
+    echo "Disk: $DISK"
+    echo "Filesystem: $FILESYSTEM"
+    echo "Timezone: $TIMEZONE"
+    echo "Keymap: $KEYMAP"
+}
+
+# Execute the main function
+main
 
 # Prepare the JSON configuration for user credentials
 credentials_file="user_credentials.json"
