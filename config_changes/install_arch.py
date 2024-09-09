@@ -74,21 +74,21 @@ disk_path = select_disk()
 # Ask the user for the desired filesystem
 clear_screen_with_banner()
 print("Choose filesystem:")
-print("1) Btrfs")
+print("1) Btrfs (with subvolumes)")
 print("2) ext4")
 print("3) XFS")
 fs_choice = input("Enter the number (1, 2, or 3): ").strip()
 
 # Determine the filesystem type based on user input
 if fs_choice == "1":
-    fs_type = disk.FilesystemType('btrfs')
+    fs_type = 'btrfs'
 elif fs_choice == "2":
-    fs_type = disk.FilesystemType('ext4')
+    fs_type = 'ext4'
 elif fs_choice == "3":
-    fs_type = disk.FilesystemType('xfs')
+    fs_type = 'xfs'
 else:
     print("Invalid choice, defaulting to ext4.")
-    fs_type = disk.FilesystemType('ext4')
+    fs_type = 'ext4'
 
 # Get the physical disk device
 device = disk.device_handler.get_device(Path(disk_path))
@@ -110,33 +110,72 @@ boot_partition = disk.PartitionModification(
 )
 device_modification.add_partition(boot_partition)
 
-root_partition = disk.PartitionModification(
-    status=disk.ModificationStatus.Create,
-    type=disk.PartitionType.Primary,
-    start=disk.Size(513, disk.Unit.MiB, device.device_info.sector_size),
-    length=disk.Size(30 * 1024, disk.Unit.MiB, device.device_info.sector_size),  # Adjust root partition size here (e.g., 30 GiB)
-    mountpoint=Path('/'),
-    fs_type=fs_type,
-    mount_options=[]
-)
-device_modification.add_partition(root_partition)
+# Btrfs-specific setup with subvolumes
+if fs_type == 'btrfs':
+    root_partition = disk.PartitionModification(
+        status=disk.ModificationStatus.Create,
+        type=disk.PartitionType.Primary,
+        start=disk.Size(513, disk.Unit.MiB, device.device_info.sector_size),
+        length=device.device_info.size - disk.Size(513, disk.Unit.MiB, device.device_info.sector_size),
+        mountpoint=Path('/'),
+        fs_type=disk.FilesystemType('btrfs'),
+        mount_options=[]
+    )
+    device_modification.add_partition(root_partition)
 
-home_partition = disk.PartitionModification(
-    status=disk.ModificationStatus.Create,
-    type=disk.PartitionType.Primary,
-    start=disk.Size(30 * 1024 + 513, disk.Unit.MiB, device.device_info.sector_size),
-    length=disk.Size(device.device_info.size - (30 * 1024 + 513), disk.Unit.MiB, device.device_info.sector_size),
-    mountpoint=Path('/home'),
-    fs_type=fs_type,
-    mount_options=[]
-)
-device_modification.add_partition(home_partition)
+    # Create the disk configuration
+    disk_config = disk.DiskLayoutConfiguration(
+        config_type=disk.DiskLayoutType.Default,
+        device_modifications=[device_modification]
+    )
 
-# Create the disk configuration
-disk_config = disk.DiskLayoutConfiguration(
-    config_type=disk.DiskLayoutType.Default,
-    device_modifications=[device_modification]
-)
+    # Filesystem handler to format and prepare disks
+    fs_handler = disk.FilesystemHandler(disk_config)
+    fs_handler.perform_filesystem_operations(show_countdown=False)
+
+    # Mount the Btrfs partition and create subvolumes
+    subprocess.run(['mount', '-t', 'btrfs', f"{disk_path}1", '/mnt'])
+    subprocess.run(['btrfs', 'subvolume', 'create', '/mnt/@'])
+    subprocess.run(['btrfs', 'subvolume', 'create', '/mnt/@home'])
+
+    # Mount subvolumes
+    subprocess.run(['mount', '-o', 'subvol=@', f"{disk_path}1", '/mnt'])
+    subprocess.run(['mkdir', '-p', '/mnt/home'])
+    subprocess.run(['mount', '-o', 'subvol=@home', f"{disk_path}1", '/mnt/home'])
+
+# For ext4 and XFS, just create partitions normally
+else:
+    root_partition = disk.PartitionModification(
+        status=disk.ModificationStatus.Create,
+        type=disk.PartitionType.Primary,
+        start=disk.Size(513, disk.Unit.MiB, device.device_info.sector_size),
+        length=device.device_info.size - disk.Size(513, disk.Unit.MiB, device.device_info.sector_size),
+        mountpoint=Path('/'),
+        fs_type=disk.FilesystemType(fs_type),
+        mount_options=[]
+    )
+    device_modification.add_partition(root_partition)
+
+    home_partition = disk.PartitionModification(
+        status=disk.ModificationStatus.Create,
+        type=disk.PartitionType.Primary,
+        start=disk.Size(513 + root_partition.length, disk.Unit.MiB, device.device_info.sector_size),
+        length=device.device_info.size - root_partition.length - disk.Size(513, disk.Unit.MiB, device.device_info.sector_size),
+        mountpoint=Path('/home'),
+        fs_type=disk.FilesystemType(fs_type),
+        mount_options=[]
+    )
+    device_modification.add_partition(home_partition)
+
+    # Create the disk configuration
+    disk_config = disk.DiskLayoutConfiguration(
+        config_type=disk.DiskLayoutType.Default,
+        device_modifications=[device_modification]
+    )
+
+    # Filesystem handler to format and prepare disks
+    fs_handler = disk.FilesystemHandler(disk_config)
+    fs_handler.perform_filesystem_operations(show_countdown=False)
 
 # Filesystem handler to format and prepare disks
 fs_handler = disk.FilesystemHandler(disk_config)
