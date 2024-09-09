@@ -318,6 +318,7 @@ pacman -Syu --noconfirm
 # Install NetworkManager and enable it
 pacman -S --noconfirm networkmanager nm-connection-editor
 systemctl enable NetworkManager
+systemctl enable sshd
 systemctl start NetworkManager
 
 # Detect GPU and install appropriate drivers
