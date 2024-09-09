@@ -98,6 +98,9 @@ if not device:
 # Disk modification configuration
 device_modification = disk.DeviceModification(device, wipe=True)
 
+# Wipe the disk before proceeding with partition creation
+subprocess.run(['wipefs', '--all', disk_path], check=True)
+
 # Create partitions
 boot_partition = disk.PartitionModification(
     status=disk.ModificationStatus.Create,
