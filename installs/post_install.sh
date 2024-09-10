@@ -94,7 +94,7 @@ echo "-------------------------------------------------------------------------"
 # Install Terminus font, ncdu, qemu-guest-agent, and yazi based on the OS
 if [ "$OS" == "arch" ]; then
     echo "Installing for Arch Linux"
-    sudo pacman -S --noconfirm --needed nano terminus-font ncdu qemu-guest-agent yazi cockpit wget
+    sudo pacman -S --noconfirm --needed nano terminus-font ncdu qemu-guest-agent yazi cockpit wget timeshift
 elif [ "$OS" == "debian" ]; then
     echo "Installing for Debian"
     sudo apt install -y nano console-terminus ncdu qemu-guest-agent cockpit wget
@@ -103,7 +103,7 @@ elif [ "$OS" == "debian" ]; then
     sudo chmod +x /usr/local/bin/yazi
 elif [ "$OS" == "fedora" ]; then
     echo "Installing for Fedora"
-    sudo dnf install -y nano terminus-fonts-console ncdu qemu-guest-agent cockpit wget
+    sudo dnf install -y nano terminus-fonts-console ncdu qemu-guest-agent cockpit wget timeshift
     # Install yazi from GitHub
     wget https://github.com/sxyazi/yazi/releases/download/latest/yazi-linux -O /usr/local/bin/yazi
     sudo chmod +x /usr/local/bin/yazi
