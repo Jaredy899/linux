@@ -32,7 +32,7 @@ if echo "${gpu_type}" | grep -E "NVIDIA|GeForce"; then
         reboot_required=true
     elif [ "$OS" == "debian" ]; then
         echo "Installing NVIDIA drivers"
-        sudo apt install -y nvidia-driver
+        sudo apt install -y nvidia-driver firmware-misc-nonfree
         reboot_required=true
     elif [ "$OS" == "fedora" ]; then
         echo "Installing NVIDIA drivers"
@@ -170,7 +170,7 @@ if [ "$OS" == "arch" ]; then
     sudo pacman -S --noconfirm --needed nano terminus-font ncdu qemu-guest-agent yazi cockpit wget timeshift
 elif [ "$OS" == "debian" ]; then
     echo "Installing for Debian"
-    sudo apt install -y nano console-terminus ncdu qemu-guest-agent cockpit wget
+    sudo apt install -y nano fonts-terminus ncdu qemu-guest-agent cockpit wget
     install_fastfetch  # Call the fastfetch installation function
 elif [ "$OS" == "fedora" ]; then
     echo "Installing for Fedora"
