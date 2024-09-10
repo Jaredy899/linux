@@ -24,37 +24,37 @@ if echo "${gpu_type}" | grep -E "NVIDIA|GeForce"; then
     echo "Detected NVIDIA GPU"
     if [ "$OS" == "arch" ]; then
         echo "Installing NVIDIA drivers: nvidia"
-        pacman -S --noconfirm --needed nvidia nvidia-settings
+        sudo pacman -S --noconfirm --needed nvidia nvidia-settings
     elif [ "$OS" == "debian" ]; then
         echo "Installing NVIDIA drivers"
-        apt install -y nvidia-driver
+        sudo apt install -y nvidia-driver
     elif [ "$OS" == "fedora" ]; then
         echo "Installing NVIDIA drivers"
-        dnf install -y akmod-nvidia
+        sudo dnf install -y akmod-nvidia
     fi
 elif echo "${gpu_type}" | grep 'VGA' | grep -E "Radeon|AMD"; then
     echo "Detected AMD GPU"
     if [ "$OS" == "arch" ]; then
         echo "Installing AMD drivers: xf86-video-amdgpu"
-        pacman -S --noconfirm --needed xf86-video-amdgpu
+        sudo pacman -S --noconfirm --needed xf86-video-amdgpu
     elif [ "$OS" == "debian" ]; then
         echo "Installing AMD drivers"
-        apt install -y firmware-amd-graphics
+        sudo apt install -y firmware-amd-graphics
     elif [ "$OS" == "fedora" ]; then
         echo "Installing AMD drivers"
-        dnf install -y xorg-x11-drv-amdgpu
+        sudo dnf install -y xorg-x11-drv-amdgpu
     fi
 elif echo "${gpu_type}" | grep -E "Intel"; then
     echo "Detected Intel GPU"
     if [ "$OS" == "arch" ]; then
         echo "Installing Intel drivers"
-        pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-utils lib32-mesa
+        sudo pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-utils lib32-mesa
     elif [ "$OS" == "debian" ]; then
         echo "Installing Intel drivers"
-        apt install -y intel-media-va-driver mesa-va-drivers mesa-vulkan-drivers
+        sudo apt install -y intel-media-va-driver mesa-va-drivers mesa-vulkan-drivers
     elif [ "$OS" == "fedora" ]; then
         echo "Installing Intel drivers"
-        dnf install -y intel-media-driver mesa-vulkan-drivers
+        sudo dnf install -y intel-media-driver mesa-vulkan-drivers
     fi
 else
     echo "No supported GPU found"
@@ -66,14 +66,14 @@ echo "-------------------------------------------------------------------------"
 
 # Install and enable NetworkManager
 if [ "$OS" == "arch" ]; then
-    pacman -S --noconfirm --needed networkmanager
-    systemctl enable --now NetworkManager
+    sudo pacman -S --noconfirm --needed networkmanager
+    sudo systemctl enable --now NetworkManager
 elif [ "$OS" == "debian" ]; then
-    apt install -y network-manager
-    systemctl enable --now NetworkManager
+    sudo apt install -y network-manager
+    sudo systemctl enable --now NetworkManager
 elif [ "$OS" == "fedora" ]; then
-    dnf install -y NetworkManager
-    systemctl enable --now NetworkManager
+    sudo dnf install -y NetworkManager
+    sudo systemctl enable --now NetworkManager
 fi
 
 echo "-------------------------------------------------------------------------"
@@ -83,19 +83,19 @@ echo "-------------------------------------------------------------------------"
 # Install Terminus font, ncdu, qemu-guest-agent, and yazi based on the OS
 if [ "$OS" == "arch" ]; then
     echo "Installing for Arch Linux"
-    pacman -S --noconfirm --needed terminus-font ncdu qemu-guest-agent yazi cockpit
+    sudo pacman -S --noconfirm --needed nano terminus-font ncdu qemu-guest-agent yazi cockpit
 elif [ "$OS" == "debian" ]; then
     echo "Installing for Debian"
-    apt install -y console-terminus ncdu qemu-guest-agent cockpit
+    sudo apt install -y nano console-terminus ncdu qemu-guest-agent cockpit
     # Install yazi from GitHub
     wget https://github.com/sxyazi/yazi/releases/download/latest/yazi-linux -O /usr/local/bin/yazi
-    chmod +x /usr/local/bin/yazi
+    sudo chmod +x /usr/local/bin/yazi
 elif [ "$OS" == "fedora" ]; then
     echo "Installing for Fedora"
-    dnf install -y terminus-fonts-console ncdu qemu-guest-agent cockpit
+    sudo dnf install -y nano terminus-fonts-console ncdu qemu-guest-agent cockpit
     # Install yazi from GitHub
     wget https://github.com/sxyazi/yazi/releases/download/latest/yazi-linux -O /usr/local/bin/yazi
-    chmod +x /usr/local/bin/yazi
+    sudo chmod +x /usr/local/bin/yazi
 fi
 
 # Function to check if Cockpit is installed
@@ -206,17 +206,17 @@ echo "-------------------------------------------------------------------------"
 echo "                    Setting Permanent Console Font"
 echo "-------------------------------------------------------------------------"
 
-# Set permanent font based on the OS
+# Set permanent console font with sudo privileges
 if [ "$OS" == "arch" ] || [ "$OS" == "fedora" ]; then
-    echo "FONT=ter-v18b" >> /etc/vconsole.conf
-    echo "Console font set permanently in /etc/vconsole.conf"
+    echo "Setting console font to ter-v18b in /etc/vconsole.conf"
+    echo "FONT=ter-v18b" | sudo tee -a /etc/vconsole.conf > /dev/null
 elif [ "$OS" == "debian" ]; then
+    echo "Setting console font to ter-v18b in /etc/default/console-setup"
     if grep -q '^FONT=' /etc/default/console-setup; then
-        sed -i 's/^FONT=.*/FONT="ter-v18b"/' /etc/default/console-setup
+        sudo sed -i 's/^FONT=.*/FONT="ter-v18b"/' /etc/default/console-setup
     else
-        echo "FONT=ter-v18b" >> /etc/default/console-setup
+        echo "FONT=ter-v18b" | sudo tee -a /etc/default/console-setup > /dev/null
     fi
-    echo "Console font set permanently in /etc/default/console-setup"
 fi
 
 echo "-------------------------------------------------------------------------"
