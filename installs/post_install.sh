@@ -172,17 +172,10 @@ elif [ "$OS" == "debian" ]; then
     echo "Installing for Debian"
     sudo apt install -y nano console-terminus ncdu qemu-guest-agent cockpit wget
     install_fastfetch  # Call the fastfetch installation function
-    # Install yazi from GitHub
-    wget https://github.com/sxyazi/yazi/releases/download/latest/yazi-linux -O /usr/local/bin/yazi
-    sudo chmod +x /usr/local/bin/yazi
 elif [ "$OS" == "fedora" ]; then
     echo "Installing for Fedora"
     sudo dnf install -y nano terminus-fonts-console ncdu qemu-guest-agent cockpit wget timeshift
-    install_fastfetch  # Call the fastfetch installation function
-    # Install yazi from GitHub
-    wget https://github.com/sxyazi/yazi/releases/download/latest/yazi-linux -O /usr/local/bin/yazi
-    sudo chmod +x /usr/local/bin/yazi
-fi
+    fi
 
 # Function to check if Cockpit is installed
 is_cockpit_installed() {
