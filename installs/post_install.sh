@@ -1,5 +1,7 @@
 #!/bin/bash
 
+reboot_required=false
+
 echo "-------------------------------------------------------------------------"
 echo "                    Installing Graphics Drivers"
 echo "-------------------------------------------------------------------------"
@@ -25,36 +27,45 @@ if echo "${gpu_type}" | grep -E "NVIDIA|GeForce"; then
     if [ "$OS" == "arch" ]; then
         echo "Installing NVIDIA drivers: nvidia"
         sudo pacman -S --noconfirm --needed nvidia nvidia-settings
+        reboot_required=true
     elif [ "$OS" == "debian" ]; then
         echo "Installing NVIDIA drivers"
         sudo apt install -y nvidia-driver
+        reboot_required=true
     elif [ "$OS" == "fedora" ]; then
         echo "Installing NVIDIA drivers"
         sudo dnf install -y akmod-nvidia
+        reboot_required=true
     fi
 elif echo "${gpu_type}" | grep 'VGA' | grep -E "Radeon|AMD"; then
     echo "Detected AMD GPU"
     if [ "$OS" == "arch" ]; then
         echo "Installing AMD drivers: xf86-video-amdgpu"
         sudo pacman -S --noconfirm --needed xf86-video-amdgpu
+        reboot_required=true
     elif [ "$OS" == "debian" ]; then
         echo "Installing AMD drivers"
         sudo apt install -y firmware-amd-graphics
+        reboot_required=true
     elif [ "$OS" == "fedora" ]; then
         echo "Installing AMD drivers"
         sudo dnf install -y xorg-x11-drv-amdgpu
+        reboot_required=true
     fi
 elif echo "${gpu_type}" | grep -E "Intel"; then
     echo "Detected Intel GPU"
     if [ "$OS" == "arch" ]; then
         echo "Installing Intel drivers"
         sudo pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-utils lib32-mesa
+        reboot_required=true
     elif [ "$OS" == "debian" ]; then
         echo "Installing Intel drivers"
         sudo apt install -y intel-media-va-driver mesa-va-drivers mesa-vulkan-drivers
+        reboot_required=true
     elif [ "$OS" == "fedora" ]; then
         echo "Installing Intel drivers"
         sudo dnf install -y intel-media-driver mesa-vulkan-drivers
+        reboot_required=true
     fi
 else
     echo "No supported GPU found"
@@ -150,58 +161,6 @@ else
     install_cockpit
 fi
 
-# Function to detect architecture for Fastfetch
-detect_arch() {
-    ARCH=$(uname -m)
-    case "$ARCH" in
-        x86_64)
-            echo "linux-amd64.deb"
-            ;;
-        aarch64)
-            echo "linux-aarch64.deb"
-            ;;
-        armv7l)
-            echo "linux-armv7l.deb"
-            ;;
-        riscv64)
-            echo "linux-riscv64.deb"
-            ;;
-        *)
-            echo "unsupported"
-            ;;
-    esac
-}
-
-# Function to install Fastfetch
-install_fastfetch() {
-    echo "Installing Fastfetch..."
-
-    if [ "$OS" == "arch" ]; then
-        sudo pacman -S --noconfirm fastfetch
-    elif [ "$OS" == "fedora" ]; then
-        sudo dnf install -y fastfetch
-    elif [ "$OS" == "debian" ]; then
-        GITHUB_API_URL="https://api.github.com/repos/fastfetch-cli/fastfetch/releases/latest"
-        ARCH_DEB=$(detect_arch)
-        if [ "$ARCH_DEB" = "unsupported" ]; then
-            echo "Unsupported architecture for Fastfetch. Exiting."
-            exit 1
-        fi
-        FASTFETCH_URL=$(curl -s $GITHUB_API_URL | grep "browser_download_url.*$ARCH_DEB" | cut -d '"' -f 4)
-        if [ -z "$FASTFETCH_URL" ]; then
-            echo "Failed to retrieve Fastfetch URL. Exiting."
-            exit 1
-        fi
-        curl -s -L --retry 3 -o /tmp/fastfetch_latest_$ARCH.deb "$FASTFETCH_URL"
-        sudo dpkg -i /tmp/fastfetch_latest_$ARCH.deb || sudo apt-get install -f -y
-        rm /tmp/fastfetch_latest_$ARCH.deb
-        echo "Fastfetch has been successfully installed."
-    fi
-}
-
-# Install Fastfetch
-install_fastfetch
-
 echo "-------------------------------------------------------------------------"
 echo "                    Setting Permanent Console Font"
 echo "-------------------------------------------------------------------------"
@@ -223,7 +182,11 @@ echo "-------------------------------------------------------------------------"
 echo "                        Applications Installed                           "
 echo "-------------------------------------------------------------------------"
 
-# Reboot after the installation completes
-echo "Rebooting the system in 5 seconds..."
-sleep 5
-reboot
+# Reboot only if GPU drivers were installed
+if [ "$reboot_required" = true ]; then
+    echo "Rebooting the system in 5 seconds due to GPU driver installation..."
+    sleep 5
+    sudo reboot
+else
+    echo "No GPU drivers were installed, skipping reboot."
+fi
