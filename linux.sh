@@ -67,71 +67,46 @@ else
     echo "Git is already installed."
 fi
 
-# Check if the system is Debian/Ubuntu, Arch, or openSUSE, and install fastfetch if necessary
-if [[ "$distro" == "debian" || "$distro" == "ubuntu" ]]; then
-    if command_exists fastfetch; then
-        echo "Fastfetch is already installed. Skipping installation."
-    else
-        echo "Fastfetch is not installed. Proceeding to install fastfetch..."
-        run_script "install_fastfetch.sh" "$GITPATH/installs" "$INSTALLS_URL"
-    fi
-elif [[ "$distro" == "opensuse" ]]; then
-    if command_exists fastfetch; then
-        echo "Fastfetch is already installed on openSUSE. Skipping installation."
-    else
-        echo "Fastfetch is not installed on openSUSE. Installing..."
-        sudo zypper install fastfetch
-    fi
-elif [[ "$distro" == "arch" ]]; then
-    if command_exists fastfetch; then
-        echo "Fastfetch is already installed on Arch. Skipping installation."
-    else
-        echo "Fastfetch is not installed on Arch. Installing..."
-        sudo pacman -S fastfetch --noconfirm
-    fi
-fi
-
 # Menu loop
 while true; do
     echo "#############################"
     echo "##    Select an option:    ##"
     echo "#############################"
-    echo "1) Run ChrisTitusTech script"
-    echo "2) Add SSH Key"
-    echo "3) Install ncdu"
-    echo "4) Install Cockpit"
-    echo "5) Install a network drive"
-    echo "6) Install qemu-guest-agent"
-    echo "7) Install Tailscale"
-    echo "8) Install Docker and Portainer"
-    echo "9) Run DWM Setup Script"
+    echo "1) Run Post Install Script"
+    echo "2) Run Chris Titus Tech Script"
+    echo "3) Add SSH Key"
+    echo "4) Install a network drive"
+    echo "5) Install Tailscale"
+    echo "6) Install Docker and Portainer"
+    echo "7) Run DWM Setup Script"
     echo "0) Exit"
     echo
 
-    read -p "Enter your choice (0-9): " choice
+    read -p "Enter your choice (0-7): " choice
 
     case $choice in
         1) 
+            echo "Running Post Install Script..."
+            run_script "post_install.sh" "$GITPATH/installs" "$INSTALLS_URL"
+            ;;
+        2) 
             echo "Running Chris Titus Tech's script..."
             curl -fsSL christitus.com/linux | sh
             ;;
-        2) run_script "add_ssh_key.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
-        3) run_script "install_ncdu.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
-        4) run_script "cockpit.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
-        5) run_script "add_network_drive.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
-        6) run_script "qemu-guest-agent.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
-        7) 
+        3) run_script "add_ssh_key.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        4) run_script "add_network_drive.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        5) 
             echo "Installing Tailscale..."
             curl -fsSL https://tailscale.com/install.sh | sh
             echo "Tailscale installed. Please run 'sudo tailscale up' to activate."
             ;;
-        8) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
-        9)
+        6) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        7) 
             echo "Running DWM Setup Script..."
             run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         0) echo "Exiting script."; break ;;
-        *) echo "Invalid option. Please enter a number between 0 and 9." ;;
+        *) echo "Invalid option. Please enter a number between 0 and 7." ;;
     esac
 done
 
