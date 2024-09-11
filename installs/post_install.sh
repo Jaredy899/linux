@@ -209,7 +209,7 @@ if [ "$OS" == "arch" ]; then
     sudo pacman -S --noconfirm --needed nano git terminus-font ncdu qemu-guest-agent yazi cockpit wget timeshift
 elif [ "$OS" == "debian" ]; then
     echo "Installing for Debian"
-    sudo apt install -y nano fonts-terminus ncdu qemu-guest-agent cockpit wget git 
+    sudo apt install -y nano console-setup xfonts-terminus ncdu qemu-guest-agent cockpit wget git 
     install_fastfetch  # Call the fastfetch installation function
 elif [ "$OS" == "fedora" ]; then
     echo "Installing for Fedora"
@@ -223,14 +223,28 @@ echo "-------------------------------------------------------------------------"
 # Set permanent console font with sudo privileges
 if [ "$OS" == "arch" ] || [ "$OS" == "fedora" ]; then
     echo "Setting console font to ter-v18b in /etc/vconsole.conf"
-    echo "FONT=ter-v18b" | sudo tee -a /etc/vconsole.conf > /dev/null
-elif [ "$OS" == "debian" ]; then
-    echo "Setting console font to ter-v18b in /etc/default/console-setup"
-    if grep -q '^FONT=' /etc/default/console-setup; then
-        sudo sed -i 's/^FONT=.*/FONT="ter-v18b"/' /etc/default/console-setup
+    
+    # Replace FONT line if it exists, otherwise add it
+    if grep -q '^FONT=' /etc/vconsole.conf; then
+        sudo sed -i 's/^FONT=.*/FONT=ter-v18b/' /etc/vconsole.conf
     else
-        echo "FONT=ter-v18b" | sudo tee -a /etc/default/console-setup > /dev/null
+        echo "FONT=ter-v18b" | sudo tee -a /etc/vconsole.conf > /dev/null
     fi
+
+    # Apply the font change immediately
+    echo "Applying the console font immediately"
+    sudo setfont ter-v18b
+
+elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
+    echo "Setting console font to Terminus in /etc/default/console-setup"
+    sudo sed -i 's/^FONTFACE=.*/FONTFACE="Terminus"/' /etc/default/console-setup
+    sudo sed -i 's/^FONTSIZE=.*/FONTSIZE="18x10"/' /etc/default/console-setup
+    
+    echo "Updating initramfs to apply changes"
+    sudo update-initramfs -u
+
+    echo "Setting the font immediately"
+    sudo setfont /usr/share/consolefonts/Uni2-TerminusBold18x10.psf.gz
 fi
 
 # Function to check if Cockpit is installed
@@ -315,11 +329,21 @@ EOF
     echo "Cockpit installation complete. Access it via https://<your-server-ip>:9090"
 }
 
+# Function to prompt user for installation
+prompt_cockpit_install() {
+    read -p "Do you want to install Cockpit? (y/n): " answer
+    case "$answer" in
+        [Yy]* ) install_cockpit ;;
+        [Nn]* ) echo "Skipping Cockpit installation." ;;
+        * ) echo "Please answer yes or no." ;;
+    esac
+}
+
 # Check if Cockpit is already installed
 if is_cockpit_installed; then
     echo "Cockpit is already installed. Skipping installation."
 else
-    install_cockpit
+    prompt_cockpit_install
 fi
 
 echo "-------------------------------------------------------------------------"
