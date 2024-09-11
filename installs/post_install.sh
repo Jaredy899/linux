@@ -216,6 +216,23 @@ elif [ "$OS" == "fedora" ]; then
     sudo dnf install -y nano terminus-fonts-console ncdu qemu-guest-agent cockpit wget timeshift git
     fi
 
+echo "-------------------------------------------------------------------------"
+echo "                    Setting Permanent Console Font"
+echo "-------------------------------------------------------------------------"
+
+# Set permanent console font with sudo privileges
+if [ "$OS" == "arch" ] || [ "$OS" == "fedora" ]; then
+    echo "Setting console font to ter-v18b in /etc/vconsole.conf"
+    echo "FONT=ter-v18b" | sudo tee -a /etc/vconsole.conf > /dev/null
+elif [ "$OS" == "debian" ]; then
+    echo "Setting console font to ter-v18b in /etc/default/console-setup"
+    if grep -q '^FONT=' /etc/default/console-setup; then
+        sudo sed -i 's/^FONT=.*/FONT="ter-v18b"/' /etc/default/console-setup
+    else
+        echo "FONT=ter-v18b" | sudo tee -a /etc/default/console-setup > /dev/null
+    fi
+fi
+
 # Function to check if Cockpit is installed
 is_cockpit_installed() {
     if command -v cockpit >/dev/null 2>&1; then
@@ -303,23 +320,6 @@ if is_cockpit_installed; then
     echo "Cockpit is already installed. Skipping installation."
 else
     install_cockpit
-fi
-
-echo "-------------------------------------------------------------------------"
-echo "                    Setting Permanent Console Font"
-echo "-------------------------------------------------------------------------"
-
-# Set permanent console font with sudo privileges
-if [ "$OS" == "arch" ] || [ "$OS" == "fedora" ]; then
-    echo "Setting console font to ter-v18b in /etc/vconsole.conf"
-    echo "FONT=ter-v18b" | sudo tee -a /etc/vconsole.conf > /dev/null
-elif [ "$OS" == "debian" ]; then
-    echo "Setting console font to ter-v18b in /etc/default/console-setup"
-    if grep -q '^FONT=' /etc/default/console-setup; then
-        sudo sed -i 's/^FONT=.*/FONT="ter-v18b"/' /etc/default/console-setup
-    else
-        echo "FONT=ter-v18b" | sudo tee -a /etc/default/console-setup > /dev/null
-    fi
 fi
 
 echo "-------------------------------------------------------------------------"
