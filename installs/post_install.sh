@@ -80,13 +80,16 @@ echo "-------------------------------------------------------------------------"
 # Install and enable NetworkManager
 if [ "$OS" == "arch" ]; then
     sudo pacman -S --noconfirm --needed networkmanager
-    sudo systemctl enable --now NetworkManager
+    sudo systemctl enable NetworkManager
+    sudo systemctl start NetworkManager
 elif [ "$OS" == "debian" ]; then
     sudo apt install -y network-manager
-    sudo systemctl enable --now NetworkManager
+    sudo systemctl enable NetworkManager
+    sudo systemctl start NetworkManager
 elif [ "$OS" == "fedora" ]; then
     sudo dnf install -y NetworkManager
-    sudo systemctl enable --now NetworkManager
+    sudo systemctl enable NetworkManager
+    sudo systemctl start NetworkManager
 fi
 
 echo "-------------------------------------------------------------------------"
@@ -206,7 +209,8 @@ install_cockpit() {
 
     # Start Cockpit service
     if ! systemctl is-active --quiet cockpit; then
-        sudo systemctl enable --now cockpit.socket
+        sudo systemctl enable cockpit.socket
+        sudo systemctl start cockpit.socket
         echo "Cockpit service has been started."
     else
         echo "Cockpit service is already running."
