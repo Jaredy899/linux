@@ -329,21 +329,11 @@ EOF
     echo "Cockpit installation complete. Access it via https://<your-server-ip>:9090"
 }
 
-# Function to prompt user for installation
-prompt_cockpit_install() {
-    read -p "Do you want to install Cockpit? (y/n): " answer
-    case "$answer" in
-        [Yy]* ) install_cockpit ;;
-        [Nn]* ) echo "Skipping Cockpit installation." ;;
-        * ) echo "Please answer yes or no." ;;
-    esac
-}
-
 # Check if Cockpit is already installed
 if is_cockpit_installed; then
     echo "Cockpit is already installed. Skipping installation."
 else
-    prompt_cockpit_install
+    install_cockpit
 fi
 
 echo "-------------------------------------------------------------------------"
