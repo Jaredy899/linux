@@ -604,7 +604,7 @@ mount --rbind /run /mnt/run
 
 # Enter chroot using arch-chroot
 arch-chroot /mnt << EOF
-  curl https://raw.githubusercontent.com/Jaredy899/linux/main/installs/post_install.sh | sh
+  bash <(curl https://raw.githubusercontent.com/Jaredy899/linux/main/installs/post_install.sh)
   exit
 EOF
 
