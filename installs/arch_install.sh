@@ -1,10 +1,7 @@
 #!/bin/bash
 
-pacman -Sy --noconfirm --needed pacman-contrib terminus-font
-setfont ter-v18b
-
-# Function to display banner and handle disk selection
-function banner_and_diskpart {
+# Function to display the banner
+function display_banner {
     echo -ne "
     -------------------------------------------------------------------------
                          █████╗ ██████╗  ██████╗██╗  ██╗
@@ -12,11 +9,26 @@ function banner_and_diskpart {
                         ███████║██████╔╝██║     ███████║ 
                         ██╔══██║██╔══██╗██║     ██╔══██║ 
                         ██║  ██║██║  ██║╚██████╗██║  ██║ 
-                        ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝ 
+                        ╚═╝  ╚═╝╚═╝  ╚═════╝╚═╝  ╚═╝ 
     -------------------------------------------------------------------------
                         Automated Arch Linux Installer
     -------------------------------------------------------------------------
     "
+}
+
+# Function to clear the screen and display the banner
+function clear_with_banner {
+    clear
+    display_banner
+}
+
+pacman -Sy --noconfirm --needed pacman-contrib terminus-font
+setfont ter-v18b
+
+clear_with_banner
+
+# Function to display banner and handle disk selection
+function diskpart {
 
     echo -ne "
     ------------------------------------------------------------------------
@@ -37,7 +49,7 @@ function banner_and_diskpart {
         break
     done
 
-    clear
+    clear_with_banner
 }
 
 # Function to detect the active network interface
@@ -45,7 +57,7 @@ function detect_iface {
     iface=$(ip route | grep default | awk '{print $5}' | head -n 1)
     echo "Detected network interface: $iface"
     export IFACE=$iface
-    clear
+    clear_with_banner
 }
 
 # Function to prompt for username
@@ -53,7 +65,7 @@ function get_username {
     echo "Enter the username: "
     read username
     export USERNAME=$username
-    clear
+    clear_with_banner
 }
 
 # Function to prompt for password and confirm it
@@ -72,7 +84,7 @@ function get_password {
             echo "Passwords do not match. Please try again."
         fi
     done
-    clear
+    clear_with_banner
 }
 
 # Function to prompt for hostname
@@ -80,7 +92,7 @@ function get_hostname {
     echo "Enter the hostname: "
     read hostname
     export HOSTNAME=$hostname
-    clear
+    clear_with_banner
 }
 
 # Function to select filesystem
@@ -96,10 +108,9 @@ function select_filesystem {
         *) filesystem="xfs" ;;
     esac
     export FILESYSTEM=$filesystem
-    clear
+    clear_with_banner
 }
 
-# Function to detect timezone and confirm
 function get_timezone {
     timezone=$(curl --silent https://ipapi.co/timezone)
     echo "Detected timezone: $timezone. Do you want to use this timezone? (Y/n): "
@@ -109,7 +120,20 @@ function get_timezone {
         read timezone
     fi
     export TIMEZONE=$timezone
-    clear
+
+    # Map the timezone to a country
+    if [[ $timezone == America/* ]]; then
+        country="United States"
+    elif [[ $timezone == Europe/* ]]; then
+        country="Germany"  # You can change this or add more specific mappings
+    elif [[ $timezone == Asia/* ]]; then
+        country="Japan"  # Example for Asia timezones
+    else
+        country="Worldwide"
+    fi
+
+    export COUNTRY=$country
+    clear_with_banner
 }
 
 # Function to select keyboard layout (default: us)
@@ -129,12 +153,11 @@ function select_keymap {
         *) keymap="us" ;;
     esac
     export KEYMAP=$keymap
-    clear
+    clear_with_banner
 }
 
-# Function to use reflector and update the mirrorlist based on the guide
 function update_mirrorlist {
-    echo "Updating /etc/pacman.d/mirrorlist with the 20 most recently synchronized HTTPS mirrors..."
+    echo "Updating /etc/pacman.d/mirrorlist with the 20 most recently synchronized HTTPS mirrors from your timezone's country ($COUNTRY)..."
 
     # Ensure reflector is installed
     if ! command -v reflector &> /dev/null; then
@@ -142,8 +165,13 @@ function update_mirrorlist {
         pacman -Syu --noconfirm reflector
     fi
 
-    # Use reflector to get 20 most recent, HTTPS mirrors, sorted by download rate
-    reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+    # Use reflector to get 20 most recent, HTTPS mirrors from the detected country, sorted by download rate
+    if [[ "$COUNTRY" != "Worldwide" ]]; then
+        reflector --latest 20 --protocol https --country "$COUNTRY" --sort rate --save /etc/pacman.d/mirrorlist
+    else
+        # Default to worldwide mirrors if the country is not determined
+        reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+    fi
 
     # Check if reflector succeeded
     if [ $? -ne 0 ]; then
@@ -160,7 +188,7 @@ function update_mirrorlist {
 
 # Main function to run the entire script
 function main {
-    banner_and_diskpart
+    diskpart
     detect_iface
     get_username
     get_password
@@ -529,6 +557,6 @@ echo "Installation configuration saved to $config_file."
 archinstall --config $config_file --creds $credentials_file --silent
 
 # Reboot after the installation completes
-echo "Rebooting the system in 5 seconds..."
-sleep 5
-reboot
+#echo "Rebooting the system in 5 seconds..."
+#sleep 5
+#reboot
