@@ -180,6 +180,10 @@ function update_mirrorlist {
     else
         echo "Mirrorlist updated successfully."
     fi
+    
+    # Enable Parallel Downloads in pacman.conf
+    sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
+    echo "Enabled Parallel Downloads in pacman.conf"
 
     # Display the updated mirrorlist for user inspection
     echo "Here are the top mirrors:"
