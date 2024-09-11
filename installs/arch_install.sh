@@ -6,10 +6,10 @@ function display_banner {
     -------------------------------------------------------------------------
                          █████╗ ██████╗  ██████╗██╗  ██╗
                         ██╔══██╗██╔══██╗██╔════╝██║  ██║
-                        ███████║██████╔╝██║     ███████║ 
+                        ███████║██████╔╝██║     ███████║
                         ██╔══██║██╔══██╗██║     ██╔══██║ 
                         ██║  ██║██║  ██║╚██████╗██║  ██║ 
-                        ╚═╝  ╚═╝╚═╝  ╚═════╝╚═╝  ╚═╝ 
+                        ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝ 
     -------------------------------------------------------------------------
                         Automated Arch Linux Installer
     -------------------------------------------------------------------------
@@ -157,7 +157,7 @@ function select_keymap {
 }
 
 function update_mirrorlist {
-    echo "Updating /etc/pacman.d/mirrorlist with the 20 most recently synchronized HTTPS mirrors from your timezone's country ($COUNTRY)..."
+    echo "Updating the Mirror list from your timezone's country ($COUNTRY)..."
 
     # Ensure reflector is installed
     if ! command -v reflector &> /dev/null; then
@@ -553,10 +553,68 @@ EOL
 
 echo "Installation configuration saved to $config_file."
 
-# Start the installation process using archinstall with the user credentials and config files
+# Run archinstall with the provided config and credentials
 archinstall --config $config_file --creds $credentials_file --silent
 
-# Reboot after the installation completes
-#echo "Rebooting the system in 5 seconds..."
-#sleep 5
-#reboot
+# --- Insert the script here to handle mounting, chrooting, and rebooting ---
+
+# List partitions of the selected disk with no tree format (-ln) and log them
+partitions=$(lsblk -ln -o NAME,FSTYPE | grep "^$(basename $DISK)")
+echo "Detected partitions on $DISK:"
+echo "$partitions"
+
+# Ensure /mnt exists
+[ ! -d /mnt ] && mkdir /mnt
+
+# Look for ext4, xfs, or btrfs filesystems on the selected disk
+if echo "$partitions" | grep -q "ext4\|xfs"; then
+  root_partition=$(echo "$partitions" | grep "ext4\|xfs" | head -n 1 | awk '{print $1}')
+  echo "Mounting ext4 or xfs root partition: /dev/$root_partition"
+  mount /dev/$root_partition /mnt || { echo "Failed to mount root partition: /dev/$root_partition"; exit 1; }
+elif echo "$partitions" | grep -q "btrfs"; then
+  btrfs_partition=$(echo "$partitions" | grep "btrfs" | head -n 1 | awk '{print $1}')
+  echo "Mounting btrfs partition: /dev/$btrfs_partition"
+  mount -o subvol=@ /dev/$btrfs_partition /mnt || { echo "Failed to mount root subvolume: /dev/$btrfs_partition"; exit 1; }
+  mkdir -p /mnt/home /mnt/boot
+  mount -o subvol=@home /dev/$btrfs_partition /mnt/home || { echo "Failed to mount @home subvolume: /dev/$btrfs_partition"; exit 1; }
+  
+  # Mount boot partition if applicable
+  boot_partition=$(echo "$partitions" | grep "vfat" | head -n 1 | awk '{print $1}')
+  if [ -n "$boot_partition" ]; then
+    echo "Mounting boot partition: /dev/$boot_partition"
+    mount /dev/$boot_partition /mnt/boot || { echo "Failed to mount boot partition: /dev/$boot_partition"; exit 1; }
+  fi
+else
+  echo "No ext4, xfs, or btrfs partitions found on $DISK."
+  exit 1
+fi
+
+# If the mount was successful, proceed
+echo "Mount successful. Proceeding to chroot."
+
+# Mount API filesystems
+mount -t proc /proc /mnt/proc
+mount --rbind /sys /mnt/sys
+mount --rbind /dev /mnt/dev
+mount --rbind /run /mnt/run
+
+# Enter chroot using arch-chroot
+arch-chroot /mnt << EOF
+  curl https://raw.githubusercontent.com/Jaredy899/linux/main/installs/post_install.sh | sh
+  exit
+EOF
+
+# # Unmount filesystems, handle force unmount if necessary
+# echo "Unmounting filesystems..."
+
+# umount -R /mnt || { 
+#     echo "Some filesystems couldn't be unmounted cleanly, attempting lazy unmounts...";
+#     umount -Rl /mnt || { 
+#         echo "Force rebooting due to unmount issues...";
+#         reboot -f
+#     }
+# }
+
+# If unmounting succeeds, reboot normally
+echo "Rebooting the system..."
+reboot -f
