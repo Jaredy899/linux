@@ -190,7 +190,16 @@ is_cockpit_installed() {
     fi
 }
 
-# Function to install Cockpit and start it if not running
+# Function to check if running in chroot
+is_chroot() {
+    if [ "$(stat -c %d:%i /proc/1/root)" != "$(stat -c %d:%i /)" ]; then
+        return 0  # In chroot
+    else
+        return 1  # Not in chroot
+    fi
+}
+
+# Function to install Cockpit and enable it
 install_cockpit() {
     echo "Installing Cockpit..."
 
@@ -207,12 +216,34 @@ install_cockpit() {
             ;;
     esac
 
-    # Start Cockpit service
-    if ! systemctl is-active --quiet cockpit; then
-        sudo systemctl enable --now cockpit.socket
-        echo "Cockpit service has been started."
+    # Check if running in chroot
+    if is_chroot; then
+        echo "Running in chroot: enabling Cockpit for first boot"
+        # Only enable cockpit for next boot, don't start it in chroot
+        sudo systemctl enable cockpit.socket
+
+        # Prepare first-boot service to ensure Cockpit starts after reboot
+        cat << 'EOF' | sudo tee /mnt/etc/systemd/system/first-boot.service > /dev/null
+[Unit]
+Description=First boot service to start Cockpit
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl start cockpit.socket
+ExecStartPost=/usr/bin/systemctl disable first-boot.service
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+        # Enable first-boot service
+        sudo systemctl enable first-boot.service
     else
-        echo "Cockpit service is already running."
+        echo "Not in chroot: enabling and starting Cockpit now"
+        # If not in chroot, enable and start cockpit immediately
+        sudo systemctl enable --now cockpit.socket
     fi
 
     # Open firewall port for Cockpit (port 9090)
@@ -220,6 +251,12 @@ install_cockpit() {
         sudo ufw allow 9090/tcp
         sudo ufw reload
         echo "UFW configuration updated to allow Cockpit."
+    elif command -v firewall-cmd >/dev/null 2>&1; then
+        sudo firewall-cmd --permanent --add-service=cockpit
+        sudo firewall-cmd --reload
+        echo "FirewallD configuration updated to allow Cockpit."
+    else
+        echo "No firewall manager found. Skipping firewall configuration."
     fi
 
     echo "Cockpit installation complete. Access it via https://<your-server-ip>:9090"
