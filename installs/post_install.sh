@@ -23,6 +23,42 @@ else
     exit 1
 fi
 
+# Function to enable parallel downloads based on OS
+enable_parallel_downloads() {
+    if [[ -f /etc/pacman.conf ]]; then
+        # Enable ParallelDownloads in Pacman (Arch Linux)
+        echo "Enabling ParallelDownloads for Pacman..."
+        sudo sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
+        echo "ParallelDownloads enabled for Pacman."
+
+    elif [[ -f /etc/apt/apt.conf.d/90parallel ]]; then
+        # Enable parallel downloading for APT (Debian-based)
+        echo "Enabling parallel downloads for APT..."
+        sudo tee /etc/apt/apt.conf.d/90parallel > /dev/null <<EOL
+APT::Acquire::Retries "3";
+APT::Acquire::Queue-Mode "access";
+APT::Acquire::http { Pipeline-Depth "200"; };
+EOL
+        echo "Parallel downloads enabled for APT."
+
+    elif [[ -f /etc/dnf/dnf.conf ]]; then
+        # Enable max_parallel_downloads for DNF (Fedora)
+        echo "Enabling max_parallel_downloads for DNF..."
+        if grep -q '^#max_parallel_downloads' /etc/dnf/dnf.conf; then
+            sudo sed -i 's/^#max_parallel_downloads/max_parallel_downloads/' /etc/dnf/dnf.conf
+        elif ! grep -q '^max_parallel_downloads' /etc/dnf/dnf.conf; then
+            echo 'max_parallel_downloads=10' | sudo tee -a /etc/dnf/dnf.conf
+        fi
+        echo "max_parallel_downloads enabled for DNF."
+
+    else
+        echo "Package manager not supported or configuration file not found."
+    fi
+}
+
+# Enable parallel downloads for the detected OS
+enable_parallel_downloads
+
 # Graphics Drivers installation based on OS and GPU type
 if echo "${gpu_type}" | grep -E "NVIDIA|GeForce"; then
     echo "Detected NVIDIA GPU"
