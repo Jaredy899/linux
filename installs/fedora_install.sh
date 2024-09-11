@@ -78,7 +78,7 @@ keyboard us
 timezone UTC --isUtc
 
 # Root password (hashed with openssl)
-rootpw --plaintext $password
+rootpw --iscrypted $(openssl passwd -6 $password)
 
 # Network settings (DHCP for eth0)
 network --bootproto=dhcp --device=eth0 --activate
@@ -90,33 +90,36 @@ network --hostname=$hostname
 bootloader --location=mbr --boot-drive=${disk}
 
 # Partitioning
-clearpart --all --initlabel
-part /boot --fstype="xfs" --size=1024
+clearpart --all --initlabel --drives=${disk}
+part /boot --fstype="xfs" --size=1024 --ondisk=${disk}
 EOF
 
 # Btrfs-specific partitioning
 if [ "$fs" == "btrfs" ]; then
 cat <<EOF >> $kickstart_file
-part / --fstype="btrfs" --size=10240 --grow
-btrfs / --label=FedoraBtrfs --data=single --metadata=single
-btrfs /home --subvol --name=home
-btrfs /var --subvol --name=var
+part btrfs.01 --fstype="btrfs" --grow --ondisk=${disk}
+btrfs / --label=FedoraBtrfs --subvol --name=root btrfs.01
+btrfs /home --subvol --name=home btrfs.01
+btrfs /var --subvol --name=var btrfs.01
 EOF
 else
 # XFS or EXT4 partitioning
 cat <<EOF >> $kickstart_file
-part / --fstype="$fs" --size=10240 --grow
+part / --fstype="$fs" --grow --ondisk=${disk}
 EOF
 fi
 
 cat <<EOF >> $kickstart_file
-logvol swap --fstype="swap" --name=swap --vgname=VolGroup --size=2048
+part swap --fstype="swap" --size=2048 --ondisk=${disk}
 
 # User setup
-user --name=$username --password=$password --plaintext --groups=wheel
+user --name=$username --password=$(openssl passwd -6 $password) --iscrypted --groups=wheel
 
-# Reboot after installation
-reboot
+# SELinux configuration
+selinux --enforcing
+
+# Firewall configuration
+firewall --enabled --service=ssh
 
 # Package selection
 %packages
@@ -127,14 +130,27 @@ vim
 
 # Post-installation script
 %post
-echo "Installation completed on \$(date)" > /var/log/kickstart_post.log
+echo "Installation completed on $(date)" > /var/log/kickstart_post.log
 %end
+
+# Reboot after installation
+reboot
 EOF
 
-# Start the installation using the generated Kickstart file
+# Display the generated Kickstart file
 clear
 display_banner
-echo "Starting Fedora installation using Kickstart..."
-sleep 2
-sudo dnf install -y anaconda  # Ensure the installer is present
-sudo anaconda --kickstart=$kickstart_file
+echo "Generated Kickstart file:"
+cat $kickstart_file
+
+# Inform the user about next steps
+echo
+echo "Kickstart file has been generated at $kickstart_file"
+echo "To use this Kickstart file during Fedora installation:"
+echo "1. Boot into the Fedora installer"
+echo "2. At the boot menu, press Tab to edit the boot options"
+echo "3. Add 'inst.ks=file:/$kickstart_file' to the boot options"
+echo "4. Press Enter to start the installation"
+
+# Note: This script does not actually start the installation
+# as that typically requires booting from installation media
