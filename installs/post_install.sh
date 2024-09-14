@@ -1,363 +1,388 @@
 #!/bin/bash
 
-# Initialize error log
-ERROR_LOG="/tmp/install_script_errors.log"
-> "$ERROR_LOG"
-
-# Function to log errors
-log_error() {
-    echo "$(date): $1" >> "$ERROR_LOG"
-    echo "Error: $1" >&2
-}
-
-# Function to run a command and log any errors
-run_command() {
-    if ! "$@"; then
-        log_error "Command failed: $*"
-        return 1
-    fi
-}
-
-set -o pipefail  # Ensure pipe failures are caught
+set -e  # Exit immediately if a command exits with a non-zero status
 
 reboot_required=false
 
-# Function to detect the package manager
-detect_package_manager() {
-    if command -v apt-get &> /dev/null; then
-        PACKAGE_MANAGER="apt-get"
-        PACKAGE_INSTALL="install -y"
-        PACKAGE_CHECK="dpkg -s"
-        SUDO_GROUP="sudo"
-        OS="debian"  # This covers both Debian and Ubuntu
-    elif command -v dnf &> /dev/null; then
-        PACKAGE_MANAGER="dnf"
-        PACKAGE_INSTALL="install -y"
-        PACKAGE_CHECK="rpm -q"
-        SUDO_GROUP="wheel"
-        OS="fedora"
-    # ... (other package manager detections remain unchanged)
+echo "-------------------------------------------------------------------------"
+echo "                    Installing Graphics Drivers"
+echo "-------------------------------------------------------------------------"
+
+# Detect GPU Type
+gpu_type=$(lspci | grep -E "VGA|3D")
+
+# OS Detection
+if [ -f /etc/arch-release ]; then
+    OS="arch"
+elif [ -f /etc/debian_version ]; then
+    if [ -f /etc/lsb-release ] && grep -q "Ubuntu" /etc/lsb-release; then
+        OS="ubuntu"
     else
-        log_error "Unsupported package manager. Exiting."
-        exit 1
+        OS="debian"
     fi
-}
+elif [ -f /etc/fedora-release ]; then
+    OS="fedora"
+else
+    echo "Unsupported OS"
+    exit 1
+fi
 
-# Detect package manager
-detect_package_manager
-
-echo "Detected package manager: $PACKAGE_MANAGER"
-echo "Detected OS: $OS"
-
-# Function to check if a package is installed
-is_package_installed() {
-    $PACKAGE_CHECK "$1" &> /dev/null
-}
-
-# Function to install a package if it's not already installed
-install_package() {
-    if ! is_package_installed "$1"; then
-        echo "Installing $1..."
-        if ! run_command sudo $PACKAGE_MANAGER $PACKAGE_INSTALL "$1"; then
-            log_error "Failed to install $1"
-            return 1
-        fi
-    else
-        echo "$1 is already installed. Skipping."
-    fi
-}
-
-# Install and configure Nala for Debian and Ubuntu
+# Function to install and configure Nala
 install_nala() {
-    if [ "$OS" == "debian" ]; then
-        if ! is_package_installed nala; then
-            echo "Installing Nala on Debian/Ubuntu system..."
-            run_command sudo $PACKAGE_MANAGER update
-            run_command sudo $PACKAGE_MANAGER $PACKAGE_INSTALL nala -y
-            
-            # Configure nala
-            run_command sudo nala fetch --auto --fetches 3
-            echo "Nala installed and configured."
-        else
-            echo "Nala is already installed. Skipping."
-        fi
-        
-        # Replace apt with nala
-        PACKAGE_MANAGER="nala"
-        PACKAGE_INSTALL="install"
-        PACKAGE_CHECK="dpkg -s"
+    if [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
+        echo "Installing Nala..."
+        sudo apt update
+        sudo apt install nala -y
+
+        # Configure nala
+        sudo nala fetch --auto --fetches 3
 
         # Make nala the default package manager
         echo "Configuring nala as the default package manager..."
         
         # Create aliases for apt commands
-        run_command echo "alias apt='nala'" | sudo tee -a /etc/bash.bashrc > /dev/null
-        run_command echo "alias apt-get='nala'" | sudo tee -a /etc/bash.bashrc > /dev/null
-        run_command echo "alias aptitude='nala'" | sudo tee -a /etc/bash.bashrc > /dev/null
+        echo "alias apt='nala'" | sudo tee -a /etc/bash.bashrc > /dev/null
+        echo "alias apt-get='nala'" | sudo tee -a /etc/bash.bashrc > /dev/null
+        echo "alias aptitude='nala'" | sudo tee -a /etc/bash.bashrc > /dev/null
 
         # Create scripts to intercept apt commands
-        run_command sudo tee /usr/local/bin/apt << EOF > /dev/null
+        sudo tee /usr/local/bin/apt << EOF > /dev/null
 #!/bin/sh
 echo "apt has been replaced by nala. Running nala instead."
 nala "\$@"
 EOF
-        run_command sudo chmod +x /usr/local/bin/apt
+        sudo chmod +x /usr/local/bin/apt
 
-        run_command sudo tee /usr/local/bin/apt-get << EOF > /dev/null
+        sudo tee /usr/local/bin/apt-get << EOF > /dev/null
 #!/bin/sh
 echo "apt-get has been replaced by nala. Running nala instead."
 nala "\$@"
 EOF
-        run_command sudo chmod +x /usr/local/bin/apt-get
+        sudo chmod +x /usr/local/bin/apt-get
 
-        echo "Nala has been set as the default package manager."
+        echo "Nala has been installed and set as the default package manager."
     fi
 }
 
 # Install Nala if on Debian/Ubuntu
 install_nala
 
-# Install package containing lspci
-install_lspci() {
-    case $OS in
-        "debian"|"ubuntu"|"fedora"|"centos"|"arch"|"opensuse"|"alpine")
-            install_package pciutils
-            ;;
-        "gentoo")
-            install_package sys-apps/pciutils
-            ;;
-        *)
-            log_error "Unable to install lspci. Please install it manually."
-            return 1
-            ;;
-    esac
-}
+# Function to enable parallel downloads based on OS
+enable_parallel_downloads() {
+    if [[ -f /etc/pacman.conf ]]; then
+        # Enable ParallelDownloads in Pacman (Arch Linux)
+        echo "Enabling ParallelDownloads for Pacman..."
+        sudo sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
+        echo "ParallelDownloads enabled for Pacman."
 
-# Install lspci
-install_lspci
+    elif [[ -f /etc/apt/apt.conf.d/90parallel ]]; then
+        # Parallel downloads already enabled with Nala for Debian/Ubuntu
+        echo "Parallel downloads already enabled with Nala."
 
-# Detect GPU Type
-gpu_type=$(lspci | grep -E "VGA|3D" || echo "No GPU detected")
+    elif [[ -f /etc/dnf/dnf.conf ]]; then
+        # Enable max_parallel_downloads for DNF (Fedora)
+        echo "Enabling max_parallel_downloads for DNF..."
+        if grep -q '^#max_parallel_downloads' /etc/dnf/dnf.conf; then
+            sudo sed -i 's/^#max_parallel_downloads/max_parallel_downloads/' /etc/dnf/dnf.conf
+        elif ! grep -q '^max_parallel_downloads' /etc/dnf/dnf.conf; then
+            echo 'max_parallel_downloads=10' | sudo tee -a /etc/dnf/dnf.conf
+        fi
+        echo "max_parallel_downloads enabled for DNF."
 
-# Function to install NVIDIA drivers on Fedora
-install_nvidia_fedora() {
-    echo "Setting up NVIDIA drivers for Fedora..."
-    
-    # Enable RPM Fusion repositories
-    if ! rpm -q rpmfusion-free-release > /dev/null; then
-        run_command sudo dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
-    fi
-    if ! rpm -q rpmfusion-nonfree-release > /dev/null; then
-        run_command sudo dnf install -y https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
-    fi
-    
-    # Update package list
-    run_command sudo dnf update -y
-    
-    # Install NVIDIA driver
-    if run_command sudo dnf install -y akmod-nvidia; then
-        echo "NVIDIA drivers installed successfully."
-    elif run_command sudo dnf install -y kmod-nvidia; then
-        echo "NVIDIA drivers (kmod-nvidia) installed successfully."
     else
-        log_error "Failed to install NVIDIA drivers. Please check your system configuration."
-        echo "You may need to manually install the appropriate driver for your GPU."
-        echo "Visit https://rpmfusion.org/Howto/NVIDIA for more information."
+        echo "Package manager not supported or configuration file not found."
     fi
 }
+
+# Enable parallel downloads for the detected OS
+enable_parallel_downloads
 
 # Graphics Drivers installation based on OS and GPU type
-if echo "${gpu_type}" | grep -E "NVIDIA|GeForce" > /dev/null; then
+if echo "${gpu_type}" | grep -E "NVIDIA|GeForce"; then
     echo "Detected NVIDIA GPU"
-    case $OS in
-        "arch")
-            install_package nvidia
-            install_package nvidia-settings
-            ;;
-        "debian"|"ubuntu")
-            if [ "$OS" == "ubuntu" ]; then
-                run_command sudo ubuntu-drivers autoinstall
-            else
-                # For Debian, we need to add non-free repository and install nvidia-driver
-                echo "Setting up NVIDIA drivers for Debian..."
-                
-                # Check if non-free repository is enabled
-                if ! grep -q "non-free" /etc/apt/sources.list; then
-                    echo "Adding non-free repository..."
-                    run_command sudo sed -i '/^deb/ s/$/ non-free/' /etc/apt/sources.list
-                    run_command sudo $PACKAGE_MANAGER update
-                fi
-                
-                # Install linux headers
-                install_package linux-headers-$(uname -r)
-                
-                # Install NVIDIA drivers
-                install_package nvidia-driver
-                
-                if ! is_package_installed nvidia-driver; then
-                    log_error "Unable to install NVIDIA driver. Please check your system configuration."
-                    echo "You may need to manually install the appropriate driver for your GPU."
-                    echo "Visit https://wiki.debian.org/NvidiaGraphicsDrivers for more information."
-                fi
-            fi
-            ;;
-        "fedora"|"centos")
-            install_nvidia_fedora
-            ;;
-        *)
-            log_error "NVIDIA driver installation not configured for $OS"
-            ;;
-    esac
-    reboot_required=true
-elif echo "${gpu_type}" | grep 'VGA' | grep -E "Radeon|AMD" > /dev/null; then
+    if [ "$OS" == "arch" ]; then
+        echo "Installing NVIDIA drivers: nvidia"
+        sudo pacman -S --noconfirm --needed nvidia nvidia-settings
+        reboot_required=true
+    elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
+        echo "Installing NVIDIA drivers"
+        if [ "$OS" == "ubuntu" ]; then
+            sudo ubuntu-drivers autoinstall
+        else
+            sudo nala install -y nvidia-driver firmware-misc-nonfree
+        fi
+        reboot_required=true
+    elif [ "$OS" == "fedora" ]; then
+        echo "Installing NVIDIA drivers"
+        sudo dnf install -y akmod-nvidia
+        reboot_required=true
+    fi
+elif echo "${gpu_type}" | grep 'VGA' | grep -E "Radeon|AMD"; then
     echo "Detected AMD GPU"
-    case $OS in
-        "arch")
-            install_package xf86-video-amdgpu
-            ;;
-        "debian"|"ubuntu")
-            install_package firmware-amd-graphics
-            ;;
-        "fedora"|"centos")
-            install_package xorg-x11-drv-amdgpu
-            ;;
-        *)
-            log_error "AMD driver installation not configured for $OS"
-            ;;
-    esac
-    reboot_required=true
-elif echo "${gpu_type}" | grep -E "Intel" > /dev/null; then
+    if [ "$OS" == "arch" ]; then
+        echo "Installing AMD drivers: xf86-video-amdgpu"
+        sudo pacman -S --noconfirm --needed xf86-video-amdgpu
+        reboot_required=true
+    elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
+        echo "Installing AMD drivers"
+        sudo nala install -y firmware-amd-graphics
+        reboot_required=true
+    elif [ "$OS" == "fedora" ]; then
+        echo "Installing AMD drivers"
+        sudo dnf install -y xorg-x11-drv-amdgpu
+        reboot_required=true
+    fi
+elif echo "${gpu_type}" | grep -E "Intel"; then
     echo "Detected Intel GPU"
-    case $OS in
-        "arch")
-            install_package libva-intel-driver
-            install_package libvdpau-va-gl
-            install_package lib32-vulkan-intel
-            install_package vulkan-intel
-            install_package libva-utils
-            install_package lib32-mesa
-            ;;
-        "debian"|"ubuntu")
-            install_package intel-media-va-driver
-            install_package mesa-va-drivers
-            install_package mesa-vulkan-drivers
-            ;;
-        "fedora"|"centos")
-            install_package intel-media-driver
-            install_package mesa-vulkan-drivers
-            ;;
-        *)
-            log_error "Intel driver installation not configured for $OS"
-            ;;
-    esac
-    reboot_required=true
+    if [ "$OS" == "arch" ]; then
+        echo "Installing Intel drivers"
+        sudo pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-utils lib32-mesa
+        reboot_required=true
+    elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
+        echo "Installing Intel drivers"
+        sudo nala install -y intel-media-va-driver mesa-va-drivers mesa-vulkan-drivers
+        reboot_required=true
+    elif [ "$OS" == "fedora" ]; then
+        echo "Installing Intel drivers"
+        sudo dnf install -y intel-media-driver mesa-vulkan-drivers
+        reboot_required=true
+    fi
 else
-    log_error "No supported GPU found"
+    echo "No supported GPU found"
 fi
 
+echo "-------------------------------------------------------------------------"
+echo "                     Installing Network Manager                          "
+echo "-------------------------------------------------------------------------"
+
 # Install and enable NetworkManager
-nstall_network_manager() {
-    local package_name
-    case $OS in
-        "fedora"|"centos")
-            package_name="NetworkManager"
+if [ "$OS" == "arch" ]; then
+    sudo pacman -S --noconfirm --needed networkmanager
+    sudo systemctl enable NetworkManager
+    sudo systemctl start NetworkManager
+elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
+    sudo nala install -y network-manager
+    sudo systemctl enable NetworkManager
+    sudo systemctl start NetworkManager
+elif [ "$OS" == "fedora" ]; then
+    sudo dnf install -y NetworkManager
+    sudo systemctl enable NetworkManager
+    sudo systemctl start NetworkManager
+fi
+
+echo "-------------------------------------------------------------------------"
+echo "                       Installing Applications                           "
+echo "-------------------------------------------------------------------------"
+
+# Function to detect the system architecture
+detect_arch() {
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64)
+            echo "linux-amd64.deb"
+            ;;
+        aarch64)
+            echo "linux-aarch64.deb"
+            ;;
+        armv7l)
+            echo "linux-armv7l.deb"
+            ;;
+        riscv64)
+            echo "linux-riscv64.deb"
             ;;
         *)
-            package_name="networkmanager"
+            echo "unsupported"
             ;;
     esac
+}
 
-    echo "Installing NetworkManager..."
-    if install_package "$package_name"; then
-        echo "NetworkManager installed successfully."
-        
-        # Enable and start NetworkManager
-        if run_command sudo systemctl enable NetworkManager.service; then
-            echo "NetworkManager enabled successfully."
-            if run_command sudo systemctl start NetworkManager.service; then
-                echo "NetworkManager started successfully."
-            else
-                log_error "Failed to start NetworkManager. You may need to start it manually after reboot."
-            fi
-        else
-            log_error "Failed to enable NetworkManager. You may need to enable it manually after reboot."
-        fi
+# Function to fetch the latest release of fastfetch from GitHub
+install_fastfetch() {
+    echo "Installing fastfetch..."
+
+    # GitHub API URL for the latest release of fastfetch
+    GITHUB_API_URL="https://api.github.com/repos/fastfetch-cli/fastfetch/releases/latest"
+
+    # Detect the system architecture
+    ARCH_DEB=$(detect_arch)
+    if [ "$ARCH_DEB" = "unsupported" ]; then
+        echo "Unsupported architecture. Exiting."
+        exit 1
+    fi
+
+    # Get the download URL for the latest Debian package (.deb) release for the detected architecture
+    FASTFETCH_URL=$(curl -s $GITHUB_API_URL | grep "browser_download_url.*$ARCH_DEB" | cut -d '"' -f 4)
+
+    # Check if the URL was successfully retrieved
+    if [ -z "$FASTFETCH_URL" ]; then
+        echo "Failed to retrieve the latest release URL for fastfetch. Exiting."
+        exit 1
+    fi
+
+    # Download the .deb package to /tmp using curl with retry
+    curl -s -L --retry 3 -o /tmp/fastfetch_latest_$ARCH.deb "$FASTFETCH_URL"
+
+    # Check if the download was successful
+    if [ ! -s /tmp/fastfetch_latest_$ARCH.deb ]; then
+        echo "Downloaded file is empty or corrupted. Exiting."
+        rm -f /tmp/fastfetch_latest_$ARCH.deb  # Remove corrupted file
+        exit 1
+    fi
+
+    # Verify the downloaded package
+    if ! dpkg-deb --info /tmp/fastfetch_latest_$ARCH.deb > /dev/null 2>&1; then
+        echo "The .deb file is corrupted or invalid. Exiting."
+        rm -f /tmp/fastfetch_latest_$ARCH.deb  # Remove corrupted file
+        exit 1
+    fi
+
+    # Install the .deb package
+    sudo dpkg -i /tmp/fastfetch_latest_$ARCH.deb || sudo nala install -f -y
+
+    # Remove the downloaded .deb file
+    rm /tmp/fastfetch_latest_$ARCH.deb
+
+    echo "fastfetch has been successfully installed."
+}
+
+# Install Terminus font, ncdu, qemu-guest-agent, fastfetch, and yazi based on the OS
+if [ "$OS" == "arch" ]; then
+    echo "Installing for Arch Linux"
+    sudo pacman -S --noconfirm --needed nano git terminus-font ncdu qemu-guest-agent yazi wget timeshift
+elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
+    echo "Installing for Debian/Ubuntu"
+    sudo nala install -y nano console-setup xfonts-terminus ncdu qemu-guest-agent wget git timeshift
+    install_fastfetch  # Call the fastfetch installation function
+elif [ "$OS" == "fedora" ]; then
+    echo "Installing for Fedora"
+    sudo dnf install -y nano terminus-fonts-console ncdu qemu-guest-agent wget timeshift git
+fi
+
+echo "-------------------------------------------------------------------------"
+echo "                    Setting Permanent Console Font"
+echo "-------------------------------------------------------------------------"
+
+# Set permanent console font with sudo privileges
+if [ "$OS" == "arch" ] || [ "$OS" == "fedora" ]; then
+    echo "Setting console font to ter-v18b in /etc/vconsole.conf"
+    
+    # Replace FONT line if it exists, otherwise add it
+    if grep -q '^FONT=' /etc/vconsole.conf; then
+        sudo sed -i 's/^FONT=.*/FONT=ter-v18b/' /etc/vconsole.conf
     else
-        log_error "Failed to install NetworkManager. You may need to install it manually."
+        echo "FONT=ter-v18b" | sudo tee -a /etc/vconsole.conf > /dev/null
+    fi
+
+    # Apply the font change immediately
+    echo "Applying the console font immediately"
+    sudo setfont ter-v18b
+
+elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
+    echo "Setting console font to Terminus in /etc/default/console-setup"
+    sudo sed -i 's/^FONTFACE=.*/FONTFACE="Terminus"/' /etc/default/console-setup
+    sudo sed -i 's/^FONTSIZE=.*/FONTSIZE="18x10"/' /etc/default/console-setup
+    
+    echo "Updating initramfs to apply changes"
+    sudo update-initramfs -u
+
+    echo "Setting the font immediately"
+    sudo setfont /usr/share/consolefonts/Uni2-TerminusBold18x10.psf.gz
+fi
+
+# Function to check if Cockpit is installed
+is_cockpit_installed() {
+    if command -v cockpit >/dev/null 2>&1; then
+        echo "Cockpit is already installed."
+        return 0
+    else
+        return 1
     fi
 }
 
-# Install common applications
-common_apps="nano git ncdu qemu-guest-agent wget"
-for app in $common_apps; do
-    install_package $app
-done
+# Function to check if running in chroot
+is_chroot() {
+    if [ "$(stat -c %d:%i /proc/1/root)" != "$(stat -c %d:%i /)" ]; then
+        return 0  # In chroot
+    else
+        return 1  # Not in chroot
+    fi
+}
 
-case $OS in
-    "arch")
-        install_package terminus-font
-        install_package yazi
-        install_package timeshift
-        ;;
-    "debian"|"ubuntu")
-        install_package console-setup
-        install_package xfonts-terminus
-        install_package timeshift
-        ;;
-    "fedora"|"centos")
-        install_package terminus-fonts-console
-        install_package timeshift
-        ;;
-    *)
-        log_error "Some applications may not be available for $OS"
-        ;;
-esac
-
-# Set permanent console font
-case $OS in
-    "arch"|"fedora"|"centos")
-        echo "Setting console font to ter-v18b in /etc/vconsole.conf"
-        if grep -q '^FONT=' /etc/vconsole.conf; then
-            run_command sudo sed -i 's/^FONT=.*/FONT=ter-v18b/' /etc/vconsole.conf
-        else
-            run_command echo "FONT=ter-v18b" | sudo tee -a /etc/vconsole.conf > /dev/null
-        fi
-        run_command sudo setfont ter-v18b
-        ;;
-    "debian"|"ubuntu")
-        echo "Setting console font to Terminus in /etc/default/console-setup"
-        run_command sudo sed -i 's/^FONTFACE=.*/FONTFACE="Terminus"/' /etc/default/console-setup
-        run_command sudo sed -i 's/^FONTSIZE=.*/FONTSIZE="18x10"/' /etc/default/console-setup
-        run_command sudo update-initramfs -u
-        run_command sudo setfont /usr/share/consolefonts/Uni2-TerminusBold18x10.psf.gz
-        ;;
-    *)
-        log_error "Console font setting not configured for $OS"
-        ;;
-esac
-
-# Install Cockpit
-if ! is_package_installed cockpit; then
+# Function to install Cockpit and enable it
+install_cockpit() {
     echo "Installing Cockpit..."
-    install_package cockpit
-    run_command sudo systemctl enable --now cockpit.socket
+
+    case "$OS" in
+        debian|ubuntu)
+            sudo nala update -qq
+            sudo nala install -y cockpit -qq
+            ;;
+        fedora)
+            sudo dnf install -y cockpit -q
+            ;;
+        arch)
+            sudo pacman -Sy cockpit --noconfirm >/dev/null
+            ;;
+    esac
+
+    # Check if running in chroot
+    if is_chroot; then
+        echo "Running in chroot: enabling Cockpit for first boot"
+        # Only enable cockpit for next boot, don't start it in chroot
+        sudo systemctl enable cockpit.socket
+
+        # Prepare first-boot service to ensure Cockpit starts after reboot
+        cat << 'EOF' | sudo tee /etc/systemd/system/first-boot.service > /dev/null
+[Unit]
+Description=First boot service to start Cockpit
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl start cockpit.socket
+ExecStartPost=/usr/bin/systemctl disable first-boot.service
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+        # Enable first-boot service
+        sudo systemctl enable first-boot.service
+    else
+        echo "Not in chroot: enabling and starting Cockpit now"
+        # If not in chroot, enable and start cockpit immediately
+        sudo systemctl enable --now cockpit.socket
+    fi
 
     # Open firewall port for Cockpit (port 9090)
-    if command -v ufw &> /dev/null; then
-        run_command sudo ufw allow 9090/tcp
-        run_command sudo ufw reload
-    elif command -v firewall-cmd &> /dev/null; then
-        run_command sudo firewall-cmd --permanent --add-service=cockpit
-        run_command sudo firewall-cmd --reload
+    if command -v ufw >/dev/null 2>&1; then
+        sudo ufw allow 9090/tcp
+        sudo ufw reload
+        echo "UFW configuration updated to allow Cockpit."
+    elif command -v firewall-cmd >/dev/null 2>&1; then
+        sudo firewall-cmd --permanent --add-service=cockpit
+        sudo firewall-cmd --reload
+        echo "FirewallD configuration updated to allow Cockpit."
     else
-        log_error "No firewall manager found. Skipping firewall configuration."
+        echo "No firewall manager found. Skipping firewall configuration."
     fi
 
     echo "Cockpit installation complete. Access it via https://<your-server-ip>:9090"
-else
+}
+
+# Check if Cockpit is already installed
+if is_cockpit_installed; then
     echo "Cockpit is already installed. Skipping installation."
+else
+    install_cockpit
 fi
 
+echo "-------------------------------------------------------------------------"
+echo "                        Applications Installed                           "
+echo "-------------------------------------------------------------------------"
+
+# Reboot only if GPU drivers were
 if [ "$reboot_required" = true ]; then
     echo "Rebooting the system in 5 seconds due to GPU driver installation..."
     sleep 5
@@ -365,5 +390,3 @@ if [ "$reboot_required" = true ]; then
 else
     echo "No GPU drivers were installed, skipping reboot."
 fi
-
-echo "Script execution completed. Check $ERROR_LOG for any errors that occurred during the process."
