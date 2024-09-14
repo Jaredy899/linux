@@ -15,7 +15,11 @@ gpu_type=$(lspci | grep -E "VGA|3D")
 if [ -f /etc/arch-release ]; then
     OS="arch"
 elif [ -f /etc/debian_version ]; then
-    OS="debian"
+    if [ -f /etc/lsb-release ] && grep -q "Ubuntu" /etc/lsb-release; then
+        OS="ubuntu"
+    else
+        OS="debian"
+    fi
 elif [ -f /etc/fedora-release ]; then
     OS="fedora"
 else
@@ -32,7 +36,7 @@ enable_parallel_downloads() {
         echo "ParallelDownloads enabled for Pacman."
 
     elif [[ -f /etc/apt/apt.conf.d/90parallel ]]; then
-        # Enable parallel downloading for APT (Debian-based)
+        # Enable parallel downloading for APT (Debian/Ubuntu-based)
         echo "Enabling parallel downloads for APT..."
         sudo tee /etc/apt/apt.conf.d/90parallel > /dev/null <<EOL
 APT::Acquire::Retries "3";
@@ -66,9 +70,13 @@ if echo "${gpu_type}" | grep -E "NVIDIA|GeForce"; then
         echo "Installing NVIDIA drivers: nvidia"
         sudo pacman -S --noconfirm --needed nvidia nvidia-settings
         reboot_required=true
-    elif [ "$OS" == "debian" ]; then
+    elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
         echo "Installing NVIDIA drivers"
-        sudo apt install -y nvidia-driver firmware-misc-nonfree
+        if [ "$OS" == "ubuntu" ]; then
+            sudo ubuntu-drivers autoinstall
+        else
+            sudo apt install -y nvidia-driver firmware-misc-nonfree
+        fi
         reboot_required=true
     elif [ "$OS" == "fedora" ]; then
         echo "Installing NVIDIA drivers"
@@ -81,7 +89,7 @@ elif echo "${gpu_type}" | grep 'VGA' | grep -E "Radeon|AMD"; then
         echo "Installing AMD drivers: xf86-video-amdgpu"
         sudo pacman -S --noconfirm --needed xf86-video-amdgpu
         reboot_required=true
-    elif [ "$OS" == "debian" ]; then
+    elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
         echo "Installing AMD drivers"
         sudo apt install -y firmware-amd-graphics
         reboot_required=true
@@ -96,7 +104,7 @@ elif echo "${gpu_type}" | grep -E "Intel"; then
         echo "Installing Intel drivers"
         sudo pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-utils lib32-mesa
         reboot_required=true
-    elif [ "$OS" == "debian" ]; then
+    elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
         echo "Installing Intel drivers"
         sudo apt install -y intel-media-va-driver mesa-va-drivers mesa-vulkan-drivers
         reboot_required=true
@@ -118,7 +126,7 @@ if [ "$OS" == "arch" ]; then
     sudo pacman -S --noconfirm --needed networkmanager
     sudo systemctl enable NetworkManager
     sudo systemctl start NetworkManager
-elif [ "$OS" == "debian" ]; then
+elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
     sudo apt install -y network-manager
     sudo systemctl enable NetworkManager
     sudo systemctl start NetworkManager
@@ -207,14 +215,14 @@ install_fastfetch() {
 if [ "$OS" == "arch" ]; then
     echo "Installing for Arch Linux"
     sudo pacman -S --noconfirm --needed nano git terminus-font ncdu qemu-guest-agent yazi wget timeshift
-elif [ "$OS" == "debian" ]; then
-    echo "Installing for Debian"
-    sudo apt install -y nano console-setup xfonts-terminus ncdu qemu-guest-agent wget git 
+elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
+    echo "Installing for Debian/Ubuntu"
+    sudo apt install -y nano console-setup xfonts-terminus ncdu qemu-guest-agent wget git timeshift
     install_fastfetch  # Call the fastfetch installation function
 elif [ "$OS" == "fedora" ]; then
     echo "Installing for Fedora"
     sudo dnf install -y nano terminus-fonts-console ncdu qemu-guest-agent wget timeshift git
-    fi
+fi
 
 echo "-------------------------------------------------------------------------"
 echo "                    Setting Permanent Console Font"
@@ -271,7 +279,7 @@ install_cockpit() {
     echo "Installing Cockpit..."
 
     case "$OS" in
-        debian)
+        debian|ubuntu)
             sudo apt-get update -qq
             sudo apt-get install -y cockpit -qq
             ;;
@@ -290,7 +298,7 @@ install_cockpit() {
         sudo systemctl enable cockpit.socket
 
         # Prepare first-boot service to ensure Cockpit starts after reboot
-        cat << 'EOF' | sudo tee /mnt/etc/systemd/system/first-boot.service > /dev/null
+        cat << 'EOF' | sudo tee /etc/systemd/system/first-boot.service > /dev/null
 [Unit]
 Description=First boot service to start Cockpit
 After=network.target
