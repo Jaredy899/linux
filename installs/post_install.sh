@@ -4,13 +4,6 @@ set -e  # Exit immediately if a command exits with a non-zero status
 
 reboot_required=false
 
-echo "-------------------------------------------------------------------------"
-echo "                    Installing Graphics Drivers"
-echo "-------------------------------------------------------------------------"
-
-# Detect GPU Type
-gpu_type=$(lspci | grep -E "VGA|3D")
-
 # OS Detection
 if [ -f /etc/arch-release ]; then
     OS="arch"
@@ -96,6 +89,13 @@ enable_parallel_downloads() {
 
 # Enable parallel downloads for the detected OS
 enable_parallel_downloads
+
+echo "-------------------------------------------------------------------------"
+echo "                    Installing Graphics Drivers"
+echo "-------------------------------------------------------------------------"
+
+# Detect GPU Type
+gpu_type=$(lspci | grep -E "VGA|3D")
 
 # Graphics Drivers installation based on OS and GPU type
 if echo "${gpu_type}" | grep -E "NVIDIA|GeForce"; then
