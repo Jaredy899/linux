@@ -73,6 +73,37 @@ install_nala() {
 # Install Nala if on Debian/Ubuntu
 install_nala
 
+# Install package containing lspci
+install_lspci() {
+    case $OS in
+        "debian"|"ubuntu")
+            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL pciutils
+            ;;
+        "fedora"|"centos")
+            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL pciutils
+            ;;
+        "arch")
+            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL pciutils
+            ;;
+        "opensuse")
+            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL pciutils
+            ;;
+        "alpine")
+            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL pciutils
+            ;;
+        "gentoo")
+            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL sys-apps/pciutils
+            ;;
+        *)
+            echo "Unable to install lspci. Please install it manually."
+            exit 1
+            ;;
+    esac
+}
+
+# Install lspci
+install_lspci
+
 # Detect GPU Type
 gpu_type=$(lspci | grep -E "VGA|3D")
 
