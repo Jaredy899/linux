@@ -206,14 +206,14 @@ install_fastfetch() {
 # Install Terminus font, ncdu, qemu-guest-agent, fastfetch, and yazi based on the OS
 if [ "$OS" == "arch" ]; then
     echo "Installing for Arch Linux"
-    sudo pacman -S --noconfirm --needed nano git terminus-font ncdu qemu-guest-agent yazi cockpit wget timeshift
+    sudo pacman -S --noconfirm --needed nano git terminus-font ncdu qemu-guest-agent yazi wget timeshift
 elif [ "$OS" == "debian" ]; then
     echo "Installing for Debian"
-    sudo apt install -y nano console-setup xfonts-terminus ncdu qemu-guest-agent cockpit wget git 
+    sudo apt install -y nano console-setup xfonts-terminus ncdu qemu-guest-agent wget git 
     install_fastfetch  # Call the fastfetch installation function
 elif [ "$OS" == "fedora" ]; then
     echo "Installing for Fedora"
-    sudo dnf install -y nano terminus-fonts-console ncdu qemu-guest-agent cockpit wget timeshift git
+    sudo dnf install -y nano terminus-fonts-console ncdu qemu-guest-agent wget timeshift git
     fi
 
 echo "-------------------------------------------------------------------------"
