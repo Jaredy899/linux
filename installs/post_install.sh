@@ -175,7 +175,7 @@ enable_parallel_downloads() {
 enable_parallel_downloads
 
 # Graphics Drivers installation based on OS and GPU type
-if echo "${gpu_type}" | grep -E "NVIDIA|GeForce"; then
+if echo "${gpu_type}" | grep -E "NVIDIA|GeForce" > /dev/null; then
     echo "Detected NVIDIA GPU"
     case $OS in
         "arch")
@@ -217,10 +217,48 @@ if echo "${gpu_type}" | grep -E "NVIDIA|GeForce"; then
             ;;
     esac
     reboot_required=true
-elif echo "${gpu_type}" | grep 'VGA' | grep -E "Radeon|AMD"; then
-    # ... (AMD GPU handling remains unchanged)
-elif echo "${gpu_type}" | grep -E "Intel"; then
-    # ... (Intel GPU handling remains unchanged)
+elif echo "${gpu_type}" | grep 'VGA' | grep -E "Radeon|AMD" > /dev/null; then
+    echo "Detected AMD GPU"
+    case $OS in
+        "arch")
+            install_package xf86-video-amdgpu
+            ;;
+        "debian"|"ubuntu")
+            install_package firmware-amd-graphics
+            ;;
+        "fedora"|"centos")
+            install_package xorg-x11-drv-amdgpu
+            ;;
+        *)
+            echo "AMD driver installation not configured for $OS"
+            ;;
+    esac
+    reboot_required=true
+elif echo "${gpu_type}" | grep -E "Intel" > /dev/null; then
+    echo "Detected Intel GPU"
+    case $OS in
+        "arch")
+            install_package libva-intel-driver
+            install_package libvdpau-va-gl
+            install_package lib32-vulkan-intel
+            install_package vulkan-intel
+            install_package libva-utils
+            install_package lib32-mesa
+            ;;
+        "debian"|"ubuntu")
+            install_package intel-media-va-driver
+            install_package mesa-va-drivers
+            install_package mesa-vulkan-drivers
+            ;;
+        "fedora"|"centos")
+            install_package intel-media-driver
+            install_package mesa-vulkan-drivers
+            ;;
+        *)
+            echo "Intel driver installation not configured for $OS"
+            ;;
+    esac
+    reboot_required=true
 else
     echo "No supported GPU found"
 fi
