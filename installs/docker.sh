@@ -35,9 +35,14 @@ install_docker() {
             
             # If Fedora, adjust SELinux settings
             if [ "$DISTRO" = "fedora" ]; then
-                echo "Adjusting SELinux for Docker on Fedora..."
-                sudo setenforce 0
-                sudo sed -i --follow-symlinks 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+                selinux_status=$(sestatus | grep 'SELinux status:' | awk '{print $3}')
+                if [ "$selinux_status" = "enabled" ]; then
+                    echo "Adjusting SELinux for Docker on Fedora..."
+                    sudo setenforce 0
+                    sudo sed -i --follow-symlinks 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+                else
+                    echo "SELinux is disabled. No adjustment needed."
+                fi
             fi
             ;;
         arch)
