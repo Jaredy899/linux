@@ -256,9 +256,36 @@ else
 fi
 
 # Install and enable NetworkManager
-install_package networkmanager
-run_command sudo systemctl enable NetworkManager
-run_command sudo systemctl start NetworkManager
+nstall_network_manager() {
+    local package_name
+    case $OS in
+        "fedora"|"centos")
+            package_name="NetworkManager"
+            ;;
+        *)
+            package_name="networkmanager"
+            ;;
+    esac
+
+    echo "Installing NetworkManager..."
+    if install_package "$package_name"; then
+        echo "NetworkManager installed successfully."
+        
+        # Enable and start NetworkManager
+        if run_command sudo systemctl enable NetworkManager.service; then
+            echo "NetworkManager enabled successfully."
+            if run_command sudo systemctl start NetworkManager.service; then
+                echo "NetworkManager started successfully."
+            else
+                log_error "Failed to start NetworkManager. You may need to start it manually after reboot."
+            fi
+        else
+            log_error "Failed to enable NetworkManager. You may need to enable it manually after reboot."
+        fi
+    else
+        log_error "Failed to install NetworkManager. You may need to install it manually."
+    fi
+}
 
 # Install common applications
 common_apps="nano git ncdu qemu-guest-agent wget"
