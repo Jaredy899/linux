@@ -9,36 +9,43 @@ detect_package_manager() {
     if command -v apt-get &> /dev/null; then
         PACKAGE_MANAGER="apt-get"
         PACKAGE_INSTALL="install -y"
+        PACKAGE_CHECK="dpkg -s"
         SUDO_GROUP="sudo"
         OS="debian"  # This covers both Debian and Ubuntu
     elif command -v dnf &> /dev/null; then
         PACKAGE_MANAGER="dnf"
         PACKAGE_INSTALL="install -y"
+        PACKAGE_CHECK="rpm -q"
         SUDO_GROUP="wheel"
         OS="fedora"
     elif command -v yum &> /dev/null; then
         PACKAGE_MANAGER="yum"
         PACKAGE_INSTALL="install -y"
+        PACKAGE_CHECK="rpm -q"
         SUDO_GROUP="wheel"
         OS="centos"
     elif command -v zypper &> /dev/null; then
         PACKAGE_MANAGER="zypper"
         PACKAGE_INSTALL="install -y"
+        PACKAGE_CHECK="rpm -q"
         SUDO_GROUP="wheel"
         OS="opensuse"
     elif command -v apk &> /dev/null; then
         PACKAGE_MANAGER="apk"
         PACKAGE_INSTALL="add"
+        PACKAGE_CHECK="apk info -e"
         SUDO_GROUP="wheel"
         OS="alpine"
     elif command -v pacman &> /dev/null; then
         PACKAGE_MANAGER="pacman"
         PACKAGE_INSTALL="-Sy --noconfirm"
+        PACKAGE_CHECK="pacman -Qi"
         SUDO_GROUP="wheel"
         OS="arch"
     elif command -v emerge &> /dev/null; then
         PACKAGE_MANAGER="emerge"
         PACKAGE_INSTALL="--ask n"
+        PACKAGE_CHECK="equery list -i"
         SUDO_GROUP="wheel"
         OS="gentoo"
     else
@@ -53,20 +60,65 @@ detect_package_manager
 echo "Detected package manager: $PACKAGE_MANAGER"
 echo "Detected OS: $OS"
 
+# Function to check if a package is installed
+is_package_installed() {
+    $PACKAGE_CHECK "$1" &> /dev/null
+}
+
+# Function to install a package if it's not already installed
+install_package() {
+    if ! is_package_installed "$1"; then
+        echo "Installing $1..."
+        sudo $PACKAGE_MANAGER $PACKAGE_INSTALL "$1"
+    else
+        echo "$1 is already installed. Skipping."
+    fi
+}
+
 # Install and configure Nala for Debian and Ubuntu
 install_nala() {
     if [ "$OS" == "debian" ]; then
-        echo "Installing Nala on Debian/Ubuntu system..."
-        sudo $PACKAGE_MANAGER update
-        sudo $PACKAGE_MANAGER $PACKAGE_INSTALL nala -y
+        if ! is_package_installed nala; then
+            echo "Installing Nala on Debian/Ubuntu system..."
+            sudo $PACKAGE_MANAGER update
+            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL nala -y
+            
+            # Configure nala
+            sudo nala fetch --auto --fetches 3
+            echo "Nala installed and configured."
+        else
+            echo "Nala is already installed. Skipping."
+        fi
         
         # Replace apt with nala
         PACKAGE_MANAGER="nala"
         PACKAGE_INSTALL="install"
+        PACKAGE_CHECK="dpkg -s"
+
+        # Make nala the default package manager
+        echo "Configuring nala as the default package manager..."
         
-        # Configure nala
-        sudo nala fetch --auto --fetches 3
-        echo "Nala installed and configured."
+        # Create aliases for apt commands
+        echo "alias apt='nala'" | sudo tee -a /etc/bash.bashrc > /dev/null
+        echo "alias apt-get='nala'" | sudo tee -a /etc/bash.bashrc > /dev/null
+        echo "alias aptitude='nala'" | sudo tee -a /etc/bash.bashrc > /dev/null
+
+        # Create a script to intercept apt commands
+        sudo tee /usr/local/bin/apt << EOF > /dev/null
+#!/bin/sh
+echo "apt has been replaced by nala. Running nala instead."
+nala "\$@"
+EOF
+        sudo chmod +x /usr/local/bin/apt
+
+        sudo tee /usr/local/bin/apt-get << EOF > /dev/null
+#!/bin/sh
+echo "apt-get has been replaced by nala. Running nala instead."
+nala "\$@"
+EOF
+        sudo chmod +x /usr/local/bin/apt-get
+
+        echo "Nala has been set as the default package manager."
     fi
 }
 
@@ -76,23 +128,11 @@ install_nala
 # Install package containing lspci
 install_lspci() {
     case $OS in
-        "debian"|"ubuntu")
-            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL pciutils
-            ;;
-        "fedora"|"centos")
-            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL pciutils
-            ;;
-        "arch")
-            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL pciutils
-            ;;
-        "opensuse")
-            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL pciutils
-            ;;
-        "alpine")
-            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL pciutils
+        "debian"|"ubuntu"|"fedora"|"centos"|"arch"|"opensuse"|"alpine")
+            install_package pciutils
             ;;
         "gentoo")
-            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL sys-apps/pciutils
+            install_package sys-apps/pciutils
             ;;
         *)
             echo "Unable to install lspci. Please install it manually."
@@ -139,17 +179,19 @@ if echo "${gpu_type}" | grep -E "NVIDIA|GeForce"; then
     echo "Detected NVIDIA GPU"
     case $OS in
         "arch")
-            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL nvidia nvidia-settings
+            install_package nvidia
+            install_package nvidia-settings
             ;;
         "debian"|"ubuntu")
             if [ "$OS" == "ubuntu" ]; then
                 sudo ubuntu-drivers autoinstall
             else
-                sudo $PACKAGE_MANAGER $PACKAGE_INSTALL nvidia-driver firmware-misc-nonfree
+                install_package nvidia-driver
+                install_package firmware-misc-nonfree
             fi
             ;;
         "fedora"|"centos")
-            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL akmod-nvidia
+            install_package akmod-nvidia
             ;;
         *)
             echo "NVIDIA driver installation not configured for $OS"
@@ -160,13 +202,13 @@ elif echo "${gpu_type}" | grep 'VGA' | grep -E "Radeon|AMD"; then
     echo "Detected AMD GPU"
     case $OS in
         "arch")
-            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL xf86-video-amdgpu
+            install_package xf86-video-amdgpu
             ;;
         "debian"|"ubuntu")
-            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL firmware-amd-graphics
+            install_package firmware-amd-graphics
             ;;
         "fedora"|"centos")
-            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL xorg-x11-drv-amdgpu
+            install_package xorg-x11-drv-amdgpu
             ;;
         *)
             echo "AMD driver installation not configured for $OS"
@@ -177,13 +219,21 @@ elif echo "${gpu_type}" | grep -E "Intel"; then
     echo "Detected Intel GPU"
     case $OS in
         "arch")
-            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-utils lib32-mesa
+            install_package libva-intel-driver
+            install_package libvdpau-va-gl
+            install_package lib32-vulkan-intel
+            install_package vulkan-intel
+            install_package libva-utils
+            install_package lib32-mesa
             ;;
         "debian"|"ubuntu")
-            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL intel-media-va-driver mesa-va-drivers mesa-vulkan-drivers
+            install_package intel-media-va-driver
+            install_package mesa-va-drivers
+            install_package mesa-vulkan-drivers
             ;;
         "fedora"|"centos")
-            sudo $PACKAGE_MANAGER $PACKAGE_INSTALL intel-media-driver mesa-vulkan-drivers
+            install_package intel-media-driver
+            install_package mesa-vulkan-drivers
             ;;
         *)
             echo "Intel driver installation not configured for $OS"
@@ -195,24 +245,32 @@ else
 fi
 
 # Install and enable NetworkManager
-sudo $PACKAGE_MANAGER $PACKAGE_INSTALL networkmanager
+install_package networkmanager
 sudo systemctl enable NetworkManager
 sudo systemctl start NetworkManager
 
 # Install common applications
 common_apps="nano git ncdu qemu-guest-agent wget"
+for app in $common_apps; do
+    install_package $app
+done
+
 case $OS in
     "arch")
-        sudo $PACKAGE_MANAGER $PACKAGE_INSTALL $common_apps terminus-font yazi timeshift
+        install_package terminus-font
+        install_package yazi
+        install_package timeshift
         ;;
     "debian"|"ubuntu")
-        sudo $PACKAGE_MANAGER $PACKAGE_INSTALL $common_apps console-setup xfonts-terminus timeshift
+        install_package console-setup
+        install_package xfonts-terminus
+        install_package timeshift
         ;;
     "fedora"|"centos")
-        sudo $PACKAGE_MANAGER $PACKAGE_INSTALL $common_apps terminus-fonts-console timeshift
+        install_package terminus-fonts-console
+        install_package timeshift
         ;;
     *)
-        sudo $PACKAGE_MANAGER $PACKAGE_INSTALL $common_apps
         echo "Some applications may not be available for $OS"
         ;;
 esac
@@ -241,9 +299,9 @@ case $OS in
 esac
 
 # Install Cockpit
-if ! command -v cockpit &> /dev/null; then
+if ! is_package_installed cockpit; then
     echo "Installing Cockpit..."
-    sudo $PACKAGE_MANAGER $PACKAGE_INSTALL cockpit
+    install_package cockpit
     sudo systemctl enable --now cockpit.socket
 
     # Open firewall port for Cockpit (port 9090)
