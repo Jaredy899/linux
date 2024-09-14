@@ -25,9 +25,9 @@ fi
 install_nala() {
     if [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
         echo "Installing Nala..."
-        if sudo apt update && sudo apt install nala -y; then
+        if sudo DEBIAN_FRONTEND=noninteractive apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nala; then
             # Configure nala
-            sudo nala fetch --auto --fetches 3 || echo "Nala fetch failed, continuing..."
+            sudo nala fetch --auto --fetches 3 < /dev/null || echo "Nala fetch failed, continuing..."
 
             # Make nala the default package manager
             echo "Configuring nala as the default package manager..."
@@ -92,9 +92,9 @@ if echo "${gpu_type}" | grep -E "NVIDIA|GeForce"; then
         sudo pacman -S --noconfirm --needed nvidia nvidia-settings || echo "NVIDIA driver installation failed. Continuing..."
     elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
         if [ "$OS" == "ubuntu" ]; then
-            sudo ubuntu-drivers autoinstall || echo "NVIDIA driver installation failed. Continuing..."
+            sudo DEBIAN_FRONTEND=noninteractive ubuntu-drivers autoinstall || echo "NVIDIA driver installation failed. Continuing..."
         else
-            sudo nala install -y nvidia-driver firmware-misc-nonfree || echo "NVIDIA driver installation failed. Continuing..."
+            sudo DEBIAN_FRONTEND=noninteractive nala install -y nvidia-driver firmware-misc-nonfree || echo "NVIDIA driver installation failed. Continuing..."
         fi
     elif [ "$OS" == "fedora" ]; then
         sudo dnf install -y akmod-nvidia || echo "NVIDIA driver installation failed. Continuing..."
@@ -105,7 +105,7 @@ elif echo "${gpu_type}" | grep 'VGA' | grep -E "Radeon|AMD"; then
     if [ "$OS" == "arch" ]; then
         sudo pacman -S --noconfirm --needed xf86-video-amdgpu || echo "AMD driver installation failed. Continuing..."
     elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
-        sudo nala install -y firmware-amd-graphics || echo "AMD driver installation failed. Continuing..."
+        sudo DEBIAN_FRONTEND=noninteractive nala install -y firmware-amd-graphics || echo "AMD driver installation failed. Continuing..."
     elif [ "$OS" == "fedora" ]; then
         sudo dnf install -y xorg-x11-drv-amdgpu || echo "AMD driver installation failed. Continuing..."
     fi
@@ -115,7 +115,7 @@ elif echo "${gpu_type}" | grep -E "Intel"; then
     if [ "$OS" == "arch" ]; then
         sudo pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-utils lib32-mesa || echo "Intel driver installation failed. Continuing..."
     elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
-        sudo nala install -y intel-media-va-driver mesa-va-drivers mesa-vulkan-drivers || echo "Intel driver installation failed. Continuing..."
+        sudo DEBIAN_FRONTEND=noninteractive nala install -y intel-media-va-driver mesa-va-drivers mesa-vulkan-drivers || echo "Intel driver installation failed. Continuing..."
     elif [ "$OS" == "fedora" ]; then
         sudo dnf install -y intel-media-driver mesa-vulkan-drivers || echo "Intel driver installation failed. Continuing..."
     fi
@@ -132,7 +132,7 @@ echo "-------------------------------------------------------------------------"
 if [ "$OS" == "arch" ]; then
     sudo pacman -S --noconfirm --needed networkmanager || echo "NetworkManager installation failed. Continuing..."
 elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
-    sudo nala install -y network-manager || echo "NetworkManager installation failed. Continuing..."
+    sudo DEBIAN_FRONTEND=noninteractive nala install -y network-manager || echo "NetworkManager installation failed. Continuing..."
 elif [ "$OS" == "fedora" ]; then
     sudo dnf install -y NetworkManager || echo "NetworkManager installation failed. Continuing..."
 fi
@@ -149,7 +149,7 @@ install_package() {
     if [ "$OS" == "arch" ]; then
         sudo pacman -S --noconfirm --needed $1 || echo "Failed to install $1. Continuing..."
     elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
-        sudo nala install -y $1 || echo "Failed to install $1. Continuing..."
+        sudo DEBIAN_FRONTEND=noninteractive nala install -y $1 || echo "Failed to install $1. Continuing..."
     elif [ "$OS" == "fedora" ]; then
         sudo dnf install -y $1 || echo "Failed to install $1. Continuing..."
     else
@@ -227,13 +227,9 @@ echo "                        Installation Complete                            "
 echo "-------------------------------------------------------------------------"
 
 if [ "$reboot_required" = true ]; then
-    echo "A reboot is recommended due to driver installations. Do you want to reboot now? (y/n)"
-    read -r response
-    if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-        sudo reboot
-    else
-        echo "Please remember to reboot your system later for all changes to take effect."
-    fi
+    echo "Rebooting the system in 10 seconds due to driver installations..."
+    sleep 10
+    sudo reboot
 else
-    echo "No reboot is required. All changes have been applied."
+    echo "No reboot required. All changes have been applied."
 fi
