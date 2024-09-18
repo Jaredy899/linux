@@ -76,13 +76,14 @@ while true; do
     echo "2) Run Chris Titus Tech Script"
     echo "3) Add SSH Key"
     echo "4) Install a network drive"
-    echo "5) Install Tailscale"
-    echo "6) Install Docker and Portainer"
-    echo "7) Run DWM Setup Script"
+    echo "5) Install Cockpit"
+    echo "6) Install Tailscale"
+    echo "7) Install Docker and Portainer"
+    echo "8) Run DWM Setup Script"
     echo "0) Exit"
     echo
 
-    read -p "Enter your choice (0-7): " choice
+    read -p "Enter your choice (0-8): " choice
 
     case $choice in
         1) 
@@ -96,17 +97,21 @@ while true; do
         3) run_script "add_ssh_key.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         4) run_script "add_network_drive.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         5) 
+            echo "Installing Cockpit..."
+            run_script "cockpit.sh" "$GITPATH/installs" "$INSTALLS_URL"
+            ;;
+        6) 
             echo "Installing Tailscale..."
             curl -fsSL https://tailscale.com/install.sh | sh
             echo "Tailscale installed. Please run 'sudo tailscale up' to activate."
             ;;
-        6) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
-        7) 
+        7) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        8) 
             echo "Running DWM Setup Script..."
             run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         0) echo "Exiting script."; break ;;
-        *) echo "Invalid option. Please enter a number between 0 and 7." ;;
+        *) echo "Invalid option. Please enter a number between 0 and 8." ;;
     esac
 done
 

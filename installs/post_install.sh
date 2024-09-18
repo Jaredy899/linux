@@ -197,31 +197,6 @@ elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
     sudo setfont /usr/share/consolefonts/Uni2-TerminusBold18x10.psf.gz || echo "Failed to apply console font. Continuing..."
 fi
 
-# Function to install Cockpit
-install_cockpit() {
-    echo "Installing Cockpit..."
-    install_package cockpit
-    sudo systemctl enable --now cockpit.socket || echo "Failed to enable Cockpit. Continuing..."
-
-    # Open firewall port for Cockpit (port 9090)
-    if command -v ufw >/dev/null 2>&1; then
-        sudo ufw allow 9090/tcp || echo "Failed to configure UFW for Cockpit. Continuing..."
-        sudo ufw reload || echo "Failed to reload UFW. Continuing..."
-    elif command -v firewall-cmd >/dev/null 2>&1; then
-        sudo firewall-cmd --permanent --add-service=cockpit || echo "Failed to configure firewalld for Cockpit. Continuing..."
-        sudo firewall-cmd --reload || echo "Failed to reload firewalld. Continuing..."
-    else
-        echo "No supported firewall found. Skipping firewall configuration for Cockpit."
-    fi
-}
-
-# Install Cockpit if not already installed
-if ! command -v cockpit >/dev/null 2>&1; then
-    install_cockpit
-else
-    echo "Cockpit is already installed. Skipping installation."
-fi
-
 echo "-------------------------------------------------------------------------"
 echo "                        Installation Complete                            "
 echo "-------------------------------------------------------------------------"
