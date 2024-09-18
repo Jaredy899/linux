@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Function to display the banner
 function display_banner {
     echo -ne "
@@ -22,603 +24,229 @@ function clear_with_banner {
     display_banner
 }
 
-pacman -Sy --noconfirm --needed pacman-contrib terminus-font
+# Install necessary packages
+pacman -Sy --noconfirm --needed pacman-contrib terminus-font reflector curl reflector rsync grub
 setfont ter-v18b
+sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
+cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
 
 clear_with_banner
 
-# Function to display banner and handle disk selection
-function diskpart {
-
-    echo -ne "
-    ------------------------------------------------------------------------
-        THIS WILL FORMAT AND DELETE ALL DATA ON THE DISK
-        Please make sure you know what you are doing because
-        after formatting your disk, there is no way to get data back.
-        *****BACKUP YOUR DATA BEFORE CONTINUING*****
-        ***I AM NOT RESPONSIBLE FOR ANY DATA LOSS***
-    ------------------------------------------------------------------------
-    "
-    PS3='Select the disk to install on: '
-    options=($(lsblk -n --output TYPE,KNAME,SIZE | awk '$1=="disk"{print "/dev/"$2"|"$3}'))
-
-    select option in "${options[@]}"; do
-        disk=${option%|*}
-        echo -e "\n${disk} selected \n"
-        export DISK=$disk
-        break
+# Function to handle disk selection
+function select_disk {
+    echo "Available disks:"
+    mapfile -t DISKS < <(lsblk -d -n -p -o NAME,SIZE,MODEL | grep -E '(/dev/sd|/dev/nvme)')
+    for i in "${!DISKS[@]}"; do
+        echo "$((i+1)). ${DISKS[$i]}"
     done
-
-    clear_with_banner
-}
-
-# Function to detect the active network interface
-function detect_iface {
-    iface=$(ip route | grep default | awk '{print $5}' | head -n 1)
-    echo "Detected network interface: $iface"
-    export IFACE=$iface
-    clear_with_banner
-}
-
-# Function to prompt for username
-function get_username {
-    echo "Enter the username: "
-    read username
-    export USERNAME=$username
-    clear_with_banner
-}
-
-# Function to prompt for password and confirm it
-function get_password {
-    while true; do
-        echo "Enter the password: "
-        read -s password
-        echo
-        echo "Confirm the password: "
-        read -s password_confirm
-        echo
-        if [ "$password" == "$password_confirm" ]; then
-            export PASSWORD=$password
-            break
-        else
-            echo "Passwords do not match. Please try again."
-        fi
-    done
-    clear_with_banner
-}
-
-# Function to prompt for hostname
-function get_hostname {
-    echo "Enter the hostname: "
-    read hostname
-    export HOSTNAME=$hostname
-    clear_with_banner
+    echo "Enter the number of the disk you want to use:"
+    read DISK_NUMBER
+    if ! [[ "$DISK_NUMBER" =~ ^[0-9]+$ ]] || [ "$DISK_NUMBER" -lt 1 ] || [ "$DISK_NUMBER" -gt "${#DISKS[@]}" ]; then
+        echo "Invalid selection. Please try again."
+        select_disk
+    else
+        DISK=$(echo "${DISKS[$DISK_NUMBER-1]}" | awk '{print $1}')
+    fi
+    export DISK
 }
 
 # Function to select filesystem
 function select_filesystem {
-    echo "Choose filesystem (for root partition):"
-    echo "1) Btrfs"
-    echo "2) ext4"
-    echo "3) xfs"
-    read -p "Enter the number (1, 2, or 3): " fs_choice
-    case $fs_choice in
-        1) filesystem="btrfs" ;;
-        2) filesystem="ext4" ;;
-        *) filesystem="xfs" ;;
-    esac
-    export FILESYSTEM=$filesystem
-    clear_with_banner
-}
-
-function get_timezone {
-    timezone=$(curl --silent https://ipapi.co/timezone)
-    echo "Detected timezone: $timezone. Do you want to use this timezone? (Y/n): "
-    read -r confirm_tz
-    if [[ "$confirm_tz" != "Y" && "$confirm_tz" != "y" && "$confirm_tz" != "" ]]; then
-        echo "Enter your preferred timezone (e.g., America/New_York): "
-        read timezone
-    fi
-    export TIMEZONE=$timezone
-
-    # Map the timezone to a country
-    if [[ $timezone == America/* ]]; then
-        country="United States"
-    elif [[ $timezone == Europe/* ]]; then
-        country="Germany"  # You can change this or add more specific mappings
-    elif [[ $timezone == Asia/* ]]; then
-        country="Japan"  # Example for Asia timezones
+    echo "Select filesystem:"
+    FS_OPTIONS=("ext4" "btrfs" "xfs")
+    for i in "${!FS_OPTIONS[@]}"; do
+        echo "$((i+1)). ${FS_OPTIONS[$i]}"
+    done
+    read FS_NUMBER
+    if ! [[ "$FS_NUMBER" =~ ^[0-9]+$ ]] || [ "$FS_NUMBER" -lt 1 ] || [ "$FS_NUMBER" -gt "${#FS_OPTIONS[@]}" ]; then
+        echo "Invalid selection. Please try again."
+        select_filesystem
     else
-        country="Worldwide"
+        FILESYSTEM=${FS_OPTIONS[$FS_NUMBER-1]}
     fi
-
-    export COUNTRY=$country
-    clear_with_banner
+    export FILESYSTEM
 }
 
-# Function to select keyboard layout (default: us)
-function select_keymap {
-    echo "Select keyboard layout (default: us):"
-    echo "1) us"
-    echo "2) uk"
-    echo "3) de"
-    echo "4) fr"
-    echo "5) es"
-    read -p "Enter the number (1-5) or press Enter to use 'us': " keymap_choice
-    case $keymap_choice in
-        2) keymap="uk" ;;
-        3) keymap="de" ;;
-        4) keymap="fr" ;;
-        5) keymap="es" ;;
-        *) keymap="us" ;;
-    esac
-    export KEYMAP=$keymap
-    clear_with_banner
+# Function to detect and confirm timezone
+function detect_timezone {
+    detected_timezone="$(curl --fail https://ipapi.co/timezone)"
+    if [ $? -eq 0 ] && [ -n "$detected_timezone" ]; then
+        echo "Detected timezone: $detected_timezone"
+        echo "Is this correct? (y/n)"
+        read confirm
+        if [[ $confirm =~ ^[Yy]$ ]]; then
+            TIMEZONE=$detected_timezone
+        else
+            select_timezone
+        fi
+    else
+        echo "Unable to detect timezone automatically."
+        select_timezone
+    fi
+    export TIMEZONE
 }
 
+# Function to search and select timezone (used if automatic detection is incorrect or fails)
+function select_timezone {
+    echo "Enter a search term for your timezone (e.g., 'New_York' or 'London'):"
+    read SEARCH_TERM
+    mapfile -t TIMEZONES < <(timedatectl list-timezones | grep -i "$SEARCH_TERM")
+    if [ ${#TIMEZONES[@]} -eq 0 ]; then
+        echo "No timezones found matching '$SEARCH_TERM'. Please try again."
+        select_timezone
+        return
+    fi
+    echo "Select your timezone:"
+    for i in "${!TIMEZONES[@]}"; do
+        echo "$((i+1)). ${TIMEZONES[$i]}"
+    done
+    read TZ_NUMBER
+    if ! [[ "$TZ_NUMBER" =~ ^[0-9]+$ ]] || [ "$TZ_NUMBER" -lt 1 ] || [ "$TZ_NUMBER" -gt "${#TIMEZONES[@]}" ]; then
+        echo "Invalid selection. Please try again."
+        select_timezone
+    else
+        TIMEZONE=${TIMEZONES[$TZ_NUMBER-1]}
+    fi
+}
+
+# Function to update mirrorlist using reflector
 function update_mirrorlist {
-    echo "Updating the Mirror list from your timezone's country ($COUNTRY)..."
-
-    # Ensure reflector is installed
-    if ! command -v reflector &> /dev/null; then
-        echo "Reflector is not installed. Installing it now..."
-        pacman -Syu --noconfirm reflector
-    fi
-
-    # Use reflector to get 20 most recent, HTTPS mirrors from the detected country, sorted by download rate
-    if [[ "$COUNTRY" != "Worldwide" ]]; then
-        reflector --latest 20 --protocol https --country "$COUNTRY" --sort rate --save /etc/pacman.d/mirrorlist
+    COUNTRY=$(curl --fail https://ipapi.co/country_name)
+    if [ $? -eq 0 ] && [ -n "$COUNTRY" ]; then
+        echo "Detected country: $COUNTRY"
+        echo "Updating mirrorlist for $COUNTRY..."
+        reflector --country "$COUNTRY" --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+        if [ $? -eq 0 ]; then
+            echo "Mirrorlist updated successfully."
+        else
+            echo "Failed to update mirrorlist for $COUNTRY. Using default mirrorlist."
+        fi
     else
-        # Default to worldwide mirrors if the country is not determined
-        reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+        echo "Unable to detect country. Using default mirrorlist."
     fi
-
-    # Check if reflector succeeded
-    if [ $? -ne 0 ]; then
-        echo "Reflector failed to update mirrors. Restoring backup mirrorlist..."
-        cp /etc/pacman.d/mirrorlist.bak /etc/pacman.d/mirrorlist
-    else
-        echo "Mirrorlist updated successfully."
-    fi
-    
-    # Enable Parallel Downloads in pacman.conf
-    sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
-    echo "Enabled Parallel Downloads in pacman.conf"
-
-    # Display the updated mirrorlist for user inspection
-    echo "Here are the top mirrors:"
-    head -n 20 /etc/pacman.d/mirrorlist
 }
 
-# Main function to run the entire script
-function main {
-    diskpart
-    detect_iface
-    get_username
-    get_password
-    get_hostname
-    select_filesystem
-    get_timezone
-    select_keymap
+# Function to get user input
+function get_user_input {
+    echo "Enter username:"
+    read USERNAME
+    echo "Enter password:"
+    read -s PASSWORD
+    echo "Confirm password:"
+    read -s PASSWORD_CONFIRM
+    if [ "$PASSWORD" != "$PASSWORD_CONFIRM" ]; then
+        echo "Passwords do not match. Please try again."
+        get_user_input
+    fi
+    echo "Enter hostname:"
+    read HOSTNAME
+    detect_timezone
+}
 
-    # Update mirrorlist before proceeding with the installation
+# Main installation function
+function install_arch {
+    select_disk
+    select_filesystem
+    get_user_input
     update_mirrorlist
 
-    echo -e "\nSummary:"
-    echo "Username: $USERNAME"
-    echo "Password: (hidden)"
-    echo "Hostname: $HOSTNAME"
-    echo "Disk: $DISK"
-    echo "Filesystem: $FILESYSTEM"
-    echo "Timezone: $TIMEZONE"
-    echo "Keymap: $KEYMAP"
-}
+    # Unmount any partitions on the selected disk
+    umount -R /mnt 2>/dev/null || true
+    swapoff -a
+    umount -R ${DISK}* 2>/dev/null || true
 
-# Execute the main function
-main
+    # Partition the disk
+    parted -s $DISK mklabel gpt
+    parted -s $DISK mkpart primary fat32 1MiB 513MiB
+    parted -s $DISK set 1 esp on
+    parted -s $DISK mkpart primary $FILESYSTEM 513MiB 100%
 
-# Prepare the JSON configuration for user credentials
-credentials_file="user_credentials.json"
-echo "Creating $credentials_file..."
+    # Format partitions
+    mkfs.fat -F32 ${DISK}1
+    case $FILESYSTEM in
+        ext4) mkfs.ext4 ${DISK}2 ;;
+        btrfs) 
+            mkfs.btrfs -f ${DISK}2
+            mount ${DISK}2 /mnt
+            btrfs subvolume create /mnt/@
+            btrfs subvolume create /mnt/@home
+            btrfs subvolume create /mnt/@snapshots
+            btrfs subvolume create /mnt/@var_log
+            umount /mnt
+            mount -o subvol=@,compress=zstd,noatime ${DISK}2 /mnt
+            mkdir -p /mnt/{home,.snapshots,var/log}
+            mount -o subvol=@home,compress=zstd,noatime ${DISK}2 /mnt/home
+            mount -o subvol=@snapshots,compress=zstd,noatime ${DISK}2 /mnt/.snapshots
+            mount -o subvol=@var_log,compress=zstd,noatime ${DISK}2 /mnt/var/log
+            ;;
+        xfs) mkfs.xfs -f ${DISK}2 ;;
+    esac
 
-cat <<EOL > $credentials_file
-{
-    "!users": [
-        {
-            "!password": "$password",
-            "sudo": true,
-            "username": "$username"
-        }
-    ]
-}
-EOL
+    # Mount boot partition
+    mkdir -p /mnt/boot/efi
+    mount ${DISK}1 /mnt/boot/efi
 
-echo "User credentials saved to $credentials_file."
+    # Install base system
+    pacstrap /mnt base base-devel linux linux-firmware
 
-# Prepare the partition configuration dynamically based on filesystem choice
-if [ "$filesystem" == "btrfs" ]; then
-    partition_config='{
-        "device": "'$DISK'",
-        "partitions": [
-            {
-                "btrfs": [],
-                "dev_path": null,
-                "flags": [
-                    "Boot",
-                    "ESP"
-                ],
-                "fs_type": "fat32",
-                "mount_options": [],
-                "mountpoint": "/boot",
-                "obj_id": "ca133b5f-1b92-4941-872e-020d8e82933d",
-                "size": {
-                    "sector_size": {
-                        "unit": "B",
-                        "value": 512
-                    },
-                    "unit": "GiB",
-                    "value": 1
-                },
-                "start": {
-                    "sector_size": {
-                        "unit": "B",
-                        "value": 512
-                    },
-                    "unit": "MiB",
-                    "value": 1
-                },
-                "status": "create",
-                "type": "primary"
-            },
-            {
-                "btrfs": [
-                    {
-                        "mountpoint": "/",
-                        "name": "@"
-                    },
-                    {
-                        "mountpoint": "/home",
-                        "name": "@home"
-                    }
-                ],
-                "dev_path": null,
-                "flags": [],
-                "fs_type": "btrfs",
-                "mount_options": [
-                    "compress=zstd"
-                ],
-                "mountpoint": null,
-                "obj_id": "419587f1-0f2c-4890-a13a-9b752f1ee786",
-                "size": {
-                    "sector_size": {
-                        "unit": "B",
-                        "value": 512
-                    },
-                    "unit": "B",
-                    "value": 67643637760
-                },
-                "start": {
-                    "sector_size": {
-                        "unit": "B",
-                        "value": 512
-                    },
-                    "unit": "B",
-                    "value": 1074790400
-                },
-                "status": "create",
-                "type": "primary"
-            }
-        ],
-        "wipe": true
-    }'
-elif [ "$filesystem" == "xfs" ]; then
-    partition_config='{
-        "device": "'$DISK'",
-        "partitions": [
-            {
-                "btrfs": [],
-                "dev_path": null,
-                "flags": [
-                    "Boot",
-                    "ESP"
-                ],
-                "fs_type": "fat32",
-                "mount_options": [],
-                "mountpoint": "/boot",
-                "obj_id": "25cb7add-6d80-414e-a7d3-0687d098e56e",
-                "size": {
-                    "sector_size": {
-                        "unit": "B",
-                        "value": 512
-                    },
-                    "unit": "GiB",
-                    "value": 1
-                },
-                "start": {
-                    "sector_size": {
-                        "unit": "B",
-                        "value": 512
-                    },
-                    "unit": "MiB",
-                    "value": 1
-                },
-                "status": "create",
-                "type": "primary"
-            },
-            {
-                "btrfs": [],
-                "dev_path": null,
-                "flags": [],
-                "fs_type": "xfs",
-                "mount_options": [],
-                "mountpoint": "/",
-                "obj_id": "3a5ee17c-609d-4bf1-895e-ffce49e04674",
-                "size": {
-                    "sector_size": {
-                        "unit": "B",
-                        "value": 512
-                    },
-                    "unit": "GiB",
-                    "value": 20
-                },
-                "start": {
-                    "sector_size": {
-                        "unit": "B",
-                        "value": 512
-                    },
-                    "unit": "B",
-                    "value": 1074790400
-                },
-                "status": "create",
-                "type": "primary"
-            },
-            {
-                "btrfs": [],
-                "dev_path": null,
-                "flags": [],
-                "fs_type": "xfs",
-                "mount_options": [],
-                "mountpoint": "/home",
-                "obj_id": "67a6c9cc-2a66-4ea7-a16b-93957566c8d9",
-                "size": {
-                    "sector_size": {
-                        "unit": "B",
-                        "value": 512
-                    },
-                    "unit": "B",
-                    "value": 46168801280
-                },
-                "start": {
-                    "sector_size": {
-                        "unit": "B",
-                        "value": 512
-                    },
-                    "unit": "B",
-                    "value": 22549626880
-                },
-                "status": "create",
-                "type": "primary"
-            }
-        ],
-        "wipe": true
-    }'
-else
-    partition_config='{
-        "device": "'$DISK'",
-        "partitions": [
-            {
-                "btrfs": [],
-                "dev_path": null,
-                "flags": [
-                    "Boot",
-                    "ESP"
-                ],
-                "fs_type": "fat32",
-                "mount_options": [],
-                "mountpoint": "/boot",
-                "obj_id": "172d3330-6327-43b8-ad2b-6b9c6b2c2ca0",
-                "size": {
-                    "sector_size": {
-                        "unit": "B",
-                        "value": 512
-                    },
-                    "unit": "GiB",
-                    "value": 1
-                },
-                "start": {
-                    "sector_size": {
-                        "unit": "B",
-                        "value": 512
-                    },
-                    "unit": "MiB",
-                    "value": 1
-                },
-                "status": "create",
-                "type": "primary"
-            },
-            {
-                "btrfs": [],
-                "dev_path": null,
-                "flags": [],
-                "fs_type": "ext4",
-                "mount_options": [],
-                "mountpoint": "/",
-                "obj_id": "ed2389fa-b437-4796-88b5-acbaca91a6cc",
-                "size": {
-                    "sector_size": {
-                        "unit": "B",
-                        "value": 512
-                    },
-                    "unit": "GiB",
-                    "value": 20
-                },
-                "start": {
-                    "sector_size": {
-                        "unit": "B",
-                        "value": 512
-                    },
-                    "unit": "B",
-                    "value": 1074790400
-                },
-                "status": "create",
-                "type": "primary"
-            },
-            {
-                "btrfs": [],
-                "dev_path": null,
-                "flags": [],
-                "fs_type": "ext4",
-                "mount_options": [],
-                "mountpoint": "/home",
-                "obj_id": "636531bd-0855-4831-b8a0-0c919bd6fc18",
-                "size": {
-                    "sector_size": {
-                        "unit": "B",
-                        "value": 512
-                    },
-                    "unit": "B",
-                    "value": 46168801280
-                },
-                "start": {
-                    "sector_size": {
-                        "unit": "B",
-                        "value": 512
-                    },
-                    "unit": "B",
-                    "value": 22549626880
-                },
-                "status": "create",
-                "type": "primary"
-            }
-        ],
-        "wipe": true
-    }'
-fi
+    # Generate fstab
+    genfstab -U /mnt >> /mnt/etc/fstab
 
-# Create the final configuration file
-config_file="user_configuration.json"
-echo "Creating $config_file..."
+    # If using BTRFS, update fstab with correct mount options
+    if [ "$FILESYSTEM" == "btrfs" ]; then
+        sed -i 's|subvol=@,|subvol=@,compress=zstd,noatime,|g' /mnt/etc/fstab
+        sed -i 's|subvol=@home,|subvol=@home,compress=zstd,noatime,|g' /mnt/etc/fstab
+        sed -i 's|subvol=@snapshots,|subvol=@snapshots,compress=zstd,noatime,|g' /mnt/etc/fstab
+        sed -i 's|subvol=@var_log,|subvol=@var_log,compress=zstd,noatime,|g' /mnt/etc/fstab
+    fi
 
-cat <<EOL > $config_file
-{
-    "additional-repositories": [],
-    "archinstall-language": "English",
-    "bootloader": "Grub",
-    "config_version": "2.8.6",
-    "debug": false,
-    "disk_config": {
-        "config_type": "default_layout",
-        "device_modifications": [
-            $partition_config
-        ]
-    },
-    "hostname": "$hostname",
-    "kernels": [
-        "linux"
-    ],
-    "locale_config": {
-        "kb_layout": "$keymap",
-        "sys_enc": "UTF-8",
-        "sys_lang": "en_US"
-    },
-    "network_config": {
-        "nics": [
-            {
-                "dhcp": true,
-                "dns": [],
-                "gateway": null,
-                "iface": "$IFACE",
-                "ip": null
-            }
-        ],
-        "type": "manual"
-    },
-    "no_pkg_lookups": false,
-    "ntp": true,
-    "offline": false,
-    "profile_config": {
-        "gfx_driver": null,
-        "greeter": null,
-        "profile": {
-            "custom_settings": {
-                "sshd": {}
-            },
-            "details": [
-                "sshd"
-            ],
-            "main": "Server"
-        }
-    },
-    "swap": true,
-    "timezone": "$timezone",
-    "version": "2.8.6"
-}
-EOL
+    # Chroot and configure system
+    arch-chroot /mnt /bin/bash << EOF
+    # Set timezone
+    ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
+    hwclock --systohc
 
-echo "Installation configuration saved to $config_file."
+    # Set locale
+    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+    locale-gen
+    echo "LANG=en_US.UTF-8" > /etc/locale.conf
 
-# Run archinstall with the provided config and credentials
-archinstall --config $config_file --creds $credentials_file --silent
+    # Set hostname
+    echo $HOSTNAME > /etc/hostname
 
-# --- Insert the script here to handle mounting, chrooting, and rebooting ---
+    # Set root password
+    echo "root:$PASSWORD" | chpasswd
 
-# List partitions of the selected disk with no tree format (-ln) and log them
-partitions=$(lsblk -ln -o NAME,FSTYPE | grep "^$(basename $DISK)")
-echo "Detected partitions on $DISK:"
-echo "$partitions"
+    # Create user
+    useradd -m -G wheel -s /bin/bash $USERNAME
+    echo "$USERNAME:$PASSWORD" | chpasswd
 
-# Ensure /mnt exists
-[ ! -d /mnt ] && mkdir /mnt
+    # Configure sudo
+    echo "%wheel ALL=(ALL) ALL" > /etc/sudoers.d/wheel
 
-# Look for ext4, xfs, or btrfs filesystems on the selected disk
-if echo "$partitions" | grep -q "ext4\|xfs"; then
-  root_partition=$(echo "$partitions" | grep "ext4\|xfs" | head -n 1 | awk '{print $1}')
-  echo "Mounting ext4 or xfs root partition: /dev/$root_partition"
-  mount /dev/$root_partition /mnt || { echo "Failed to mount root partition: /dev/$root_partition"; exit 1; }
-elif echo "$partitions" | grep -q "btrfs"; then
-  btrfs_partition=$(echo "$partitions" | grep "btrfs" | head -n 1 | awk '{print $1}')
-  echo "Mounting btrfs partition: /dev/$btrfs_partition"
-  mount -o subvol=@ /dev/$btrfs_partition /mnt || { echo "Failed to mount root subvolume: /dev/$btrfs_partition"; exit 1; }
-  mkdir -p /mnt/home /mnt/boot
-  mount -o subvol=@home /dev/$btrfs_partition /mnt/home || { echo "Failed to mount @home subvolume: /dev/$btrfs_partition"; exit 1; }
-  
-  # Mount boot partition if applicable
-  boot_partition=$(echo "$partitions" | grep "vfat" | head -n 1 | awk '{print $1}')
-  if [ -n "$boot_partition" ]; then
-    echo "Mounting boot partition: /dev/$boot_partition"
-    mount /dev/$boot_partition /mnt/boot || { echo "Failed to mount boot partition: /dev/$boot_partition"; exit 1; }
-  fi
-else
-  echo "No ext4, xfs, or btrfs partitions found on $DISK."
-  exit 1
-fi
+    # Install and configure bootloader (GRUB)
+    pacman -S --noconfirm grub efibootmgr
+    grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+    grub-mkconfig -o /boot/grub/grub.cfg
 
-# If the mount was successful, proceed
-echo "Mount successful. Proceeding to chroot."
+    # Enable network manager
+    pacman -S --noconfirm networkmanager
+    systemctl enable NetworkManager
 
-# Mount API filesystems
-mount -t proc /proc /mnt/proc
-mount --rbind /sys /mnt/sys
-mount --rbind /dev /mnt/dev
-mount --rbind /run /mnt/run
+    # Install and configure Timeshift
+    pacman -S --noconfirm timeshift
+    timeshift --btrfs
+    timeshift --create --comments "Initial snapshot" --snapshot-device ${DISK}2
 
-# Enter chroot using arch-chroot
-arch-chroot /mnt << EOF
-  bash <(curl https://raw.githubusercontent.com/Jaredy899/linux/main/installs/post_install.sh)
-  exit
+    # Exit chroot
+    exit
 EOF
 
-# # Unmount filesystems, handle force unmount if necessary
-# echo "Unmounting filesystems..."
+    # Unmount partitions
+    umount -R /mnt
 
-# umount -R /mnt || { 
-#     echo "Some filesystems couldn't be unmounted cleanly, attempting lazy unmounts...";
-#     umount -Rl /mnt || { 
-#         echo "Force rebooting due to unmount issues...";
-#         reboot -f
-#     }
-# }
+    echo "Installation complete! You can now reboot into your new Arch Linux system."
+}
 
-# If unmounting succeeds, reboot normally
-echo "Rebooting the system..."
-reboot -f
+# Run the installation
+install_arch
