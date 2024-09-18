@@ -24,6 +24,9 @@ function clear_with_banner {
     display_banner
 }
 
+# Display the banner at the beginning
+clear_with_banner
+
 # Install necessary packages
 pacman -Sy --noconfirm --needed pacman-contrib terminus-font 
 setfont ter-v18b
