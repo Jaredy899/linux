@@ -28,12 +28,9 @@ function clear_with_banner {
 clear_with_banner
 
 # Install necessary packages
-pacman -Sy --noconfirm --needed pacman-contrib terminus-font 
+pacman -Sy --noconfirm --needed pacman-contrib terminus-font
 setfont ter-v18b
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
 
-# Enable necessary features
-systemctl enable --now fstrim.timer
-
-# Download and run install.py from GitHub
-curl -sSL https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/config_changes/install.py | python
+# Run archinstall
+archinstall
