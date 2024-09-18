@@ -28,6 +28,7 @@ function clear_with_banner {
 clear_with_banner
 
 # Install necessary packages
+pacman-key --init
 pacman -Sy --noconfirm --needed pacman-contrib terminus-font
 setfont ter-v18b
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
