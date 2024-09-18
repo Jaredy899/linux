@@ -33,7 +33,7 @@ setfont ter-v18b
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
 
 # Run archinstall
-archinstall --script
+archinstall
 
 # Automatically chroot and run post-install script
 MOUNT_POINT=$(mount | grep 'on / type' | cut -d' ' -f3)
