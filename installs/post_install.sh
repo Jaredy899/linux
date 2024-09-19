@@ -56,7 +56,13 @@ gpu_type=$(lspci | grep -E "VGA|3D" || echo "No GPU detected")
 if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
     echo "Detected NVIDIA GPU"
     case "$OS" in
-        arch) sudo pacman -S --noconfirm --needed nvidia nvidia-settings ;;
+        arch)
+            if [[ $(uname -r) == *lts* ]]; then
+                sudo pacman -S --noconfirm --needed nvidia-lts nvidia-settings
+            else
+                sudo pacman -S --noconfirm --needed nvidia nvidia-settings
+            fi
+            ;;
 #        ubuntu) sudo DEBIAN_FRONTEND=noninteractive ubuntu-drivers autoinstall ;;
 #        debian) sudo DEBIAN_FRONTEND=noninteractive nala install -y nvidia-driver firmware-misc-nonfree ;;
 #        fedora) sudo dnf install -y akmod-nvidia ;;
