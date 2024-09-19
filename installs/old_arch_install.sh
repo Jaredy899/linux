@@ -72,9 +72,9 @@ function detect_timezone {
     detected_timezone="$(curl --fail https://ipapi.co/timezone)"
     if [ $? -eq 0 ] && [ -n "$detected_timezone" ]; then
         echo "Detected timezone: $detected_timezone"
-        echo "Is this correct? (y/n)"
-        read confirm
-        if [[ $confirm =~ ^[Yy]$ ]]; then
+        echo "Is this correct? (Y/n)"
+        read -r confirm
+        if [[ $confirm =~ ^[Yy]$ ]] || [[ -z $confirm ]]; then
             TIMEZONE=$detected_timezone
         else
             select_timezone
@@ -111,15 +111,18 @@ function select_timezone {
 
 # Function to update mirrorlist using reflector
 function update_mirrorlist {
+    # Synchronize system clock
+    timedatectl set-ntp true
+    
     COUNTRY=$(curl --fail https://ipapi.co/country_name)
     if [ $? -eq 0 ] && [ -n "$COUNTRY" ]; then
         echo "Detected country: $COUNTRY"
         echo "Updating mirrorlist for $COUNTRY..."
-        reflector --country "$COUNTRY" --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+        reflector --country "$COUNTRY" --latest 10 --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
         if [ $? -eq 0 ]; then
             echo "Mirrorlist updated successfully."
         else
-            echo "Failed to update mirrorlist for $COUNTRY. Using default mirrorlist."
+            echo "Failed to update mirrorlist for $COUNTRY within 1 second. Using default mirrorlist."
         fi
     else
         echo "Unable to detect country. Using default mirrorlist."
@@ -173,32 +176,28 @@ function install_arch {
             btrfs subvolume create /mnt/@snapshots
             btrfs subvolume create /mnt/@var_log
             umount /mnt
-            mount -o subvol=@,compress=zstd,noatime ${DISK}2 /mnt
-            mkdir -p /mnt/{home,.snapshots,var/log}
-            mount -o subvol=@home,compress=zstd,noatime ${DISK}2 /mnt/home
-            mount -o subvol=@snapshots,compress=zstd,noatime ${DISK}2 /mnt/.snapshots
-            mount -o subvol=@var_log,compress=zstd,noatime ${DISK}2 /mnt/var/log
             ;;
         xfs) mkfs.xfs -f ${DISK}2 ;;
     esac
 
-    # Mount boot partition
-    mkdir -p /mnt/boot/efi
+    # Mount partitions
+    if [ "$FILESYSTEM" == "btrfs" ]; then
+        mount -o subvol=@,compress=zstd,noatime ${DISK}2 /mnt
+        mkdir -p /mnt/{home,.snapshots,var/log,boot/efi}
+        mount -o subvol=@home,compress=zstd,noatime ${DISK}2 /mnt/home
+        mount -o subvol=@snapshots,compress=zstd,noatime ${DISK}2 /mnt/.snapshots
+        mount -o subvol=@var_log,compress=zstd,noatime ${DISK}2 /mnt/var/log
+    else
+        mount ${DISK}2 /mnt
+        mkdir -p /mnt/boot/efi
+    fi
     mount ${DISK}1 /mnt/boot/efi
 
     # Install base system
-    pacstrap /mnt base base-devel linux linux-firmware
+    pacstrap /mnt base base-devel linux-lts linux-lts-headers linux-firmware
 
     # Generate fstab
     genfstab -U /mnt >> /mnt/etc/fstab
-
-    # If using BTRFS, update fstab with correct mount options
-    if [ "$FILESYSTEM" == "btrfs" ]; then
-        sed -i 's|subvol=@,|subvol=@,compress=zstd,noatime,|g' /mnt/etc/fstab
-        sed -i 's|subvol=@home,|subvol=@home,compress=zstd,noatime,|g' /mnt/etc/fstab
-        sed -i 's|subvol=@snapshots,|subvol=@snapshots,compress=zstd,noatime,|g' /mnt/etc/fstab
-        sed -i 's|subvol=@var_log,|subvol=@var_log,compress=zstd,noatime,|g' /mnt/etc/fstab
-    fi
 
     # Chroot and configure system
     arch-chroot /mnt /bin/bash << EOF
@@ -224,28 +223,31 @@ function install_arch {
     # Configure sudo
     echo "%wheel ALL=(ALL) ALL" > /etc/sudoers.d/wheel
 
-    # Install and configure bootloader (GRUB)
-    pacman -S --noconfirm grub efibootmgr
-    grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+    # Install essential packages
+    pacman -S --noconfirm grub efibootmgr btrfs-progs
+
+    # Install and configure GRUB
+    grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
+    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet lsm=landlock,lockdown,yama,integrity,apparmor,bpf"/' /etc/default/grub
     grub-mkconfig -o /boot/grub/grub.cfg
 
-    # Enable network manager
-    pacman -S --noconfirm networkmanager
-    systemctl enable NetworkManager
+    # Download and run post-installation script
+    curl -O https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/installs/post_install.sh
+    chmod +x post_install.sh
+    ./post_install.sh
 
-    # Install and configure Timeshift
-    pacman -S --noconfirm timeshift
-    timeshift --btrfs
-    timeshift --create --comments "Initial snapshot" --snapshot-device ${DISK}2
+    # Clean up
+    rm post_install.sh
 
     # Exit chroot
-    exit
 EOF
 
     # Unmount partitions
     umount -R /mnt
 
-    echo "Installation complete! You can now reboot into your new Arch Linux system."
+    echo "Installation complete! The system will reboot in 5 seconds."
+    sleep 5
+    reboot
 }
 
 # Run the installation
