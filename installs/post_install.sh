@@ -63,9 +63,37 @@ if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
                 sudo pacman -S --noconfirm --needed nvidia nvidia-settings
             fi
             ;;
-#        ubuntu) sudo DEBIAN_FRONTEND=noninteractive ubuntu-drivers autoinstall ;;
-#        debian) sudo DEBIAN_FRONTEND=noninteractive nala install -y nvidia-driver firmware-misc-nonfree ;;
-#        fedora) sudo dnf install -y akmod-nvidia ;;
+        debian)
+            # Detect Debian version
+            if grep -q "bookworm" /etc/os-release; then
+                echo "deb http://deb.debian.org/debian/ bookworm main contrib non-free non-free-firmware" | sudo tee -a /etc/apt/sources.list
+            elif grep -q "bullseye" /etc/os-release; then
+                echo "deb http://deb.debian.org/debian/ bullseye main contrib non-free" | sudo tee -a /etc/apt/sources.list
+            else
+                echo "Unsupported Debian version. Skipping NVIDIA driver installation."
+                return
+            fi
+            
+            sudo apt update
+            sudo DEBIAN_FRONTEND=noninteractive apt install -y nvidia-driver firmware-misc-nonfree
+            ;;
+        ubuntu)
+            # Detect if it's a server or desktop environment
+            if systemctl is-active --quiet gdm.service || systemctl is-active --quiet lightdm.service; then
+                # Desktop environment
+                sudo ubuntu-drivers install nvidia:535
+            else
+                # Server environment
+                sudo ubuntu-drivers install --gpgpu nvidia:535-server
+            fi
+            ;;
+        fedora)
+            sudo dnf install -y kernel-devel kernel-headers gcc make dkms acpid libglvnd-glx libglvnd-opengl libglvnd-devel pkgconfig
+            sudo dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+            sudo dnf install -y https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+            sudo dnf makecache
+            sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda
+            ;;
     esac
     reboot_required=true
 elif echo "${gpu_type}" | grep -qE "Radeon|AMD"; then
