@@ -224,8 +224,11 @@ elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
     echo "Setting console font to Terminus in /etc/default/console-setup"
     sudo sed -i 's/^FONTFACE=.*/FONTFACE="Terminus"/' /etc/default/console-setup
     sudo sed -i 's/^FONTSIZE=.*/FONTSIZE="18x10"/' /etc/default/console-setup
+    sudo sed -i 's/^CODESET=.*/CODESET="Uni2"/' /etc/default/console-setup
+    sudo dpkg-reconfigure console-setup
     sudo update-initramfs -u
-    sudo setfont /usr/share/consolefonts/Uni2-TerminusBold18x10.psf.gz
+    sudo setupcon --force
+    echo "Console font settings have been applied and should persist after reboot."
 fi
 
 echo "-------------------------------------------------------------------------"
