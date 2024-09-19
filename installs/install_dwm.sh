@@ -103,7 +103,7 @@ install_packages() {
 # Function to replace configuration files from GitHub
 replace_configs() {
     BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/main/config_changes"
-    MYBASH_DIR=~/linuxtoolbox/mybash
+    MYBASH_DIR=~/.local/share/mybash
     DWM_TITUS_DIR=~/dwm-titus
 
     mkdir -p "$MYBASH_DIR"
