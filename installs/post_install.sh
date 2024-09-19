@@ -99,17 +99,47 @@ if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
 elif echo "${gpu_type}" | grep -qE "Radeon|AMD"; then
     echo "Detected AMD GPU"
     case "$OS" in
-        arch) sudo pacman -S --noconfirm --needed xf86-video-amdgpu ;;
-#        debian|ubuntu) sudo DEBIAN_FRONTEND=noninteractive nala install -y firmware-amd-graphics ;;
-#        fedora) sudo dnf install -y xorg-x11-drv-amdgpu ;;
+        arch)
+            sudo pacman -S --noconfirm --needed xf86-video-amdgpu
+            ;;
+        debian)
+            # Add contrib and non-free to sources.list
+            sudo sed -i 's/main$/main contrib non-free/' /etc/apt/sources.list
+            sudo apt update
+            sudo apt install -y linux-headers-amd64 firmware-linux firmware-linux-nonfree libdrm-amdgpu1
+            sudo apt install -y firmware-amdgpu
+            ;;
+        ubuntu)
+            # Install AMD GPU drivers for Ubuntu
+            sudo add-apt-repository ppa:kisak/kisak-mesa -y
+            sudo apt update
+            sudo apt install -y mesa-vulkan-drivers mesa-vdpau-drivers
+            sudo apt install -y libdrm-amdgpu1 xserver-xorg-video-amdgpu
+            echo 'Section "Device"
+    Identifier "AMD"
+    Driver "amdgpu"
+    Option "DRI" "3"
+EndSection' | sudo tee /etc/X11/xorg.conf.d/20-amdgpu.conf
+            sudo update-initramfs -u
+            ;;
+        fedora)
+            sudo dnf install -y mesa-dri-drivers mesa-vulkan-drivers
+            sudo dnf install -y xorg-x11-drv-amdgpu
+            echo 'Section "Device"
+    Identifier "AMD"
+    Driver "amdgpu"
+    Option "DRI" "3"
+EndSection' | sudo tee /etc/X11/xorg.conf.d/20-amdgpu.conf
+            sudo dracut --force
+            ;;
     esac
     reboot_required=true
 elif echo "${gpu_type}" | grep -qE "Intel"; then
     echo "Detected Intel GPU"
     case "$OS" in
-        arch) sudo pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-utils lib32-mesa ;;
- #       debian|ubuntu) sudo DEBIAN_FRONTEND=noninteractive nala install -y intel-media-va-driver mesa-va-drivers mesa-vulkan-drivers ;;
- #       fedora) sudo dnf install -y intel-media-driver mesa-vulkan-drivers ;;
+        arch) sudo pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl vulkan-intel intel-media-driver mesa lib32-mesa ;;
+        debian|ubuntu) sudo DEBIAN_FRONTEND=noninteractive nala install -y intel-media-va-driver i965-va-driver vainfo mesa-vulkan-drivers ;;
+        fedora) sudo dnf install -y intel-media-driver mesa-va-drivers mesa-vdpau-drivers mesa-vulkan-drivers libva-intel-driver ;;
     esac
     reboot_required=true
 else
