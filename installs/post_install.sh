@@ -137,7 +137,7 @@ EndSection' | sudo tee /etc/X11/xorg.conf.d/20-amdgpu.conf
 elif echo "${gpu_type}" | grep -qE "Intel"; then
     echo "Detected Intel GPU"
     case "$OS" in
-        arch) sudo pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl vulkan-intel intel-media-driver mesa lib32-mesa ;;
+        arch) sudo pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-intel-driver libva-utils lib32-mesa ;;
         debian|ubuntu) sudo DEBIAN_FRONTEND=noninteractive nala install -y intel-media-va-driver i965-va-driver vainfo mesa-vulkan-drivers ;;
         fedora) sudo dnf install -y intel-media-driver mesa-va-drivers mesa-vdpau-drivers mesa-vulkan-drivers libva-intel-driver ;;
     esac
@@ -204,11 +204,12 @@ sudo systemctl start sshd
 echo "SSH service has been enabled and started."
 
 if systemctl list-unit-files | grep -q qemu-guest-agent; then
+    echo "Enabling and starting QEMU guest agent..."
     sudo systemctl enable qemu-guest-agent
     sudo systemctl start qemu-guest-agent
-    echo "QEMU guest agent has been enabled and started."
+    echo "QEMU guest agent activation attempted. Please verify it's running if needed."
 else
-    echo "QEMU guest agent service not found. Skipping activation."
+    echo "QEMU guest agent service not found. Make sure it's installed if you need it."
 fi
 
 echo "-------------------------------------------------------------------------"

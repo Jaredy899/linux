@@ -25,7 +25,9 @@ function clear_with_banner {
 }
 
 # Install necessary packages
-pacman -Sy --noconfirm --needed pacman-contrib terminus-font reflector curl reflector rsync grub
+pacman -Sy
+pacman -S --noconfirm archlinux-keyring
+pacman -S --noconfirm --needed pacman-contrib terminus-font reflector curl reflector rsync grub
 setfont ter-v18b
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
 cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
