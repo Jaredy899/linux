@@ -25,6 +25,7 @@ function clear_with_banner {
 }
 
 # Install necessary packages
+pacman-key --init
 pacman -Sy
 pacman -S --noconfirm archlinux-keyring
 pacman -S --noconfirm --needed pacman-contrib terminus-font reflector curl reflector rsync grub
