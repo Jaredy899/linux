@@ -138,19 +138,19 @@ else
     echo "No supported GPU found or GPU detection failed. Continuing without GPU driver installation..."
 fi
 
-echo "Installing Network Manager"
-install_package networkmanager
-sudo systemctl enable --now NetworkManager
-
 echo "Installing Applications"
 install_package nano git wget ncdu qemu-guest-agent timeshift openssh-server
 
-# OS-specific packages
+echo "Installing OS-specific packages"
 case "$OS" in
-    arch) install_package terminus-font yazi ;;
-    debian|ubuntu) install_package console-setup xfonts-terminus ;;
-    fedora) install_package terminus-fonts-console ;;
+    arch) install_package terminus-font yazi networkmanager ;;
+    debian|ubuntu) install_package console-setup xfonts-terminus network-manager ;;
+    fedora) install_package terminus-fonts-console NetworkManager ;;
 esac
+
+# Enable and start NetworkManager
+sudo systemctl enable NetworkManager
+sudo systemctl start NetworkManager
 
 # Enable and start SSH service and QEMU guest agent
 sudo systemctl enable --now sshd
