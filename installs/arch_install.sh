@@ -26,9 +26,8 @@ function clear_with_banner {
 
 # Install necessary packages
 pacman-key --init
-pacman -Sy
-pacman -S --noconfirm archlinux-keyring
-pacman -S --noconfirm --needed pacman-contrib terminus-font reflector curl reflector rsync grub
+pacman -Sy --noconfirm archlinux-keyring
+pacman -S --noconfirm --needed pacman-contrib terminus-font reflector curl rsync grub
 setfont ter-v18b
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
 cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
@@ -147,6 +146,7 @@ function get_user_input {
     echo "Enter hostname:"
     read HOSTNAME
     detect_timezone
+    select_keymap
 }
 
 # Function to detect boot mode (UEFI or BIOS)
@@ -227,6 +227,33 @@ function format_and_mount {
             mount ${DISK}1 /mnt
         fi
     fi
+}
+
+# Function to select keymap
+function select_keymap {
+    read -p "Do you want to select a non-US keymap? (y/N) " KEYMAP_CHOICE
+    if [[ $KEYMAP_CHOICE =~ ^[Yy]$ ]]; then
+        # These are default key maps as presented in official arch repo archinstall
+        options=(us by ca cf cz de dk es et fa fi fr gr hu il it lt lv mk nl no pl ro ru se sg ua uk)
+        
+        echo "Select keymap:"
+        for i in "${!options[@]}"; do
+            echo "$((i+1)). ${options[$i]}"
+        done
+        
+        read -p "Enter the number of your choice: " KEYMAP_NUMBER
+        if [[ "$KEYMAP_NUMBER" =~ ^[0-9]+$ ]] && [ "$KEYMAP_NUMBER" -ge 1 ] && [ "$KEYMAP_NUMBER" -le "${#options[@]}" ]; then
+            KEYMAP=${options[$KEYMAP_NUMBER-1]}
+        else
+            echo "Invalid selection. Using default US keymap."
+            KEYMAP="us"
+        fi
+    else
+        echo "Using default US keymap."
+        KEYMAP="us"
+    fi
+    loadkeys $KEYMAP
+    export KEYMAP
 }
 
 # Main installation function
