@@ -4,23 +4,34 @@ set +e
 reboot_required=false
 
 # OS Detection
-OS=$(case "" in
-  $(grep -qs "Ubuntu" /etc/lsb-release && echo ubuntu)) ubuntu ;;
-  $(test -f /etc/debian_version && echo debian)) debian ;;
-  $(test -f /etc/arch-release && echo arch)) arch ;;
-  $(test -f /etc/fedora-release && echo fedora)) fedora ;;
-  *) echo "unknown" ;;
-esac)
+if [ -f /etc/arch-release ]; then
+    OS="arch"
+elif [ -f /etc/debian_version ]; then
+    OS=$(grep -q "Ubuntu" /etc/lsb-release && echo "ubuntu" || echo "debian")
+elif [ -f /etc/fedora-release ]; then
+    OS="fedora"
+else
+    echo "Unsupported OS, but continuing with best-effort installation..."
+    OS="unknown"
+fi
 
-# Function to install packages based on OS
-install_package() {
-    case "$OS" in
-        arch) sudo pacman -S --noconfirm --needed "$@" ;;
-        debian|ubuntu) sudo DEBIAN_FRONTEND=noninteractive nala install -y "$@" ;;
-        fedora) sudo dnf install -y "$@" ;;
-        *) echo "Unable to install $* on this OS. Continuing..." ;;
-    esac
-}
+echo "-------------------------------------------------------------------------"
+echo "                    Setting Permanent Console Font"
+echo "-------------------------------------------------------------------------"
+
+# Set permanent console font
+if [ "$OS" == "arch" ] || [ "$OS" == "fedora" ]; then
+    echo "FONT=ter-v18b" | sudo tee /etc/vconsole.conf > /dev/null
+    sudo setfont ter-v18b
+elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
+    sudo sed -i 's/^FONTFACE=.*/FONTFACE="Terminus"/' /etc/default/console-setup
+    sudo sed -i 's/^FONTSIZE=.*/FONTSIZE="18x10"/' /etc/default/console-setup
+    sudo sed -i 's/^CODESET=.*/CODESET="Uni2"/' /etc/default/console-setup
+    sudo DEBIAN_FRONTEND=noninteractive dpkg-reconfigure -f noninteractive console-setup
+    sudo update-initramfs -u
+    sudo setupcon --force
+fi
+echo "Console font settings have been applied and should persist after reboot."
 
 # Function to install and configure Nala
 install_nala() {
@@ -43,133 +54,141 @@ EOF
 }
 
 # Install Nala if on Debian/Ubuntu
-[ "$OS" = "debian" ] || [ "$OS" = "ubuntu" ] && install_nala
+install_nala
 
 # Enable parallel downloads
-case "$OS" in
-    arch) sudo sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf ;;
-    fedora) echo 'max_parallel_downloads=10' | sudo tee -a /etc/dnf/dnf.conf ;;
-esac
+if [[ -f /etc/pacman.conf ]]; then
+    sudo sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf || echo "Failed to enable ParallelDownloads for Pacman. Continuing..."
+elif [[ -f /etc/dnf/dnf.conf ]] && ! grep -q '^max_parallel_downloads' /etc/dnf/dnf.conf; then
+    echo 'max_parallel_downloads=10' | sudo tee -a /etc/dnf/dnf.conf || echo "Failed to enable max_parallel_downloads for DNF. Continuing..."
+fi
 
-echo "Installing Graphics Drivers"
+echo "-------------------------------------------------------------------------"
+echo "                    Installing Graphics Drivers"
+echo "-------------------------------------------------------------------------"
 
-# Detect GPU Type and install drivers
+# Detect GPU Type
 gpu_type=$(lspci | grep -E "VGA|3D" || echo "No GPU detected")
 
-if echo "$gpu_type" | grep -qE "NVIDIA|GeForce"; then
+# Function to install packages based on OS
+install_gpu_packages() {
+    case "$OS" in
+        arch) sudo pacman -S --noconfirm --needed $1 ;;
+        debian|ubuntu) sudo DEBIAN_FRONTEND=noninteractive apt install -y $1 ;;
+        fedora) sudo dnf install -y $1 ;;
+    esac
+}
+
+# Graphics Drivers installation
+if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
     echo "Detected NVIDIA GPU"
     case "$OS" in
-        arch) install_package nvidia${uname -r | grep -q lts && echo "-lts"} nvidia-settings ;;
-        debian|ubuntu)
-            # Detect Debian version
-            if grep -q "bookworm" /etc/os-release; then
-                echo "deb http://deb.debian.org/debian/ bookworm main contrib non-free non-free-firmware" | sudo tee -a /etc/apt/sources.list
-            elif grep -q "bullseye" /etc/os-release; then
-                echo "deb http://deb.debian.org/debian/ bullseye main contrib non-free" | sudo tee -a /etc/apt/sources.list
-            else
-                echo "Unsupported Debian version. Skipping NVIDIA driver installation."
-                return
-            fi
-            
+        arch)
+            [[ $(uname -r) == *lts* ]] && nvidia_pkg="nvidia-lts" || nvidia_pkg="nvidia"
+            install_gpu_packages "$nvidia_pkg nvidia-settings"
+            ;;
+        debian)
+            debian_version=$(grep -oP '(?<=VERSION_CODENAME=).+' /etc/os-release)
+            case $debian_version in
+                bookworm) repo="deb http://deb.debian.org/debian/ bookworm main contrib non-free non-free-firmware" ;;
+                bullseye) repo="deb http://deb.debian.org/debian/ bullseye main contrib non-free" ;;
+                *) echo "Unsupported Debian version. Skipping NVIDIA driver installation."; return ;;
+            esac
+            echo "$repo" | sudo tee -a /etc/apt/sources.list
             sudo apt update
-            sudo DEBIAN_FRONTEND=noninteractive apt install -y nvidia-driver firmware-misc-nonfree
+            install_gpu_packages "nvidia-driver firmware-misc-nonfree"
             ;;
         ubuntu)
-            # Detect if it's a server or desktop environment
             if systemctl is-active --quiet gdm.service || systemctl is-active --quiet lightdm.service; then
-                # Desktop environment
                 sudo ubuntu-drivers install nvidia:535
             else
-                # Server environment
                 sudo ubuntu-drivers install --gpgpu nvidia:535-server
             fi
             ;;
         fedora)
-            install_package kernel-devel kernel-headers gcc make dkms acpid libglvnd-glx libglvnd-opengl libglvnd-devel pkgconfig
-            sudo dnf install -y https://download1.rpmfusion.org/{free/fedora/rpmfusion-free,nonfree/fedora/rpmfusion-nonfree}-release-$(rpm -E %fedora).noarch.rpm
-            install_package akmod-nvidia xorg-x11-drv-nvidia-cuda
+            install_gpu_packages "kernel-devel kernel-headers gcc make dkms acpid libglvnd-glx libglvnd-opengl libglvnd-devel pkgconfig"
+            sudo dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+            sudo dnf install -y https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+            sudo dnf makecache
+            install_gpu_packages "akmod-nvidia xorg-x11-drv-nvidia-cuda"
             ;;
     esac
     reboot_required=true
-elif echo "$gpu_type" | grep -qE "Radeon|AMD"; then
+elif echo "${gpu_type}" | grep -qE "Radeon|AMD"; then
     echo "Detected AMD GPU"
     case "$OS" in
-        arch) install_package xf86-video-amdgpu ;;
-        debian|ubuntu)
-            # Add contrib and non-free to sources.list
+        arch) install_gpu_packages "xf86-video-amdgpu" ;;
+        debian)
             sudo sed -i 's/main$/main contrib non-free/' /etc/apt/sources.list
             sudo apt update
-            sudo apt install -y linux-headers-amd64 firmware-linux firmware-linux-nonfree libdrm-amdgpu1
-            sudo apt install -y firmware-amdgpu
+            install_gpu_packages "linux-headers-amd64 firmware-linux firmware-linux-nonfree libdrm-amdgpu1 firmware-amdgpu"
             ;;
         ubuntu)
-            # Install AMD GPU drivers for Ubuntu
             sudo add-apt-repository ppa:kisak/kisak-mesa -y
             sudo apt update
-            sudo apt install -y mesa-vulkan-drivers mesa-vdpau-drivers
-            sudo apt install -y libdrm-amdgpu1 xserver-xorg-video-amdgpu
-            echo 'Section "Device"
-    Identifier "AMD"
-    Driver "amdgpu"
-    Option "DRI" "3"
-EndSection' | sudo tee /etc/X11/xorg.conf.d/20-amdgpu.conf
+            install_gpu_packages "mesa-vulkan-drivers mesa-vdpau-drivers libdrm-amdgpu1 xserver-xorg-video-amdgpu"
+            echo 'Section "Device"\n    Identifier "AMD"\n    Driver "amdgpu"\n    Option "DRI" "3"\nEndSection' | sudo tee /etc/X11/xorg.conf.d/20-amdgpu.conf
             sudo update-initramfs -u
             ;;
         fedora)
-            install_package mesa-dri-drivers mesa-vulkan-drivers xorg-x11-drv-amdgpu
-            echo 'Section "Device"
-    Identifier "AMD"
-    Driver "amdgpu"
-    Option "DRI" "3"
-EndSection' | sudo tee /etc/X11/xorg.conf.d/20-amdgpu.conf
+            install_gpu_packages "mesa-dri-drivers mesa-vulkan-drivers xorg-x11-drv-amdgpu"
+            echo 'Section "Device"\n    Identifier "AMD"\n    Driver "amdgpu"\n    Option "DRI" "3"\nEndSection' | sudo tee /etc/X11/xorg.conf.d/20-amdgpu.conf
             sudo dracut --force
             ;;
     esac
     reboot_required=true
-elif echo "$gpu_type" | grep -qE "Intel"; then
+elif echo "${gpu_type}" | grep -qE "Intel"; then
     echo "Detected Intel GPU"
     case "$OS" in
-        arch) install_package libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-intel-driver libva-utils lib32-mesa ;;
-        debian|ubuntu) install_package intel-media-va-driver i965-va-driver vainfo mesa-vulkan-drivers ;;
-        fedora) install_package intel-media-driver mesa-va-drivers mesa-vdpau-drivers mesa-vulkan-drivers libva-intel-driver ;;
+        arch) install_gpu_packages "libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-intel-driver libva-utils lib32-mesa" ;;
+        debian|ubuntu) install_gpu_packages "intel-media-va-driver i965-va-driver vainfo mesa-vulkan-drivers" ;;
+        fedora) install_gpu_packages "intel-media-driver mesa-va-drivers mesa-vdpau-drivers mesa-vulkan-drivers libva-intel-driver" ;;
     esac
     reboot_required=true
 else
     echo "No supported GPU found or GPU detection failed. Continuing without GPU driver installation..."
 fi
 
-echo "Installing Applications"
-install_package nano git wget ncdu qemu-guest-agent timeshift openssh-server
+echo "-------------------------------------------------------------------------"
+echo "                Installing Applications and Network Manager              "
+echo "-------------------------------------------------------------------------"
 
-echo "Installing OS-specific packages"
+# Function to install a package
+install_package() {
+    case "$OS" in
+        arch) sudo pacman -S --noconfirm --needed $1 ;;
+        debian|ubuntu) sudo DEBIAN_FRONTEND=noninteractive nala install -y $1 ;;
+        fedora) sudo dnf install -y $1 ;;
+        *) echo "Unable to install $1 on this OS. Continuing..." ;;
+    esac
+}
+
+# Install common packages
+common_packages="nano git wget ncdu qemu-guest-agent timeshift"
+for package in $common_packages; do
+    install_package $package
+done
+
+# OS-specific packages including NetworkManager
 case "$OS" in
-    arch) install_package terminus-font yazi networkmanager ;;
-    debian|ubuntu) install_package console-setup xfonts-terminus network-manager ;;
-    fedora) install_package terminus-fonts-console NetworkManager ;;
+    arch) install_package "networkmanager terminus-font yazi openssh" ;;
+    debian|ubuntu) install_package "network-manager console-setup xfonts-terminus openssh-server" ;;
+    fedora) install_package "NetworkManager terminus-fonts-console openssh-server" ;;
 esac
 
-# Enable and start NetworkManager
-sudo systemctl enable NetworkManager
-sudo systemctl start NetworkManager
+# Enable services
+services="NetworkManager ssh qemu-guest-agent"
+for service in $services; do
+    if systemctl list-unit-files | grep -q $service; then
+        sudo systemctl enable $service
+        sudo systemctl start $service || true
+        echo "$service has been enabled and activation attempted."
+    fi
+done
 
-# Enable and start SSH service and QEMU guest agent
-sudo systemctl enable --now sshd
-systemctl list-unit-files | grep -q qemu-guest-agent && sudo systemctl enable --now qemu-guest-agent
-
-echo "Setting Permanent Console Font"
-if [ "$OS" = "arch" ] || [ "$OS" = "fedora" ]; then
-    echo "FONT=ter-v18b" | sudo tee -a /etc/vconsole.conf
-    sudo setfont ter-v18b
-elif [ "$OS" = "debian" ] || [ "$OS" = "ubuntu" ]; then
-    sudo sed -i 's/^FONTFACE=.*/FONTFACE="Terminus"/' /etc/default/console-setup
-    sudo sed -i 's/^FONTSIZE=.*/FONTSIZE="18x10"/' /etc/default/console-setup
-    sudo sed -i 's/^CODESET=.*/CODESET="Uni2"/' /etc/default/console-setup
-    sudo DEBIAN_FRONTEND=noninteractive dpkg-reconfigure -f noninteractive console-setup
-    sudo update-initramfs -u
-    sudo setupcon --force
-fi
-
-echo "Installation Complete"
+echo "-------------------------------------------------------------------------"
+echo "                        Installation Complete                            "
+echo "-------------------------------------------------------------------------"
 
 if [ "$reboot_required" = true ]; then
     echo "Rebooting the system in 10 seconds due to driver installations..."
