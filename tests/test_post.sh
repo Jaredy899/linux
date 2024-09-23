@@ -15,24 +15,6 @@ else
     OS="unknown"
 fi
 
-echo "-------------------------------------------------------------------------"
-echo "                    Setting Permanent Console Font"
-echo "-------------------------------------------------------------------------"
-
-# Set permanent console font
-if [ "$OS" == "arch" ] || [ "$OS" == "fedora" ]; then
-    echo "FONT=ter-v18b" | sudo tee /etc/vconsole.conf > /dev/null
-    sudo setfont ter-v18b
-elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
-    sudo sed -i 's/^FONTFACE=.*/FONTFACE="Terminus"/' /etc/default/console-setup
-    sudo sed -i 's/^FONTSIZE=.*/FONTSIZE="18x10"/' /etc/default/console-setup
-    sudo sed -i 's/^CODESET=.*/CODESET="Uni2"/' /etc/default/console-setup
-    sudo DEBIAN_FRONTEND=noninteractive dpkg-reconfigure -f noninteractive console-setup
-    sudo update-initramfs -u
-    sudo setupcon --force
-fi
-echo "Console font settings have been applied and should persist after reboot."
-
 # Function to install and configure Nala
 install_nala() {
     [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ] || return
@@ -90,8 +72,7 @@ if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
         debian)
             debian_version=$(grep -oP '(?<=VERSION_CODENAME=).+' /etc/os-release)
             case $debian_version in
-                bookworm) repo="deb http://deb.debian.org/debian/ bookworm main contrib non-free non-free-firmware" ;;
-                bullseye) repo="deb http://deb.debian.org/debian/ bullseye main contrib non-free" ;;
+                bookworm|bullseye) repo="deb http://deb.debian.org/debian/ $debian_version main contrib non-free non-free-firmware" ;;
                 *) echo "Unsupported Debian version. Skipping NVIDIA driver installation."; return ;;
             esac
             echo "$repo" | sudo tee -a /etc/apt/sources.list
@@ -99,10 +80,10 @@ if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
             install_gpu_packages "nvidia-driver firmware-misc-nonfree"
             ;;
         ubuntu)
-            if systemctl is-active --quiet gdm.service || systemctl is-active --quiet lightdm.service; then
-                sudo ubuntu-drivers install nvidia:535
+            if [[ "$1" == "--gpgpu" ]]; then
+                sudo apt-get install nvidia-driver-535-server nvidia-utils-535-server
             else
-                sudo ubuntu-drivers install --gpgpu nvidia:535-server
+                sudo ubuntu-drivers autoinstall
             fi
             ;;
         fedora)
@@ -117,11 +98,11 @@ if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
 elif echo "${gpu_type}" | grep -qE "Radeon|AMD"; then
     echo "Detected AMD GPU"
     case "$OS" in
-        arch) install_gpu_packages "xf86-video-amdgpu" ;;
+        arch) install_gpu_packages "mesa lib32-mesa vulkan-radeon lib32-vulkan-radeon libva-mesa-driver libva-utils" ;;
         debian)
-            sudo sed -i 's/main$/main contrib non-free/' /etc/apt/sources.list
+            sudo sed -i 's/main$/main contrib non-free non-free-firmware/' /etc/apt/sources.list
             sudo apt update
-            install_gpu_packages "linux-headers-amd64 firmware-linux firmware-linux-nonfree libdrm-amdgpu1 firmware-amdgpu"
+            install_gpu_packages "firmware-amd-graphics libgl1-mesa-dri libglx-mesa0 mesa-vulkan-drivers xserver-xorg-video-all"
             ;;
         ubuntu)
             sudo add-apt-repository ppa:kisak/kisak-mesa -y
@@ -140,7 +121,7 @@ elif echo "${gpu_type}" | grep -qE "Radeon|AMD"; then
 elif echo "${gpu_type}" | grep -qE "Intel"; then
     echo "Detected Intel GPU"
     case "$OS" in
-        arch) install_gpu_packages "libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-intel-driver libva-utils lib32-mesa" ;;
+        arch) install_gpu_packages "libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-utils lib32-mesa" ;;
         debian|ubuntu) install_gpu_packages "intel-media-va-driver i965-va-driver vainfo mesa-vulkan-drivers" ;;
         fedora) install_gpu_packages "intel-media-driver mesa-va-drivers mesa-vdpau-drivers mesa-vulkan-drivers libva-intel-driver" ;;
     esac
@@ -176,15 +157,29 @@ case "$OS" in
     fedora) install_package "NetworkManager terminus-fonts-console openssh-server" ;;
 esac
 
-# Enable services
-services="NetworkManager ssh qemu-guest-agent"
-for service in $services; do
-    if systemctl list-unit-files | grep -q $service; then
-        sudo systemctl enable $service
-        sudo systemctl start $service || true
-        echo "$service has been enabled and activation attempted."
-    fi
+# Enable and start services
+for service in NetworkManager ssh sshd qemu-guest-agent; do
+    sudo systemctl enable $service &>/dev/null && echo "$service enabled" || echo "Failed to enable $service"
+    sudo systemctl start $service &>/dev/null && echo "$service started" || echo "Failed to start $service"
 done
+
+echo "-------------------------------------------------------------------------"
+echo "                    Setting Permanent Console Font"
+echo "-------------------------------------------------------------------------"
+
+# Set permanent console font
+if [ "$OS" == "arch" ] || [ "$OS" == "fedora" ]; then
+    echo "FONT=ter-v18b" | sudo tee /etc/vconsole.conf > /dev/null
+    sudo setfont ter-v18b
+elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
+    sudo sed -i 's/^FONTFACE=.*/FONTFACE="Terminus"/' /etc/default/console-setup
+    sudo sed -i 's/^FONTSIZE=.*/FONTSIZE="18x10"/' /etc/default/console-setup
+    sudo sed -i 's/^CODESET=.*/CODESET="Uni2"/' /etc/default/console-setup
+    sudo DEBIAN_FRONTEND=noninteractive dpkg-reconfigure -f noninteractive console-setup
+    sudo update-initramfs -u
+    sudo setupcon --force
+fi
+echo "Console font settings have been applied and should persist after reboot."
 
 echo "-------------------------------------------------------------------------"
 echo "                        Installation Complete                            "
