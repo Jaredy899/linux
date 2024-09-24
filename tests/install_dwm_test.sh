@@ -89,6 +89,11 @@ makeDWM() {
     cd "$HOME" && git clone https://github.com/ChrisTitusTech/dwm-titus.git # CD to Home directory to install dwm-titus
     cd dwm-titus/
     $ESCALATION_TOOL make clean install
+    
+    # Install slstatus
+    cd slstatus/
+    $ESCALATION_TOOL make clean install
+    cd ..  # Return to the dwm-titus directory
 }
 
 setupDWM() {
@@ -255,138 +260,153 @@ configure_backgrounds() {
 setupDisplayManager() {
     echo "Setting up Display Manager"
 
-    # Detect the current distribution
-    distro=$(detect_distro)
+    # Ask if the user wants to autologin
+    read -p "Do you want to set up autologin? (y/n): " setup_autologin
 
-    # Check if a display manager is already installed
-    existing_dm=""
-    for dm in sddm lightdm gdm; do
-        if command -v $dm >/dev/null 2>&1; then
-            existing_dm=$dm
-            break
+    if [ "$setup_autologin" = "y" ] || [ "$setup_autologin" = "Y" ]; then
+        # Detect the current distribution
+        distro=$(detect_distro)
+
+        # Check if a display manager is already installed
+        existing_dm=""
+        for dm in sddm lightdm gdm; do
+            if command -v $dm >/dev/null 2>&1; then
+                existing_dm=$dm
+                break
+            fi
+        done
+
+        if [ -n "$existing_dm" ]; then
+            echo "Existing display manager detected: $existing_dm"
+            read -p "Do you want to use $existing_dm? (y/n): " use_existing_dm
+            if [ "$use_existing_dm" = "y" ] || [ "$use_existing_dm" = "Y" ]; then
+                DM=$existing_dm
+            fi
         fi
-    done
 
-    if [ -n "$existing_dm" ]; then
-        echo "Existing display manager detected: $existing_dm"
-        read -p "Do you want to use $existing_dm? (y/n): " use_existing_dm
-        if [ "$use_existing_dm" = "y" ] || [ "$use_existing_dm" = "Y" ]; then
-            DM=$existing_dm
+        # If no existing DM is chosen, select based on distribution
+        if [ -z "$DM" ]; then
+            case "$distro" in
+                arch|fedora)
+                    DM="sddm"
+                    ;;
+                ubuntu|debian)
+                    DM="lightdm"
+                    ;;
+                *)
+                    echo "Unsupported distribution. Defaulting to SDDM."
+                    DM="sddm"
+                    ;;
+            esac
+
+            # Install the chosen display manager if not already installed
+            if ! command -v $DM >/dev/null 2>&1; then
+                echo "Installing $DM..."
+                case $PACKAGER in
+                    pacman)
+                        sudo pacman -S --noconfirm $DM
+                        ;;
+                    apt)
+                        sudo apt install -y $DM
+                        ;;
+                    dnf)
+                        sudo dnf install -y $DM
+                        ;;
+                    *)
+                        echo "Unsupported package manager. Please install $DM manually."
+                        return 1
+                        ;;
+                esac
+            fi
         fi
-    fi
 
-    # If no existing DM is chosen, select based on distribution
-    if [ -z "$DM" ]; then
-        case "$distro" in
-            arch|fedora)
-                DM="sddm"
+        echo "Configuring $DM for autologin"
+
+        # Configure the chosen display manager for autologin
+        case $DM in
+            "sddm")
+                # SDDM configuration
+                SDDM_CONF="/etc/sddm.conf"
+                if [ ! -f "$SDDM_CONF" ]; then
+                    echo "[Autologin]" | sudo tee "$SDDM_CONF"
+                else
+                    sudo sed -i '/^\[Autologin\]/d' "$SDDM_CONF"
+                    sudo sed -i '/^User=/d' "$SDDM_CONF"
+                    sudo sed -i '/^Session=/d' "$SDDM_CONF"
+                    echo "[Autologin]" | sudo tee -a "$SDDM_CONF"
+                fi
+                echo "User=$USER" | sudo tee -a "$SDDM_CONF"
+                echo "Session=dwm" | sudo tee -a "$SDDM_CONF"
                 ;;
-            ubuntu|debian)
-                DM="lightdm"
+            "lightdm")
+                # LightDM configuration
+                LIGHTDM_CONF="/etc/lightdm/lightdm.conf"
+                if [ ! -f "$LIGHTDM_CONF" ]; then
+                    echo "LightDM configuration file not found. Attempting to create it."
+                    sudo mkdir -p /etc/lightdm
+                    echo "[Seat:*]" | sudo tee "$LIGHTDM_CONF"
+                fi
+                
+                if [ -f "$LIGHTDM_CONF" ]; then
+                    if ! grep -q "^\[Seat:\*\]" "$LIGHTDM_CONF"; then
+                        echo "[Seat:*]" | sudo tee -a "$LIGHTDM_CONF"
+                    fi
+                    sudo sed -i "/^\[Seat:\*\]/a autologin-user=$USER" "$LIGHTDM_CONF"
+                    sudo sed -i "/^\[Seat:\*\]/a autologin-session=dwm" "$LIGHTDM_CONF"
+                    echo "LightDM configured for autologin."
+                else
+                    echo "Failed to create or find LightDM configuration file. Autologin setup failed."
+                fi
                 ;;
-            *)
-                echo "Unsupported distribution. Defaulting to SDDM."
-                DM="sddm"
+            "gdm")
+                # GDM configuration
+                GDM_CONF="/etc/gdm/custom.conf"
+                if [ ! -f "$GDM_CONF" ]; then
+                    echo "GDM configuration file not found. Attempting to create it."
+                    sudo mkdir -p /etc/gdm
+                    echo "[daemon]" | sudo tee "$GDM_CONF"
+                fi
+                
+                if [ -f "$GDM_CONF" ]; then
+                    if ! grep -q "^\[daemon\]" "$GDM_CONF"; then
+                        echo "[daemon]" | sudo tee -a "$GDM_CONF"
+                    fi
+                    sudo sed -i "/^\[daemon\]/a AutomaticLoginEnable=True" "$GDM_CONF"
+                    sudo sed -i "/^\[daemon\]/a AutomaticLogin=$USER" "$GDM_CONF"
+                    
+                    # Set DWM as the default session
+                    if [ -d "/usr/share/xsessions" ]; then
+                        echo "[Desktop]" | sudo tee /usr/share/xsessions/dwm.desktop
+                        echo "Name=DWM" | sudo tee -a /usr/share/xsessions/dwm.desktop
+                        echo "Exec=dwm" | sudo tee -a /usr/share/xsessions/dwm.desktop
+                    fi
+                    
+                    echo "GDM configured for autologin."
+                else
+                    echo "Failed to create or find GDM configuration file. Autologin setup failed."
+                fi
                 ;;
         esac
 
-        # Install the chosen display manager if not already installed
-        if ! command -v $DM >/dev/null 2>&1; then
-            echo "Installing $DM..."
-            case $PACKAGER in
-                pacman)
-                    sudo pacman -S --noconfirm $DM
-                    ;;
-                apt)
-                    sudo apt install -y $DM
-                    ;;
-                dnf)
-                    sudo dnf install -y $DM
-                    ;;
-                *)
-                    echo "Unsupported package manager. Please install $DM manually."
-                    return 1
-                    ;;
-            esac
-        fi
+        # Enable the display manager service
+        sudo systemctl enable $DM.service
+
+        # Set the system to boot into graphical.target
+        echo "Setting system to boot into graphical.target"
+        sudo systemctl set-default graphical.target
+
+        echo "Display Manager setup complete with autologin."
+    else
+        echo "Autologin not selected. Setting up for manual login."
+        
+        # Set the system to boot into multi-user.target
+        sudo systemctl set-default multi-user.target
+        
+        # Create .xinitrc file
+        echo "Creating .xinitrc file in the home directory."
+        echo "exec dwm" > "$HOME/.xinitrc"
+        echo ".xinitrc file created with 'exec dwm'"
     fi
-
-    echo "Configuring $DM for autologin"
-
-    # Configure the chosen display manager for autologin
-    case $DM in
-        "sddm")
-            # SDDM configuration
-            SDDM_CONF="/etc/sddm.conf"
-            if [ ! -f "$SDDM_CONF" ]; then
-                echo "[Autologin]" | sudo tee "$SDDM_CONF"
-            else
-                sudo sed -i '/^\[Autologin\]/d' "$SDDM_CONF"
-                sudo sed -i '/^User=/d' "$SDDM_CONF"
-                sudo sed -i '/^Session=/d' "$SDDM_CONF"
-                echo "[Autologin]" | sudo tee -a "$SDDM_CONF"
-            fi
-            echo "User=$USER" | sudo tee -a "$SDDM_CONF"
-            echo "Session=dwm" | sudo tee -a "$SDDM_CONF"
-            ;;
-        "lightdm")
-            # LightDM configuration
-            LIGHTDM_CONF="/etc/lightdm/lightdm.conf"
-            if [ ! -f "$LIGHTDM_CONF" ]; then
-                echo "LightDM configuration file not found. Attempting to create it."
-                sudo mkdir -p /etc/lightdm
-                echo "[Seat:*]" | sudo tee "$LIGHTDM_CONF"
-            fi
-            
-            if [ -f "$LIGHTDM_CONF" ]; then
-                if ! grep -q "^\[Seat:\*\]" "$LIGHTDM_CONF"; then
-                    echo "[Seat:*]" | sudo tee -a "$LIGHTDM_CONF"
-                fi
-                sudo sed -i "/^\[Seat:\*\]/a autologin-user=$USER" "$LIGHTDM_CONF"
-                sudo sed -i "/^\[Seat:\*\]/a autologin-session=dwm" "$LIGHTDM_CONF"
-                echo "LightDM configured for autologin."
-            else
-                echo "Failed to create or find LightDM configuration file. Autologin setup failed."
-            fi
-            ;;
-        "gdm")
-            # GDM configuration
-            GDM_CONF="/etc/gdm/custom.conf"
-            if [ ! -f "$GDM_CONF" ]; then
-                echo "GDM configuration file not found. Attempting to create it."
-                sudo mkdir -p /etc/gdm
-                echo "[daemon]" | sudo tee "$GDM_CONF"
-            fi
-            
-            if [ -f "$GDM_CONF" ]; then
-                if ! grep -q "^\[daemon\]" "$GDM_CONF"; then
-                    echo "[daemon]" | sudo tee -a "$GDM_CONF"
-                fi
-                sudo sed -i "/^\[daemon\]/a AutomaticLoginEnable=True" "$GDM_CONF"
-                sudo sed -i "/^\[daemon\]/a AutomaticLogin=$USER" "$GDM_CONF"
-                
-                # Set DWM as the default session
-                if [ -d "/usr/share/xsessions" ]; then
-                    echo "[Desktop]" | sudo tee /usr/share/xsessions/dwm.desktop
-                    echo "Name=DWM" | sudo tee -a /usr/share/xsessions/dwm.desktop
-                    echo "Exec=dwm" | sudo tee -a /usr/share/xsessions/dwm.desktop
-                fi
-                
-                echo "GDM configured for autologin."
-            else
-                echo "Failed to create or find GDM configuration file. Autologin setup failed."
-            fi
-            ;;
-    esac
-
-    # Enable the display manager service
-    sudo systemctl enable $DM.service
-
-    # Set the system to boot into graphical.target
-    echo "Setting system to boot into graphical.target"
-    sudo systemctl set-default graphical.target
-
-    echo "Display Manager setup complete."
 }
 
 # Function Calls
