@@ -287,10 +287,10 @@ setupDisplayManager() {
         # If no existing DM is chosen, select based on distribution
         if [ -z "$DM" ]; then
             case "$distro" in
-                arch|fedora)
+                arch|fedora|ubuntu)
                     DM="sddm"
                     ;;
-                ubuntu|debian)
+                debian)
                     DM="lightdm"
                     ;;
                 *)

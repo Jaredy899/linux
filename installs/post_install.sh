@@ -15,6 +15,16 @@ else
     OS="unknown"
 fi
 
+# Detect timezone
+detected_timezone="$(curl --fail https://ipapi.co/timezone)"
+if [ -n "$detected_timezone" ]; then
+    echo "Detected timezone: $detected_timezone"
+    sudo timedatectl set-timezone "$detected_timezone"
+    echo "Timezone set to $detected_timezone"
+else
+    echo "Failed to detect timezone. Please set it manually if needed."
+fi
+
 # Function to install and configure Nala
 install_nala() {
     [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ] || return
