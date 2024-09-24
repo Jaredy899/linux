@@ -9,7 +9,7 @@ DWM_TITUS_DIR="$HOME/dwm-titus"
 # Create directories and download files for mybash
 mkdir -p "$MYBASH_DIR"
 curl -sSfL -o "$MYBASH_DIR/.bashrc" "$BASE_URL/.bashrc"
-curl -sSfL -o "$MYBASH_DIR/config.jsonc" "$BASE_URL/config.jsonc"
+curl -sSfL -o "$HOME/.config/fastfetch/config.jsonc" "$BASE_URL/config.jsonc"
 curl -sSfL -o "$MYBASH_DIR/starship.toml" "$BASE_URL/starship.toml"
 
 # Create directory and download file for dwm-titus
