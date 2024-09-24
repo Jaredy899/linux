@@ -80,10 +80,11 @@ while true; do
     echo "6) Install Tailscale"
     echo "7) Install Docker and Portainer"
     echo "8) Run DWM Setup Script"
+    echo "9) Replace configs"
     echo "0) Exit"
     echo
 
-    read -p "Enter your choice (0-8): " choice
+    read -p "Enter your choice (0-9): " choice
 
     case $choice in
         1) 
@@ -110,8 +111,12 @@ while true; do
             echo "Running DWM Setup Script..."
             run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
+        9)
+            echo "Replacing configs..."
+            run_script "replace_configs.sh" "$GITPATH/installs" "$INSTALLS_URL"
+            ;;
         0) echo "Exiting script."; break ;;
-        *) echo "Invalid option. Please enter a number between 0 and 8." ;;
+        *) echo "Invalid option. Please enter a number between 0 and 9." ;;
     esac
 done
 
