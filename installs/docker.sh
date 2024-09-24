@@ -60,7 +60,7 @@ install_docker() {
                 exit 1
             fi
             ;;
-        opensuse|suse)
+        opensuse|suse|opensuse-tumbleweed)
             echo "Detected openSUSE system"
             sudo zypper refresh
             sudo zypper install -y docker

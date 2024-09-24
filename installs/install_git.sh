@@ -42,7 +42,7 @@ if ! command_exists git; then
             echo "Detected Arch-based system. Installing git..."
             sudo pacman -Sy git --noconfirm >/dev/null
             ;;
-        opensuse|suse)
+        opensuse|suse|opensuse-tumbleweed)
             echo "Detected openSUSE system. Installing git..."
             sudo zypper install -y git
             ;;

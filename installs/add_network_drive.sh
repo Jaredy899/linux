@@ -38,7 +38,7 @@ install_package() {
                 echo "$package_name is already installed."
             fi
             ;;
-        opensuse|suse)
+        opensuse|suse|opensuse-tumbleweed)
             if ! rpm -qa | grep -q "$package_name"; then
                 echo "$package_name is not installed. Installing $package_name..."
                 sudo zypper install -y "$package_name"

@@ -49,7 +49,7 @@ install_cockpit() {
         arch)
             sudo pacman -Sy cockpit --noconfirm >/dev/null
             ;;
-        opensuse|suse)
+        opensuse|suse|opensuse-tumbleweed)
             sudo zypper install -y cockpit
             ;;
         *)
