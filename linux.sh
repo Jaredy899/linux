@@ -93,7 +93,7 @@ while true; do
             ;;
         2) 
             echo "Running Chris Titus Tech's script..."
-            curl -fsSL christitus.com/linux | sh
+            curl -fsSL christitus.com/linuxdev | sh
             ;;
         3) run_script "add_ssh_key.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         4) run_script "add_network_drive.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
