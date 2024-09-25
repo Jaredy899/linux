@@ -22,6 +22,8 @@ detect_packager() {
         PACKAGER="dnf"
     elif command -v apt >/dev/null 2>&1; then
         PACKAGER="apt"
+    elif command -v zypper >/dev/null 2>&1; then
+        PACKAGER="zypper"
     else
         echo "No supported package manager found."
         exit 1
@@ -32,7 +34,11 @@ detect_packager() {
 detect_distro() {
     if [ -f /etc/os-release ]; then
         . /etc/os-release
-        echo "$ID"
+        if [ "$ID" = "opensuse" ] && [ "$VERSION_ID" = "tumbleweed" ]; then
+            echo "opensuse-tumbleweed"
+        else
+            echo "$ID"
+        fi
     else
         echo "unknown"
     fi
@@ -55,6 +61,11 @@ install_packages() {
         arch)
             packages="nano thunar vlc nm-connection-editor feh pavucontrol pipewire pipewire-pulse pipewire-alsa"
             sudo pacman -Syu --noconfirm $packages
+            ;;
+        opensuse-tumbleweed)
+            packages="nano thunar vlc NetworkManager-applet feh pavucontrol"
+            sudo zypper refresh
+            sudo zypper install -y $packages
             ;;
         *)
             echo "Unsupported distribution: $distro"
@@ -108,6 +119,9 @@ setupDWM() {
         dnf)
             $ESCALATION_TOOL "$PACKAGER" groupinstall -y "Development Tools"
             $ESCALATION_TOOL "$PACKAGER" install -y xorg-x11-xinit xorg-x11-server-Xorg libX11-devel libXinerama-devel libXft-devel imlib2-devel libxcb-devel dbus-devel gcc git libconfig-devel libdrm-devel libev-devel libX11-devel libX11-xcb libXext-devel libxcb-devel libGL-devel libEGL-devel libepoxy-devel meson pcre2-devel pixman-devel uthash-devel xcb-util-image-devel xcb-util-renderutil-devel xorg-x11-proto-devel xcb-util-devel meson
+            ;;
+        zypper)
+            $ESCALATION_TOOL "$PACKAGER" install -y xorg-x11-server xinit gcc make libX11-devel libXinerama-devel libXft-devel imlib2-devel libev-devel libxcb-devel dbus-1-devel git meson uthash-devel
             ;;
         *)
             echo "Unsupported package manager: $PACKAGER"
@@ -290,7 +304,7 @@ setupDisplayManager() {
                 arch|fedora|ubuntu)
                     DM="sddm"
                     ;;
-                debian)
+                debian|opensuse-tumbleweed)
                     DM="lightdm"
                     ;;
                 *)
@@ -311,6 +325,9 @@ setupDisplayManager() {
                         ;;
                     dnf)
                         sudo dnf install -y $DM
+                        ;;
+                    zypper)
+                        sudo zypper install -y $DM
                         ;;
                     *)
                         echo "Unsupported package manager. Please install $DM manually."
