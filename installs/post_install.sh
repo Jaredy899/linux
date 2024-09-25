@@ -10,6 +10,10 @@ elif [ -f /etc/debian_version ]; then
     OS=$(grep -q "Ubuntu" /etc/lsb-release && echo "ubuntu" || echo "debian")
 elif [ -f /etc/fedora-release ]; then
     OS="fedora"
+elif [ -f /etc/os-release ] && grep -q "openSUSE Tumbleweed" /etc/os-release; then
+    OS="opensuse-tumbleweed"
+elif [ -f /etc/os-release ] && grep -q "openSUSE Leap" /etc/os-release; then
+    OS="opensuse-leap"
 else
     echo "Unsupported OS, but continuing with best-effort installation..."
     OS="unknown"
@@ -53,6 +57,8 @@ if [[ -f /etc/pacman.conf ]]; then
     sudo sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf || echo "Failed to enable ParallelDownloads for Pacman. Continuing..."
 elif [[ -f /etc/dnf/dnf.conf ]] && ! grep -q '^max_parallel_downloads' /etc/dnf/dnf.conf; then
     echo 'max_parallel_downloads=10' | sudo tee -a /etc/dnf/dnf.conf || echo "Failed to enable max_parallel_downloads for DNF. Continuing..."
+elif [[ -f /etc/zypp/zypp.conf ]] && ! grep -q '^multiversion' /etc/zypp/zypp.conf; then
+    sudo sed -i 's/^# download.use_deltarpm = true/download.use_deltarpm = true/' /etc/zypp/zypp.conf || echo "Failed to enable parallel downloads for Zypper. Continuing..."
 fi
 
 echo "-------------------------------------------------------------------------"
@@ -68,6 +74,7 @@ install_gpu_packages() {
         arch) sudo pacman -S --noconfirm --needed $1 ;;
         debian|ubuntu) sudo DEBIAN_FRONTEND=noninteractive apt install -y $1 ;;
         fedora) sudo dnf install -y $1 ;;
+        opensuse-tumbleweed|opensuse-leap) sudo zypper install -y $1 ;;
     esac
 }
 
@@ -103,6 +110,16 @@ if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
             sudo dnf makecache
             install_gpu_packages "akmod-nvidia xorg-x11-drv-nvidia-cuda"
             ;;
+        opensuse-tumbleweed)
+            sudo zypper addrepo --refresh https://download.nvidia.com/opensuse/tumbleweed/ NVIDIA
+            sudo zypper refresh
+            install_gpu_packages "nvidia-glG05 nvidia-computeG05 nvidia-gfxG05-kmp-default"
+            ;;
+        opensuse-leap)
+            sudo zypper addrepo --refresh https://download.nvidia.com/opensuse/leap/$(grep VERSION_ID /etc/os-release | cut -d '"' -f 2)/ NVIDIA
+            sudo zypper refresh
+            install_gpu_packages "nvidia-glG05 nvidia-computeG05 nvidia-gfxG05-kmp-default"
+            ;;
     esac
     reboot_required=true
 elif echo "${gpu_type}" | grep -qE "Radeon|AMD"; then
@@ -126,6 +143,9 @@ elif echo "${gpu_type}" | grep -qE "Radeon|AMD"; then
             echo 'Section "Device"\n    Identifier "AMD"\n    Driver "amdgpu"\n    Option "DRI" "3"\nEndSection' | sudo tee /etc/X11/xorg.conf.d/20-amdgpu.conf
             sudo dracut --force
             ;;
+        opensuse-tumbleweed|opensuse-leap)
+            install_gpu_packages "xf86-video-amdgpu"
+            ;;
     esac
     reboot_required=true
 elif echo "${gpu_type}" | grep -qE "Intel"; then
@@ -134,6 +154,9 @@ elif echo "${gpu_type}" | grep -qE "Intel"; then
         arch) install_gpu_packages "libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-utils lib32-mesa" ;;
         debian|ubuntu) install_gpu_packages "intel-media-va-driver i965-va-driver vainfo mesa-vulkan-drivers" ;;
         fedora) install_gpu_packages "intel-media-driver mesa-va-drivers mesa-vdpau-drivers mesa-vulkan-drivers libva-intel-driver" ;;
+        opensuse-tumbleweed|opensuse-leap)
+            install_gpu_packages "xf86-video-intel"
+            ;;
     esac
     reboot_required=true
 else
@@ -150,6 +173,7 @@ install_package() {
         arch) sudo pacman -S --noconfirm --needed $1 ;;
         debian|ubuntu) sudo DEBIAN_FRONTEND=noninteractive nala install -y $1 ;;
         fedora) sudo dnf install -y $1 ;;
+        opensuse-tumbleweed|opensuse-leap) sudo zypper install -y $1 ;;
         *) echo "Unable to install $1 on this OS. Continuing..." ;;
     esac
 }
@@ -165,6 +189,7 @@ case "$OS" in
     arch) install_package "networkmanager terminus-font yazi openssh" ;;
     debian|ubuntu) install_package "network-manager console-setup xfonts-terminus openssh-server" ;;
     fedora) install_package "NetworkManager terminus-fonts-console openssh-server" ;;
+    opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager terminus-bitmap-fonts openssh" ;;
 esac
 
 # Enable and start services
@@ -178,7 +203,7 @@ echo "                    Setting Permanent Console Font"
 echo "-------------------------------------------------------------------------"
 
 # Set permanent console font
-if [ "$OS" == "arch" ] || [ "$OS" == "fedora" ]; then
+if [ "$OS" == "arch" ] || [ "$OS" == "fedora" ] || [[ "$OS" == opensuse-* ]]; then
     echo "FONT=ter-v18b" | sudo tee /etc/vconsole.conf > /dev/null
     sudo setfont ter-v18b
 elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
