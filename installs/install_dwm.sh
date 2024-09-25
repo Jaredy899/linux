@@ -301,10 +301,10 @@ setupDisplayManager() {
         # If no existing DM is chosen, select based on distribution
         if [ -z "$DM" ]; then
             case "$distro" in
-                arch|fedora|ubuntu)
+                arch|fedora|ubuntu|opensuse-tumbleweed)
                     DM="sddm"
                     ;;
-                debian|opensuse-tumbleweed)
+                debian)
                     DM="lightdm"
                     ;;
                 *)
