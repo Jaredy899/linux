@@ -62,7 +62,7 @@ install_packages() {
             packages="nano thunar vlc nm-connection-editor feh pavucontrol pipewire pipewire-pulse pipewire-alsa"
             sudo pacman -Syu --noconfirm $packages
             ;;
-        opensuse-tumbleweed)
+        opensuse-tumbleweed|opensuse-leap)
             packages="nano thunar vlc NetworkManager-applet feh pavucontrol"
             sudo zypper refresh
             sudo zypper install -y $packages
