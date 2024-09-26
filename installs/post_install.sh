@@ -83,7 +83,15 @@ if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
     echo "Detected NVIDIA GPU"
     case "$OS" in
         arch)
-            [[ $(uname -r) == *lts* ]] && nvidia_pkg="nvidia-lts" || nvidia_pkg="nvidia"
+            if [ -e /proc/version ]; then
+                [[ $(uname -r) == *lts* ]] && nvidia_pkg="nvidia-lts" || nvidia_pkg="nvidia"
+            else
+                if pacman -Qq linux-lts &>/dev/null; then
+                    nvidia_pkg="nvidia-lts"
+                else
+                    nvidia_pkg="nvidia"
+                fi
+            fi
             install_gpu_packages "$nvidia_pkg nvidia-settings"
             ;;
         debian)
