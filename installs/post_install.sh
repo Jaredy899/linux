@@ -140,20 +140,20 @@ if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
             echo "NVIDIA drivers installed. Please reboot your system to complete the installation."
             ;;
         opensuse-tumbleweed)
-            if ! sudo zypper addrepo --refresh https://download.nvidia.com/opensuse/tumbleweed/ NVIDIA; then
+            if ! yes | sudo zypper --non-interactive addrepo --refresh https://download.nvidia.com/opensuse/tumbleweed/ NVIDIA; then
                 echo "Failed to add NVIDIA repository. Exiting."
                 return 1
             fi
-            sudo zypper --gpg-auto-import-keys refresh
+            yes | sudo zypper --non-interactive --gpg-auto-import-keys refresh
             install_gpu_packages "nvidia-glG06 nvidia-computeG06 nvidia-gfxG06-kmp-default"
             ;;
         opensuse-leap)
             leap_version=$(grep VERSION_ID /etc/os-release | cut -d '"' -f 2)
-            if ! sudo zypper addrepo --refresh "https://download.nvidia.com/opensuse/leap/$leap_version/" NVIDIA; then
+            if ! yes | sudo zypper --non-interactive addrepo --refresh "https://download.nvidia.com/opensuse/leap/$leap_version/" NVIDIA; then
                 echo "Failed to add NVIDIA repository. Exiting."
                 return 1
             fi
-            sudo zypper --gpg-auto-import-keys refresh
+            yes | sudo zypper --non-interactive --gpg-auto-import-keys refresh
             install_gpu_packages "nvidia-glG06 nvidia-computeG06 nvidia-gfxG06-kmp-default"
             ;;
     esac
