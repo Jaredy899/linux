@@ -24,8 +24,8 @@ function clear_with_banner {
     display_banner
 }
 
-# Install necessary packages
 pacman-key --init
+pacman-key --populate archlinux
 pacman -Sy --noconfirm archlinux-keyring
 pacman -S --noconfirm --needed pacman-contrib terminus-font reflector curl rsync grub
 setfont ter-v18b
