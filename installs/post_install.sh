@@ -97,36 +97,64 @@ if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
         debian)
             debian_version=$(grep -oP '(?<=VERSION_CODENAME=).+' /etc/os-release)
             case $debian_version in
-                bookworm|bullseye) repo="deb http://deb.debian.org/debian/ $debian_version main contrib non-free non-free-firmware" ;;
+                bookworm|bullseye)
+                    sed -i 's/main$/main contrib non-free non-free-firmware/' /etc/apt/sources.list
+                    if command -v nala &> /dev/null; then
+                        sed -i 's/main$/main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/nala-sources.list
+                    fi
+                    if command -v nala &> /dev/null; then
+                        nala update
+                    else
+                        apt update
+                    fi
+                    install_gpu_packages "nvidia-driver firmware-misc-nonfree"
+                    ;;
                 *) echo "Unsupported Debian version. Skipping NVIDIA driver installation."; return ;;
             esac
-            echo "$repo" | sudo tee -a /etc/apt/sources.list
-            sudo apt update
-            install_gpu_packages "nvidia-driver firmware-misc-nonfree"
             ;;
         ubuntu)
+            # Update package lists
+            sudo apt update
             if [[ "$1" == "--gpgpu" ]]; then
-                sudo apt-get install nvidia-driver-535-server nvidia-utils-535-server
+                sudo apt install -y nvidia-driver-535-server nvidia-utils-535-server
             else
-                sudo ubuntu-drivers autoinstall
+                if command -v ubuntu-drivers &> /dev/null; then
+                    sudo ubuntu-drivers autoinstall
+                else
+                    sudo apt install -y nvidia-driver-535
+                fi
+            fi
+            if [[ "$1" == "--gpgpu" ]]; then
+                sudo apt install -y nvidia-cuda-toolkit
             fi
             ;;
         fedora)
-            install_gpu_packages "kernel-devel kernel-headers gcc make dkms acpid libglvnd-glx libglvnd-opengl libglvnd-devel pkgconfig"
-            sudo dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
-            sudo dnf install -y https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+            sudo dnf install -y kernel-devel kernel-headers gcc make dkms acpid libglvnd-glx libglvnd-opengl libglvnd-devel pkgconfig
+            if ! sudo dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm; then
+                echo "Failed to add RPM Fusion repositories. Exiting."
+                return 1
+            fi
             sudo dnf makecache
-            install_gpu_packages "akmod-nvidia xorg-x11-drv-nvidia-cuda"
+            sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda
+            sudo dracut --force
+            echo "NVIDIA drivers installed. Please reboot your system to complete the installation."
             ;;
         opensuse-tumbleweed)
-            sudo zypper addrepo --refresh https://download.nvidia.com/opensuse/tumbleweed/ NVIDIA
-            sudo zypper refresh
-            install_gpu_packages "nvidia-glG05 nvidia-computeG05 nvidia-gfxG05-kmp-default"
+            if ! sudo zypper addrepo --refresh https://download.nvidia.com/opensuse/tumbleweed/ NVIDIA; then
+                echo "Failed to add NVIDIA repository. Exiting."
+                return 1
+            fi
+            sudo zypper --gpg-auto-import-keys refresh
+            install_gpu_packages "nvidia-glG06 nvidia-computeG06 nvidia-gfxG06-kmp-default"
             ;;
         opensuse-leap)
-            sudo zypper addrepo --refresh https://download.nvidia.com/opensuse/leap/$(grep VERSION_ID /etc/os-release | cut -d '"' -f 2)/ NVIDIA
-            sudo zypper refresh
-            install_gpu_packages "nvidia-glG05 nvidia-computeG05 nvidia-gfxG05-kmp-default"
+            leap_version=$(grep VERSION_ID /etc/os-release | cut -d '"' -f 2)
+            if ! sudo zypper addrepo --refresh "https://download.nvidia.com/opensuse/leap/$leap_version/" NVIDIA; then
+                echo "Failed to add NVIDIA repository. Exiting."
+                return 1
+            fi
+            sudo zypper --gpg-auto-import-keys refresh
+            install_gpu_packages "nvidia-glG06 nvidia-computeG06 nvidia-gfxG06-kmp-default"
             ;;
     esac
     reboot_required=true
