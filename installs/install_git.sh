@@ -1,56 +1,37 @@
-#!/bin/bash
+#!/bin/sh -e
 
-set -e  # Exit immediately if a command exits with a non-zero status
+# Source the common script directly from GitHub
+. <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)
 
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
+# Run the environment check
+checkEnv || exit 1
 
-# Function to detect the Linux distribution
-detect_distro() {
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        echo "$ID"
+# Function to install Git
+install_git() {
+    if ! command_exists git; then
+        printf "%b\n" "${YELLOW}Installing Git...${RC}"
+        case "$PACKAGER" in
+            pacman)
+                "$ESCALATION_TOOL" "$PACKAGER" -S --needed --noconfirm git
+                ;;
+            *)
+                "$ESCALATION_TOOL" "$PACKAGER" install -y git
+                ;;
+        esac
+        printf "%b\n" "${GREEN}Git installation complete.${RC}"
     else
-        echo "unknown"
+        printf "%b\n" "${GREEN}Git is already installed.${RC}"
     fi
 }
 
-# Detect the Linux distribution
-DISTRO=$(detect_distro)
-if [ "$DISTRO" = "unknown" ]; then
-    echo "Unable to detect Linux distribution. Exiting."
-    exit 1
-fi
+# Main script
+install_git
 
-# Ensure git is installed
-if ! command_exists git; then
-    echo "Git is not installed. Installing git..."
-
-    case "$DISTRO" in
-        ubuntu|debian)
-            echo "Detected Debian/Ubuntu system. Installing git..."
-            sudo apt-get update -qq
-            sudo apt-get install -y git -qq
-            ;;
-        fedora|centos|rhel|rocky|alma)
-            echo "Detected Fedora/CentOS/RHEL-based system. Installing git..."
-            sudo dnf install -y git -q
-            ;;
-        arch)
-            echo "Detected Arch-based system. Installing git..."
-            sudo pacman -Sy git --noconfirm >/dev/null
-            ;;
-        opensuse|suse|opensuse-tumbleweed)
-            echo "Detected openSUSE system. Installing git..."
-            sudo zypper install -y git
-            ;;
-        *)
-            echo "Unsupported distribution: $DISTRO. Please install git manually."
-            exit 1
-            ;;
-    esac
+# Verify Git installation
+if command_exists git; then
+    git_version=$(git --version)
+    printf "%b\n" "${GREEN}Git is installed successfully. Version: $git_version${RC}"
 else
-    echo "Git is already installed."
+    printf "%b\n" "${RED}Git installation failed or Git is not in the system PATH.${RC}"
+    exit 1
 fi

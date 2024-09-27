@@ -1,37 +1,18 @@
-#!/bin/bash
+#!/bin/sh -e
 
-set -e  # Exit immediately if a command exits with a non-zero status
-IFS=$(printf '\n\t')
+# Source the common script from the same directory
+. "$(dirname "$0")/common_script.sh"
+
+# Run the environment check
+checkEnv || exit 1
 
 # Set the GITPATH variable to the directory where the script is located
 GITPATH="$(cd "$(dirname "$0")" && pwd)"
-echo "GITPATH is set to: $GITPATH"
+printf "%b\n" "${CYAN}GITPATH is set to: $GITPATH${RC}"
 
 # GitHub URL base for the necessary configuration files
 GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/"
 INSTALLS_URL="$GITHUB_BASE_URL/installs"
-
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
-
-# Function to detect the Linux distribution
-detect_distro() {
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        echo "$ID"
-    else
-        echo "unknown"
-    fi
-}
-
-# Detect the Linux distribution
-distro=$(detect_distro)
-if [ "$distro" = "unknown" ]; then
-    echo "Unable to detect Linux distribution. Exiting."
-    exit 1
-fi
 
 # Function to run a script from local or GitHub
 run_script() {
@@ -39,89 +20,91 @@ run_script() {
     local_path="$2"
     url="$3"
 
-    if [[ -f "$local_path/$script_name" ]]; then
-        echo "Running $script_name from local directory..."
-        bash "$local_path/$script_name"
+    if [ -f "$local_path/$script_name" ]; then
+        printf "%b\n" "${YELLOW}Running $script_name from local directory...${RC}"
+        sh "$local_path/$script_name"
     else
-        echo "Running $script_name from GitHub..."
+        printf "%b\n" "${YELLOW}Running $script_name from GitHub...${RC}"
         curl -fsSL "$url/$script_name" -o "/tmp/$script_name"
-        bash "/tmp/$script_name"
+        sh "/tmp/$script_name"
         rm "/tmp/$script_name"
     fi
 }
 
 # Check if running in an Arch Linux ISO environment
 if [ -d /run/archiso/bootmnt ]; then
-    echo "Arch Linux ISO environment detected."
-    read -p "Do you want to run the Arch install script? (y/n): " run_install
-    if [[ "$run_install" =~ ^[Yy]$ ]]; then
+    printf "%b\n" "${CYAN}Arch Linux ISO environment detected.${RC}"
+    printf "%b" "${CYAN}Do you want to run the Arch install script? (y/n): ${RC}"
+    read -r run_install
+    if [ "$run_install" = "y" ] || [ "$run_install" = "Y" ]; then
         run_script "arch_install.sh" "$GITPATH/installs" "$INSTALLS_URL"
     fi
 fi
 
 # Ensure git is installed
 if ! command_exists git; then
-    echo "Git is not installed. Installing git..."
+    printf "%b\n" "${YELLOW}Git is not installed. Installing git...${RC}"
     run_script "install_git.sh" "$GITPATH/installs" "$INSTALLS_URL"
 else
-    echo "Git is already installed."
+    printf "%b\n" "${GREEN}Git is already installed.${RC}"
 fi
 
 # Menu loop
 while true; do
-    echo "#############################"
-    echo "##    Select an option:    ##"
-    echo "#############################"
-    echo "1) Run Post Install Script"
-    echo "2) Run Chris Titus Tech Script"
-    echo "3) Add SSH Key"
-    echo "4) Install a network drive"
-    echo "5) Install Cockpit"
-    echo "6) Install Tailscale"
-    echo "7) Install Docker and Portainer"
-    echo "8) Run DWM Setup Script"
-    echo "9) Replace configs"
-    echo "0) Exit"
-    echo
+    printf "%b\n" "${CYAN}#############################${RC}"
+    printf "%b\n" "${CYAN}##    Select an option:    ##${RC}"
+    printf "%b\n" "${CYAN}#############################${RC}"
+    printf "%b\n" "${CYAN}1) Run Post Install Script${RC}"
+    printf "%b\n" "${CYAN}2) Run Chris Titus Tech Script${RC}"
+    printf "%b\n" "${CYAN}3) Add SSH Key${RC}"
+    printf "%b\n" "${CYAN}4) Install a network drive${RC}"
+    printf "%b\n" "${CYAN}5) Install Cockpit${RC}"
+    printf "%b\n" "${CYAN}6) Install Tailscale${RC}"
+    printf "%b\n" "${CYAN}7) Install Docker and Portainer${RC}"
+    printf "%b\n" "${CYAN}8) Run DWM Setup Script${RC}"
+    printf "%b\n" "${CYAN}9) Replace configs${RC}"
+    printf "%b\n" "${CYAN}0) Exit${RC}"
+    printf "\n"
 
-    read -p "Enter your choice (0-9): " choice
+    printf "%b" "${CYAN}Enter your choice (0-9): ${RC}"
+    read -r choice
 
     case $choice in
         1) 
-            echo "Running Post Install Script..."
+            printf "%b\n" "${YELLOW}Running Post Install Script...${RC}"
             run_script "post_install.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         2) 
-            echo "Running Chris Titus Tech's script..."
+            printf "%b\n" "${YELLOW}Running Chris Titus Tech's script...${RC}"
             curl -fsSL christitus.com/linuxdev | sh
             ;;
         3) run_script "add_ssh_key.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         4) run_script "add_network_drive.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         5) 
-            echo "Installing Cockpit..."
+            printf "%b\n" "${YELLOW}Installing Cockpit...${RC}"
             run_script "cockpit.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         6) 
-            echo "Installing Tailscale..."
+            printf "%b\n" "${YELLOW}Installing Tailscale...${RC}"
             curl -fsSL https://tailscale.com/install.sh | sh
-            echo "Tailscale installed. Please run 'sudo tailscale up' to activate."
+            printf "%b\n" "${GREEN}Tailscale installed. Please run 'sudo tailscale up' to activate.${RC}"
             ;;
         7) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         8) 
-            echo "Running DWM Setup Script..."
+            printf "%b\n" "${YELLOW}Running DWM Setup Script...${RC}"
             run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         9)
-            echo "Replacing configs..."
+            printf "%b\n" "${YELLOW}Replacing configs...${RC}"
             run_script "replace_configs.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
-        0) echo "Exiting script."; break ;;
-        *) echo "Invalid option. Please enter a number between 0 and 9." ;;
+        0) printf "%b\n" "${GREEN}Exiting script.${RC}"; break ;;
+        *) printf "%b\n" "${RED}Invalid option. Please enter a number between 0 and 9.${RC}" ;;
     esac
 done
 
-echo "#############################"
-echo "##                         ##"
-echo "## Setup script completed. ##"
-echo "##                         ##"
-echo "#############################"
+printf "%b\n" "${GREEN}#############################${RC}"
+printf "%b\n" "${GREEN}##                         ##${RC}"
+printf "%b\n" "${GREEN}## Setup script completed. ##${RC}"
+printf "%b\n" "${GREEN}##                         ##${RC}"
+printf "%b\n" "${GREEN}#############################${RC}"
