@@ -1,7 +1,7 @@
 #!/bin/sh -e
 
-# Source the common_script.sh from the repository root
-. "$(dirname "$0")/../common_script.sh"
+# Fetch and source the common_script.sh from GitHub
+eval "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)"
 
 # Check environment
 checkEnv
