@@ -267,7 +267,7 @@ case "$DTYPE" in
         ;;
     debian|ubuntu)
         "$ESCALATION_TOOL" sed -i 's/^FONTFACE=.*/FONTFACE="Terminus"/' /etc/default/console-setup
-        "$ESCALATION_TOOL" sed -i 's/^FONTSIZE=.*/FONTSIZE="16x16"/' /etc/default/console-setup
+        "$ESCALATION_TOOL" sed -i 's/^FONTSIZE=.*/FONTSIZE="16x28"/' /etc/default/console-setup
         "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive dpkg-reconfigure -f noninteractive console-setup
         "$ESCALATION_TOOL" update-initramfs -u
         printf "%b\n" "${GREEN}Console font settings configured for Debian/Ubuntu.${RC}"
