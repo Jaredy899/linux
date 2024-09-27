@@ -6,7 +6,7 @@
 checkEnv
 
 # GitHub URL base for the necessary configuration files
-GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/main"
+GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/"
 INSTALLS_URL="$GITHUB_BASE_URL/installs"
 
 # Function to run a script from local or GitHub
