@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-. ../common_script.sh
+https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh
 
 # Run the environment check
 checkEnv
