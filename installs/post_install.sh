@@ -10,20 +10,21 @@ reboot_required=false
 
 # Function to install a package
 install_package() {
-    package_name="$1"
-    if ! command_exists "$package_name"; then
-        printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
-        case "$PACKAGER" in
-            pacman)
-                "$ESCALATION_TOOL" "$PACKAGER" -S --needed --noconfirm "$package_name"
-                ;;
-            *)
-                "$ESCALATION_TOOL" "$PACKAGER" install -y "$package_name"
-                ;;
-        esac
-    else
-        printf "%b\n" "${GREEN}$package_name is already installed.${RC}"
-    fi
+    for package_name in "$@"; do
+        if ! command_exists "$package_name"; then
+            printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
+            case "$PACKAGER" in
+                pacman)
+                    "$ESCALATION_TOOL" "$PACKAGER" -S --needed --noconfirm "$package_name"
+                    ;;
+                *)
+                    "$ESCALATION_TOOL" "$PACKAGER" install -y "$package_name"
+                    ;;
+            esac
+        else
+            printf "%b\n" "${GREEN}$package_name is already installed.${RC}"
+        fi
+    done
 }
 
 # Detect timezone
@@ -222,10 +223,10 @@ done
 
 # OS-specific packages including NetworkManager
 case "$DTYPE" in
-    arch) install_package "networkmanager terminus-font yazi openssh" ;;
-    debian|ubuntu) install_package "network-manager console-setup xfonts-terminus openssh-server" ;;
-    fedora) install_package "NetworkManager terminus-fonts-console openssh-server" ;;
-    opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager terminus-bitmap-fonts openssh" ;;
+    arch) install_package "networkmanager" "terminus-font" "yazi" "openssh" ;;
+    debian|ubuntu) install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server" ;;
+    fedora) install_package "NetworkManager" "terminus-fonts-console" "openssh-server" ;;
+    opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager" "terminus-bitmap-fonts" "openssh" ;;
 esac
 
 # Enable and start services
