@@ -5,7 +5,11 @@ IFS='
 	'
 
 # Set the GITPATH variable to the directory where the script is located
-GITPATH=$(cd "$(dirname "$0")" && pwd)
+if [ -f "$0" ]; then
+    GITPATH=$(cd "$(dirname "$0")" && pwd)
+else
+    GITPATH="$HOME"
+fi
 echo "GITPATH is set to: $GITPATH"
 
 # GitHub URL base for the necessary configuration files
@@ -42,11 +46,11 @@ run_script() {
 
     if [ -f "$local_path/$script_name" ]; then
         echo "Running $script_name from local directory..."
-        sh "$local_path/$script_name"
+        bash "$local_path/$script_name"
     else
         echo "Running $script_name from GitHub..."
         curl -fsSL "$url/$script_name" -o "/tmp/$script_name"
-        sh "/tmp/$script_name"
+        bash "/tmp/$script_name"
         rm "/tmp/$script_name"
     fi
 }
