@@ -1,8 +1,7 @@
 #!/bin/sh -e
 
-# Source the common script using GITPATH
-GITPATH="$(dirname "$(dirname "$(realpath "$0")")")"
-. "$GITPATH/common_script.sh"
+# Source the common script directly from GitHub
+. <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)
 
 # Run the environment check
 checkEnv || exit 1
