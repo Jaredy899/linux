@@ -224,16 +224,8 @@ done
 case "$DTYPE" in
     arch) install_package "networkmanager terminus-font yazi openssh" ;;
     debian|ubuntu) install_package "network-manager console-setup xfonts-terminus openssh-server" ;;
-    fedora) 
-        install_package "NetworkManager" 
-        install_package "terminus-fonts" 
-        install_package "openssh-server"
-        ;;
-    opensuse-tumbleweed|opensuse-leap) 
-        install_package "NetworkManager" 
-        install_package "terminus-bitmap-fonts" 
-        install_package "openssh"
-        ;;
+    fedora) install_package "NetworkManager terminus-fonts-console openssh-server" ;;
+    opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager terminus-bitmap-fonts openssh" ;;
 esac
 
 # Enable and start services
@@ -250,29 +242,47 @@ echo "-------------------------------------------------------------------------"
 echo "                    Setting Permanent Console Font"
 echo "-------------------------------------------------------------------------"
 
-# Set permanent console font
-if [ "$DTYPE" = "arch" ] || [ "$DTYPE" = "fedora" ] || [[ "$DTYPE" == opensuse-* ]]; then
-    if command -v setfont >/dev/null 2>&1; then
-        if setfont ter-v18b; then
-            echo "FONT=ter-v18b" | "$ESCALATION_TOOL" tee /etc/vconsole.conf > /dev/null
-            printf "%b\n" "${GREEN}Console font set to ter-v18b${RC}"
-        else
-            printf "%b\n" "${YELLOW}Failed to set font ter-v18b. Using system default.${RC}"
+# Function to set console font
+set_console_font() {
+    local font_list="ter-v18b"
+    local success=false
+
+    for font in $font_list; do
+        if setfont "$font" 2>/dev/null; then
+            echo "FONT=$font" | "$ESCALATION_TOOL" tee /etc/vconsole.conf > /dev/null
+            printf "%b\n" "${GREEN}Console font set to $font${RC}"
+            success=true
+            break
         fi
-    else
-        printf "%b\n" "${YELLOW}setfont command not found. Skipping font setting.${RC}"
+    done
+
+    if [ "$success" = false ]; then
+        printf "%b\n" "${YELLOW}Failed to set any of the preferred fonts. Using system default.${RC}"
+        return 1
     fi
-elif [ "$DTYPE" = "debian" ] || [ "$DTYPE" = "ubuntu" ]; then
-    "$ESCALATION_TOOL" sed -i 's/^FONTFACE=.*/FONTFACE="Terminus"/' /etc/default/console-setup
-    "$ESCALATION_TOOL" sed -i 's/^FONTSIZE=.*/FONTSIZE="18x10"/' /etc/default/console-setup
-    "$ESCALATION_TOOL" sed -i 's/^CODESET=.*/CODESET="Uni2"/' /etc/default/console-setup
-    "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive dpkg-reconfigure -f noninteractive console-setup
-    "$ESCALATION_TOOL" update-initramfs -u
-    if command -v setupcon >/dev/null 2>&1; then
-        "$ESCALATION_TOOL" setupcon --force
-    fi
-fi
-printf "%b\n" "${GREEN}Console font settings have been applied and should persist after reboot.${RC}"
+}
+
+# Set permanent console font
+case "$DTYPE" in
+    arch|fedora|opensuse-tumbleweed|opensuse-leap)
+        if command -v setfont >/dev/null 2>&1; then
+            if ! set_console_font; then
+                printf "%b\n" "${YELLOW}Font setting failed. Check if console fonts are installed.${RC}"
+            fi
+        else
+            printf "%b\n" "${YELLOW}setfont command not found. Console font setting may not be supported.${RC}"
+        fi
+        ;;
+    debian|ubuntu)
+        "$ESCALATION_TOOL" sed -i 's/^FONTFACE=.*/FONTFACE="Terminus"/' /etc/default/console-setup
+        "$ESCALATION_TOOL" sed -i 's/^FONTSIZE=.*/FONTSIZE="16x32"/' /etc/default/console-setup
+        "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive dpkg-reconfigure -f noninteractive console-setup
+        "$ESCALATION_TOOL" update-initramfs -u
+        printf "%b\n" "${GREEN}Console font settings configured for Debian/Ubuntu.${RC}"
+        ;;
+esac
+
+printf "%b\n" "${GREEN}Console font settings have been configured and should persist after reboot.${RC}"
 
 echo "-------------------------------------------------------------------------"
 echo "                        Installation Complete                            "
