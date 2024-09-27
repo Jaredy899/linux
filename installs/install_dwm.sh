@@ -12,10 +12,10 @@ install_packages() {
     common_packages="nano thunar vlc feh pavucontrol"
 
     case "$PACKAGER" in
-        apt)
+        apt|nala)
             packages="$common_packages pipewire pipewire-audio-client-libraries pipewire-pulse pipewire-alsa"
-            $ESCALATION_TOOL apt-get update
-            $ESCALATION_TOOL apt-get install -y $packages
+            $ESCALATION_TOOL $PACKAGER update
+            $ESCALATION_TOOL $PACKAGER install -y $packages
             ;;
         dnf)
             packages="$common_packages network-manager-applet"
@@ -76,8 +76,8 @@ setupDWM() {
         pacman)
             $ESCALATION_TOOL "$PACKAGER" -S --needed --noconfirm xorg-xinit xorg-server base-devel libx11 libxinerama libxft imlib2 libxcb meson libev uthash libconfig
             ;;
-        apt)
-            $ESCALATION_TOOL apt-get install -y xorg xinit build-essential libx11-dev libxinerama-dev libxft-dev libimlib2-dev libxcb1-dev libxcb-res0-dev libconfig-dev libdbus-1-dev libegl-dev libev-dev libgl-dev libepoxy-dev libpcre2-dev libpixman-1-dev libx11-xcb-dev libxcb1-dev libxcb-composite0-dev libxcb-damage0-dev libxcb-dpms0-dev libxcb-glx0-dev libxcb-image0-dev libxcb-present-dev libxcb-randr0-dev libxcb-render0-dev libxcb-render-util0-dev libxcb-shape0-dev libxcb-util-dev libxcb-xfixes0-dev libxext-dev meson ninja-build uthash-dev meson unzip
+        apt|nala)
+            $ESCALATION_TOOL $PACKAGER install -y xorg xinit build-essential libx11-dev libxinerama-dev libxft-dev libimlib2-dev libxcb1-dev libxcb-res0-dev libconfig-dev libdbus-1-dev libegl-dev libev-dev libgl-dev libepoxy-dev libpcre2-dev libpixman-1-dev libx11-xcb-dev libxcb1-dev libxcb-composite0-dev libxcb-damage0-dev libxcb-dpms0-dev libxcb-glx0-dev libxcb-image0-dev libxcb-present-dev libxcb-randr0-dev libxcb-render0-dev libxcb-render-util0-dev libxcb-shape0-dev libxcb-util-dev libxcb-xfixes0-dev libxext-dev meson ninja-build uthash-dev meson unzip
             ;;
         dnf)
             $ESCALATION_TOOL "$PACKAGER" groupinstall -y "Development Tools"
@@ -277,8 +277,8 @@ setupDisplayManager() {
                     pacman)
                         $ESCALATION_TOOL pacman -S --noconfirm $DM
                         ;;
-                    apt)
-                        $ESCALATION_TOOL apt install -y $DM
+                    apt|nala)
+                        $ESCALATION_TOOL $PACKAGER install -y $DM
                         ;;
                     dnf)
                         $ESCALATION_TOOL dnf install -y $DM
