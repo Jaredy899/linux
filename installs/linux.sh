@@ -1,7 +1,12 @@
-#!/bin/sh -e
+#!/usr/bin/env bash
+
+# Ensure the script is running in an interactive bash shell
+if [[ $- != *i* ]]; then
+    exec bash "$0" "$@"
+fi
 
 # Fetch and source the common_script.sh from GitHub
-eval "$(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)"
+source <(curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)
 
 # Check environment
 checkEnv
