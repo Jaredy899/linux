@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -x  # Enable debug mode to print each command
 set -e  # Exit immediately if a command exits with a non-zero status
 IFS=$'\n\t'
 
@@ -11,8 +12,15 @@ echo "Script location: $0"
 GITPATH="$(cd "$(dirname "$0")" && pwd)"
 echo "GITPATH is set to: $GITPATH"
 
+# List contents of GITPATH
+echo "Contents of $GITPATH:"
+ls -la "$GITPATH"
+
 # Source the common script from the same directory
 if [ -f "$GITPATH/common_script.sh" ]; then
+    echo "common_script.sh found in local directory"
+    echo "Contents of common_script.sh:"
+    cat "$GITPATH/common_script.sh"
     echo "Sourcing common_script.sh from local directory"
     . "$GITPATH/common_script.sh"
 else
@@ -20,6 +28,8 @@ else
     COMMON_SCRIPT_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh"
     if curl -s "$COMMON_SCRIPT_URL" > "$GITPATH/common_script.sh"; then
         echo "common_script.sh downloaded successfully"
+        echo "Contents of downloaded common_script.sh:"
+        cat "$GITPATH/common_script.sh"
         . "$GITPATH/common_script.sh"
     else
         echo "Failed to download common_script.sh"
