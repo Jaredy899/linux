@@ -38,25 +38,33 @@ fi
 
 # Function to install and configure Nala
 install_nala() {
-    [ "$OS" = "debian" ] || [ "$OS" = "ubuntu" ] || return
-    printf "%b\n" "${CYAN}Installing Nala...${RC}"
-    if "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive apt-get update && "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive apt-get install -y nala; then
-        yes | "$ESCALATION_TOOL" nala fetch --auto --fetches 3 || printf "%b\n" "${YELLOW}Nala fetch failed, continuing...${RC}"
-        printf "%b\n" "${CYAN}Configuring nala as an alternative to apt...${RC}"
-        echo "alias apt='nala'" | "$ESCALATION_TOOL" tee -a /etc/bash.bashrc > /dev/null
-        "$ESCALATION_TOOL" tee /usr/local/bin/apt << EOF > /dev/null
+    printf "%b\n" "${CYAN}Checking if Nala should be installed...${RC}"
+    if [ "$DTYPE" = "debian" ] || [ "$DTYPE" = "ubuntu" ]; then
+        printf "%b\n" "${CYAN}Installing Nala...${RC}"
+        if "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive apt-get update && "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive apt-get install -y nala; then
+            yes | "$ESCALATION_TOOL" nala fetch --auto --fetches 3 || printf "%b\n" "${YELLOW}Nala fetch failed, continuing...${RC}"
+            printf "%b\n" "${CYAN}Configuring nala as an alternative to apt...${RC}"
+            echo "alias apt='nala'" | "$ESCALATION_TOOL" tee -a /etc/bash.bashrc > /dev/null
+            "$ESCALATION_TOOL" tee /usr/local/bin/apt << EOF > /dev/null
 #!/bin/sh
 echo "apt has been replaced by nala. Running nala instead."
 nala "\$@"
 EOF
-        "$ESCALATION_TOOL" chmod +x /usr/local/bin/apt
-        printf "%b\n" "${GREEN}Nala has been installed and set as an alternative to apt.${RC}"
+            "$ESCALATION_TOOL" chmod +x /usr/local/bin/apt
+            printf "%b\n" "${GREEN}Nala has been installed and set as an alternative to apt.${RC}"
+        else
+            printf "%b\n" "${YELLOW}Nala installation failed. Continuing with apt...${RC}"
+        fi
     else
-        printf "%b\n" "${YELLOW}Nala installation failed. Continuing with apt...${RC}"
+        printf "%b\n" "${YELLOW}Not a Debian/Ubuntu system. Skipping Nala installation.${RC}"
     fi
 }
 
-# Install Nala if on Debian/Ubuntu
+# Debug output to check the detected distribution type
+printf "%b\n" "${CYAN}Current distribution type detected as: $DTYPE${RC}"
+
+# Explicitly call the install_nala function
+printf "%b\n" "${CYAN}Attempting to install Nala...${RC}"
 install_nala
 
 # Enable parallel downloads
@@ -77,7 +85,7 @@ gpu_type=$(lspci | grep -E "VGA|3D" || echo "No GPU detected")
 
 # Function to install packages based on OS
 install_gpu_packages() {
-    case "$OS" in
+    case "$DTYPE" in
         arch) "$ESCALATION_TOOL" pacman -S --noconfirm --needed $1 ;;
         debian|ubuntu) "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive apt install -y $1 ;;
         fedora) "$ESCALATION_TOOL" dnf install -y $1 ;;
@@ -88,7 +96,7 @@ install_gpu_packages() {
 # Graphics Drivers installation
 if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
     echo "Detected NVIDIA GPU"
-    case "$OS" in
+    case "$DTYPE" in
         arch)
             if [ -e /proc/version ]; then
                 [[ $(uname -r) == *lts* ]] && nvidia_pkg="nvidia-lts" || nvidia_pkg="nvidia"
@@ -163,7 +171,7 @@ if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
     reboot_required=true
 elif echo "${gpu_type}" | grep -qE "Radeon|AMD"; then
     echo "Detected AMD GPU"
-    case "$OS" in
+    case "$DTYPE" in
         arch) install_gpu_packages "mesa lib32-mesa vulkan-radeon lib32-vulkan-radeon libva-mesa-driver libva-utils" ;;
         debian)
             "$ESCALATION_TOOL" sed -i 's/main$/main contrib non-free non-free-firmware/' /etc/apt/sources.list
@@ -189,7 +197,7 @@ elif echo "${gpu_type}" | grep -qE "Radeon|AMD"; then
     reboot_required=true
 elif echo "${gpu_type}" | grep -qE "Intel"; then
     echo "Detected Intel GPU"
-    case "$OS" in
+    case "$DTYPE" in
         arch) install_gpu_packages "libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-utils lib32-mesa" ;;
         debian|ubuntu) install_gpu_packages "intel-media-va-driver i965-va-driver vainfo mesa-vulkan-drivers" ;;
         fedora) install_gpu_packages "intel-media-driver mesa-va-drivers mesa-vdpau-drivers mesa-vulkan-drivers libva-intel-driver" ;;
@@ -213,7 +221,7 @@ for package in $common_packages; do
 done
 
 # OS-specific packages including NetworkManager
-case "$OS" in
+case "$DTYPE" in
     arch) install_package "networkmanager terminus-font yazi openssh" ;;
     debian|ubuntu) install_package "network-manager console-setup xfonts-terminus openssh-server" ;;
     fedora) install_package "NetworkManager terminus-fonts-console openssh-server" ;;
@@ -231,10 +239,10 @@ echo "                    Setting Permanent Console Font"
 echo "-------------------------------------------------------------------------"
 
 # Set permanent console font
-if [ "$OS" = "arch" ] || [ "$OS" = "fedora" ] || [[ "$OS" == opensuse-* ]]; then
+if [ "$DTYPE" = "arch" ] || [ "$DTYPE" = "fedora" ] || [[ "$DTYPE" == opensuse-* ]]; then
     echo "FONT=ter-v18b" | "$ESCALATION_TOOL" tee /etc/vconsole.conf > /dev/null
     "$ESCALATION_TOOL" setfont ter-v18b
-elif [ "$OS" = "debian" ] || [ "$OS" = "ubuntu" ]; then
+elif [ "$DTYPE" = "debian" ] || [ "$DTYPE" = "ubuntu" ]; then
     "$ESCALATION_TOOL" sed -i 's/^FONTFACE=.*/FONTFACE="Terminus"/' /etc/default/console-setup
     "$ESCALATION_TOOL" sed -i 's/^FONTSIZE=.*/FONTSIZE="18x10"/' /etc/default/console-setup
     "$ESCALATION_TOOL" sed -i 's/^CODESET=.*/CODESET="Uni2"/' /etc/default/console-setup
