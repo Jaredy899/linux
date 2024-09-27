@@ -1,6 +1,7 @@
 #!/bin/sh -e
 
-. ../common_script.sh
+# Source the common_script.sh from the repository root
+. "$(dirname "$0")/../common_script.sh"
 
 # Check environment
 checkEnv
