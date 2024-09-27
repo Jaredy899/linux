@@ -1,127 +1,127 @@
 #!/bin/bash
 
 set -e  # Exit immediately if a command exits with a non-zero status
-IFS=$'\n\t'
+IFS=$(printf '\n\t')
 
-# Create a temporary directory
-TEMP_DIR=$(mktemp -d)
-trap 'rm -rf "$TEMP_DIR"' EXIT
-
-# Debug: Print current directory and script location
-echo "Current directory: $(pwd)"
-echo "Temporary directory: $TEMP_DIR"
-
-# Download the common script to the temporary directory
-COMMON_SCRIPT_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh"
-if curl -fsSL "$COMMON_SCRIPT_URL" > "$TEMP_DIR/common_script.sh"; then
-    echo "common_script.sh downloaded successfully"
-    . "$TEMP_DIR/common_script.sh"
-else
-    echo "Failed to download common_script.sh"
-    exit 1
-fi
-
-echo "common_script.sh sourced successfully"
-
-# Debug: Check if required functions are available
-if ! command -v checkEnv > /dev/null 2>&1; then
-    echo "checkEnv function not found"
-    exit 1
-fi
-
-# Run the environment check
-if ! checkEnv; then
-    echo "Environment check failed"
-    exit 1
-fi
+# Set the GITPATH variable to the directory where the script is located
+GITPATH="$(cd "$(dirname "$0")" && pwd)"
+echo "GITPATH is set to: $GITPATH"
 
 # GitHub URL base for the necessary configuration files
-GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/"
+GITHUB_BASE_URL=https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/"
 INSTALLS_URL="$GITHUB_BASE_URL/installs"
 
-# Function to run a script from GitHub
-run_script() {
-    local script_name="$1"
-    local url="$2"
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
 
-    echo "Running $script_name from GitHub..."
-    curl -fsSL "$url/$script_name" | bash
+# Function to detect the Linux distribution
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    else
+        echo "unknown"
+    fi
+}
+
+# Detect the Linux distribution
+distro=$(detect_distro)
+if [ "$distro" = "unknown" ]; then
+    echo "Unable to detect Linux distribution. Exiting."
+    exit 1
+fi
+
+# Function to run a script from local or GitHub
+run_script() {
+    script_name="$1"
+    local_path="$2"
+    url="$3"
+
+    if [[ -f "$local_path/$script_name" ]]; then
+        echo "Running $script_name from local directory..."
+        bash "$local_path/$script_name"
+    else
+        echo "Running $script_name from GitHub..."
+        curl -fsSL "$url/$script_name" -o "/tmp/$script_name"
+        bash "/tmp/$script_name"
+        rm "/tmp/$script_name"
+    fi
 }
 
 # Check if running in an Arch Linux ISO environment
 if [ -d /run/archiso/bootmnt ]; then
-    printf "%b\n" "${YELLOW}Arch Linux ISO environment detected.${RC}"
-    printf "%b" "${CYAN}Do you want to run the Arch install script? (y/n): ${RC}"
-    read -r run_install
+    echo "Arch Linux ISO environment detected."
+    read -p "Do you want to run the Arch install script? (y/n): " run_install
     if [[ "$run_install" =~ ^[Yy]$ ]]; then
-        run_script "arch_install.sh" "$INSTALLS_URL"
+        run_script "arch_install.sh" "$GITPATH/installs" "$INSTALLS_URL"
     fi
 fi
 
 # Ensure git is installed
 if ! command_exists git; then
-    printf "%b\n" "${YELLOW}Git is not installed. Installing git...${RC}"
-    run_script "install_git.sh" "$INSTALLS_URL"
+    echo "Git is not installed. Installing git..."
+    run_script "install_git.sh" "$GITPATH/installs" "$INSTALLS_URL"
 else
-    printf "%b\n" "${GREEN}Git is already installed.${RC}"
+    echo "Git is already installed."
 fi
 
 # Menu loop
 while true; do
-    printf "%b\n" "${CYAN}#############################"
-    printf "%b\n" "##    Select an option:    ##"
-    printf "%b\n" "#############################${RC}"
-    printf "%b\n" "1) Run Post Install Script"
-    printf "%b\n" "2) Run Chris Titus Tech Script"
-    printf "%b\n" "3) Add SSH Key"
-    printf "%b\n" "4) Install a network drive"
-    printf "%b\n" "5) Install Cockpit"
-    printf "%b\n" "6) Install Tailscale"
-    printf "%b\n" "7) Install Docker and Portainer"
-    printf "%b\n" "8) Run DWM Setup Script"
-    printf "%b\n" "9) Replace configs"
-    printf "%b\n" "0) Exit"
+    echo "#############################"
+    echo "##    Select an option:    ##"
+    echo "#############################"
+    echo "1) Run Post Install Script"
+    echo "2) Run Chris Titus Tech Script"
+    echo "3) Add SSH Key"
+    echo "4) Install a network drive"
+    echo "5) Install Cockpit"
+    echo "6) Install Tailscale"
+    echo "7) Install Docker and Portainer"
+    echo "8) Run DWM Setup Script"
+    echo "9) Replace configs"
+    echo "0) Exit"
     echo
 
-    printf "%b" "${CYAN}Enter your choice (0-9): ${RC}"
-    read -r choice
+    read -p "Enter your choice (0-9): " choice
 
     case $choice in
         1) 
-            printf "%b\n" "${YELLOW}Running Post Install Script...${RC}"
-            run_script "post_install.sh" "$INSTALLS_URL"
+            echo "Running Post Install Script..."
+            run_script "post_install.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         2) 
-            printf "%b\n" "${YELLOW}Running Chris Titus Tech's script...${RC}"
+            echo "Running Chris Titus Tech's script..."
             curl -fsSL christitus.com/linuxdev | sh
             ;;
-        3) run_script "add_ssh_key.sh" "$INSTALLS_URL" ;;
-        4) run_script "add_network_drive.sh" "$INSTALLS_URL" ;;
+        3) run_script "add_ssh_key.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        4) run_script "add_network_drive.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         5) 
-            printf "%b\n" "${YELLOW}Installing Cockpit...${RC}"
-            run_script "cockpit.sh" "$INSTALLS_URL"
+            echo "Installing Cockpit..."
+            run_script "cockpit.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         6) 
-            printf "%b\n" "${YELLOW}Installing Tailscale...${RC}"
+            echo "Installing Tailscale..."
             curl -fsSL https://tailscale.com/install.sh | sh
-            printf "%b\n" "${GREEN}Tailscale installed. Please run 'sudo tailscale up' to activate.${RC}"
+            echo "Tailscale installed. Please run 'sudo tailscale up' to activate."
             ;;
-        7) run_script "docker.sh" "$INSTALLS_URL" ;;
+        7) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         8) 
-            printf "%b\n" "${YELLOW}Running DWM Setup Script...${RC}"
-            run_script "install_dwm.sh" "$INSTALLS_URL"
+            echo "Running DWM Setup Script..."
+            run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         9)
-            printf "%b\n" "${YELLOW}Replacing configs...${RC}"
-            run_script "replace_configs.sh" "$INSTALLS_URL"
+            echo "Replacing configs..."
+            run_script "replace_configs.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
-        0) printf "%b\n" "${GREEN}Exiting script.${RC}"; break ;;
-        *) printf "%b\n" "${RED}Invalid option. Please enter a number between 0 and 9.${RC}" ;;
+        0) echo "Exiting script."; break ;;
+        *) echo "Invalid option. Please enter a number between 0 and 9." ;;
     esac
 done
 
-printf "%b\n" "${GREEN}#############################"
-printf "%b\n" "##                         ##"
-printf "%b\n" "## Setup script completed. ##"
-printf "%b\n" "##                         ##"
-printf "%b\n" "#############################${RC}"
+echo "#############################"
+echo "##                         ##"
+echo "## Setup script completed. ##"
+echo "##                         ##"
+echo "#############################"
