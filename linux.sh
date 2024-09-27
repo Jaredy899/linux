@@ -1,15 +1,16 @@
-#!/bin/bash
+#!/bin/sh
 
 set -e  # Exit immediately if a command exits with a non-zero status
-IFS=$(printf '\n\t')
+IFS='
+	'
 
 # Set the GITPATH variable to the directory where the script is located
-GITPATH="$(cd "$(dirname "$0")" && pwd)"
+GITPATH=$(cd "$(dirname "$0")" && pwd)
 echo "GITPATH is set to: $GITPATH"
 
 # GitHub URL base for the necessary configuration files
-GITHUB_BASE_URL=https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/"
-INSTALLS_URL="$GITHUB_BASE_URL/installs"
+GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/"
+INSTALLS_URL="${GITHUB_BASE_URL}/installs"
 
 # Function to check if a command exists
 command_exists() {
@@ -39,13 +40,13 @@ run_script() {
     local_path="$2"
     url="$3"
 
-    if [[ -f "$local_path/$script_name" ]]; then
+    if [ -f "$local_path/$script_name" ]; then
         echo "Running $script_name from local directory..."
-        bash "$local_path/$script_name"
+        sh "$local_path/$script_name"
     else
         echo "Running $script_name from GitHub..."
         curl -fsSL "$url/$script_name" -o "/tmp/$script_name"
-        bash "/tmp/$script_name"
+        sh "/tmp/$script_name"
         rm "/tmp/$script_name"
     fi
 }
@@ -53,8 +54,9 @@ run_script() {
 # Check if running in an Arch Linux ISO environment
 if [ -d /run/archiso/bootmnt ]; then
     echo "Arch Linux ISO environment detected."
-    read -p "Do you want to run the Arch install script? (y/n): " run_install
-    if [[ "$run_install" =~ ^[Yy]$ ]]; then
+    printf "Do you want to run the Arch install script? (y/n): "
+    read -r run_install
+    if [ "$run_install" = "y" ] || [ "$run_install" = "Y" ]; then
         run_script "arch_install.sh" "$GITPATH/installs" "$INSTALLS_URL"
     fi
 fi
@@ -84,7 +86,8 @@ while true; do
     echo "0) Exit"
     echo
 
-    read -p "Enter your choice (0-9): " choice
+    printf "Enter your choice (0-9): "
+    read -r choice
 
     case $choice in
         1) 
