@@ -224,14 +224,26 @@ done
 case "$DTYPE" in
     arch) install_package "networkmanager terminus-font yazi openssh" ;;
     debian|ubuntu) install_package "network-manager console-setup xfonts-terminus openssh-server" ;;
-    fedora) install_package "NetworkManager terminus-fonts-console openssh-server" ;;
-    opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager terminus-bitmap-fonts openssh" ;;
+    fedora) 
+        install_package "NetworkManager" 
+        install_package "terminus-fonts" 
+        install_package "openssh-server"
+        ;;
+    opensuse-tumbleweed|opensuse-leap) 
+        install_package "NetworkManager" 
+        install_package "terminus-bitmap-fonts" 
+        install_package "openssh"
+        ;;
 esac
 
 # Enable and start services
-for service in NetworkManager ssh sshd qemu-guest-agent; do
-    "$ESCALATION_TOOL" systemctl enable $service &>/dev/null && printf "%b\n" "${GREEN}$service enabled${RC}" || printf "%b\n" "${YELLOW}Failed to enable $service${RC}"
-    "$ESCALATION_TOOL" systemctl start $service &>/dev/null && printf "%b\n" "${GREEN}$service started${RC}" || printf "%b\n" "${YELLOW}Failed to start $service${RC}"
+for service in NetworkManager sshd qemu-guest-agent; do
+    if systemctl is-active --quiet $service; then
+        printf "%b\n" "${GREEN}$service is already running${RC}"
+    else
+        "$ESCALATION_TOOL" systemctl enable $service &>/dev/null && printf "%b\n" "${GREEN}$service enabled${RC}" || printf "%b\n" "${YELLOW}Failed to enable $service${RC}"
+        "$ESCALATION_TOOL" systemctl start $service &>/dev/null && printf "%b\n" "${GREEN}$service started${RC}" || printf "%b\n" "${YELLOW}Failed to start $service${RC}"
+    fi
 done
 
 echo "-------------------------------------------------------------------------"
@@ -240,15 +252,25 @@ echo "-------------------------------------------------------------------------"
 
 # Set permanent console font
 if [ "$DTYPE" = "arch" ] || [ "$DTYPE" = "fedora" ] || [[ "$DTYPE" == opensuse-* ]]; then
-    echo "FONT=ter-v18b" | "$ESCALATION_TOOL" tee /etc/vconsole.conf > /dev/null
-    "$ESCALATION_TOOL" setfont ter-v18b
+    if command -v setfont >/dev/null 2>&1; then
+        if setfont ter-v18b; then
+            echo "FONT=ter-v18b" | "$ESCALATION_TOOL" tee /etc/vconsole.conf > /dev/null
+            printf "%b\n" "${GREEN}Console font set to ter-v18b${RC}"
+        else
+            printf "%b\n" "${YELLOW}Failed to set font ter-v18b. Using system default.${RC}"
+        fi
+    else
+        printf "%b\n" "${YELLOW}setfont command not found. Skipping font setting.${RC}"
+    fi
 elif [ "$DTYPE" = "debian" ] || [ "$DTYPE" = "ubuntu" ]; then
     "$ESCALATION_TOOL" sed -i 's/^FONTFACE=.*/FONTFACE="Terminus"/' /etc/default/console-setup
     "$ESCALATION_TOOL" sed -i 's/^FONTSIZE=.*/FONTSIZE="18x10"/' /etc/default/console-setup
     "$ESCALATION_TOOL" sed -i 's/^CODESET=.*/CODESET="Uni2"/' /etc/default/console-setup
     "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive dpkg-reconfigure -f noninteractive console-setup
     "$ESCALATION_TOOL" update-initramfs -u
-    "$ESCALATION_TOOL" setupcon --force
+    if command -v setupcon >/dev/null 2>&1; then
+        "$ESCALATION_TOOL" setupcon --force
+    fi
 fi
 printf "%b\n" "${GREEN}Console font settings have been applied and should persist after reboot.${RC}"
 
