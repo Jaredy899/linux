@@ -49,6 +49,9 @@ install_cockpit() {
         arch)
             sudo pacman -Sy cockpit --noconfirm >/dev/null
             ;;
+        opensuse|suse|opensuse-tumbleweed)
+            sudo zypper install -y cockpit
+            ;;
         *)
             echo "Unsupported Linux distribution: $DISTRO"
             exit 1

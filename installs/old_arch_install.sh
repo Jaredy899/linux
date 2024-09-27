@@ -24,10 +24,8 @@ function clear_with_banner {
     display_banner
 }
 
-pacman-key --init
-pacman-key --populate archlinux
-pacman -Sy --noconfirm archlinux-keyring
-pacman -S --noconfirm --needed pacman-contrib terminus-font reflector curl rsync grub
+# Install necessary packages
+pacman -Sy --noconfirm --needed pacman-contrib terminus-font reflector curl reflector rsync grub
 setfont ter-v18b
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
 cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
@@ -146,114 +144,6 @@ function get_user_input {
     echo "Enter hostname:"
     read HOSTNAME
     detect_timezone
-    select_keymap
-}
-
-# Function to detect boot mode (UEFI or BIOS)
-function detect_boot_mode {
-    if [ -d "/sys/firmware/efi/efivars" ]; then
-        BOOT_MODE="UEFI"
-    else
-        BOOT_MODE="BIOS"
-    fi
-    export BOOT_MODE
-}
-
-# Function to partition the disk
-function partition_disk {
-    if [ "$BOOT_MODE" == "UEFI" ]; then
-        parted -s $DISK mklabel gpt
-        parted -s $DISK mkpart primary fat32 1MiB 513MiB
-        parted -s $DISK set 1 esp on
-        parted -s $DISK mkpart primary $FILESYSTEM 513MiB 100%
-    else
-        parted -s $DISK mklabel msdos
-        parted -s $DISK mkpart primary $FILESYSTEM 1MiB 100%
-        parted -s $DISK set 1 boot on
-    fi
-}
-
-# Function to format and mount partitions
-function format_and_mount {
-    if [ "$BOOT_MODE" == "UEFI" ]; then
-        mkfs.fat -F32 ${DISK}1
-        case $FILESYSTEM in
-            ext4) mkfs.ext4 ${DISK}2 ;;
-            btrfs) 
-                mkfs.btrfs -f ${DISK}2
-                mount ${DISK}2 /mnt
-                btrfs subvolume create /mnt/@
-                btrfs subvolume create /mnt/@home
-                btrfs subvolume create /mnt/@snapshots
-                btrfs subvolume create /mnt/@var_log
-                umount /mnt
-                ;;
-            xfs) mkfs.xfs -f ${DISK}2 ;;
-        esac
-
-        if [ "$FILESYSTEM" == "btrfs" ]; then
-            mount -o subvol=@,compress=zstd,noatime ${DISK}2 /mnt
-            mkdir -p /mnt/{home,.snapshots,var/log,boot/efi}
-            mount -o subvol=@home,compress=zstd,noatime ${DISK}2 /mnt/home
-            mount -o subvol=@snapshots,compress=zstd,noatime ${DISK}2 /mnt/.snapshots
-            mount -o subvol=@var_log,compress=zstd,noatime ${DISK}2 /mnt/var/log
-        else
-            mount ${DISK}2 /mnt
-            mkdir -p /mnt/boot/efi
-        fi
-        mount ${DISK}1 /mnt/boot/efi
-    else
-        case $FILESYSTEM in
-            ext4) mkfs.ext4 ${DISK}1 ;;
-            btrfs) 
-                mkfs.btrfs -f ${DISK}1
-                mount ${DISK}1 /mnt
-                btrfs subvolume create /mnt/@
-                btrfs subvolume create /mnt/@home
-                btrfs subvolume create /mnt/@snapshots
-                btrfs subvolume create /mnt/@var_log
-                umount /mnt
-                ;;
-            xfs) mkfs.xfs -f ${DISK}1 ;;
-        esac
-
-        if [ "$FILESYSTEM" == "btrfs" ]; then
-            mount -o subvol=@,compress=zstd,noatime ${DISK}1 /mnt
-            mkdir -p /mnt/{home,.snapshots,var/log}
-            mount -o subvol=@home,compress=zstd,noatime ${DISK}1 /mnt/home
-            mount -o subvol=@snapshots,compress=zstd,noatime ${DISK}1 /mnt/.snapshots
-            mount -o subvol=@var_log,compress=zstd,noatime ${DISK}1 /mnt/var/log
-        else
-            mount ${DISK}1 /mnt
-        fi
-    fi
-}
-
-# Function to select keymap
-function select_keymap {
-    read -p "Do you want to select a non-US keymap? (y/N) " KEYMAP_CHOICE
-    if [[ $KEYMAP_CHOICE =~ ^[Yy]$ ]]; then
-        # These are default key maps as presented in official arch repo archinstall
-        options=(us by ca cf cz de dk es et fa fi fr gr hu il it lt lv mk nl no pl ro ru se sg ua uk)
-        
-        echo "Select keymap:"
-        for i in "${!options[@]}"; do
-            echo "$((i+1)). ${options[$i]}"
-        done
-        
-        read -p "Enter the number of your choice: " KEYMAP_NUMBER
-        if [[ "$KEYMAP_NUMBER" =~ ^[0-9]+$ ]] && [ "$KEYMAP_NUMBER" -ge 1 ] && [ "$KEYMAP_NUMBER" -le "${#options[@]}" ]; then
-            KEYMAP=${options[$KEYMAP_NUMBER-1]}
-        else
-            echo "Invalid selection. Using default US keymap."
-            KEYMAP="us"
-        fi
-    else
-        echo "Using default US keymap."
-        KEYMAP="us"
-    fi
-    loadkeys $KEYMAP
-    export KEYMAP
 }
 
 # Main installation function
@@ -262,15 +152,46 @@ function install_arch {
     select_filesystem
     get_user_input
     update_mirrorlist
-    detect_boot_mode
 
     # Unmount any partitions on the selected disk
     umount -R /mnt 2>/dev/null || true
     swapoff -a
     umount -R ${DISK}* 2>/dev/null || true
 
-    partition_disk
-    format_and_mount
+    # Partition the disk
+    parted -s $DISK mklabel gpt
+    parted -s $DISK mkpart primary fat32 1MiB 513MiB
+    parted -s $DISK set 1 esp on
+    parted -s $DISK mkpart primary $FILESYSTEM 513MiB 100%
+
+    # Format partitions
+    mkfs.fat -F32 ${DISK}1
+    case $FILESYSTEM in
+        ext4) mkfs.ext4 ${DISK}2 ;;
+        btrfs) 
+            mkfs.btrfs -f ${DISK}2
+            mount ${DISK}2 /mnt
+            btrfs subvolume create /mnt/@
+            btrfs subvolume create /mnt/@home
+            btrfs subvolume create /mnt/@snapshots
+            btrfs subvolume create /mnt/@var_log
+            umount /mnt
+            ;;
+        xfs) mkfs.xfs -f ${DISK}2 ;;
+    esac
+
+    # Mount partitions
+    if [ "$FILESYSTEM" == "btrfs" ]; then
+        mount -o subvol=@,compress=zstd,noatime ${DISK}2 /mnt
+        mkdir -p /mnt/{home,.snapshots,var/log,boot/efi}
+        mount -o subvol=@home,compress=zstd,noatime ${DISK}2 /mnt/home
+        mount -o subvol=@snapshots,compress=zstd,noatime ${DISK}2 /mnt/.snapshots
+        mount -o subvol=@var_log,compress=zstd,noatime ${DISK}2 /mnt/var/log
+    else
+        mount ${DISK}2 /mnt
+        mkdir -p /mnt/boot/efi
+    fi
+    mount ${DISK}1 /mnt/boot/efi
 
     # Install base system
     pacstrap /mnt base base-devel linux-lts linux-lts-headers linux-firmware
@@ -306,13 +227,7 @@ function install_arch {
     pacman -S --noconfirm grub efibootmgr btrfs-progs
 
     # Install and configure GRUB
-    if [ "$BOOT_MODE" == "UEFI" ]; then
-        pacman -S --noconfirm grub efibootmgr
-        grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
-    else
-        pacman -S --noconfirm grub
-        grub-install --target=i386-pc $DISK
-    fi
+    grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
     sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet lsm=landlock,lockdown,yama,integrity,apparmor,bpf"/' /etc/default/grub
     grub-mkconfig -o /boot/grub/grub.cfg
 

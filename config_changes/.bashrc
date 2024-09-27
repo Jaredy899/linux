@@ -64,8 +64,8 @@ if [[ $iatest -gt 0 ]]; then bind "set completion-ignore-case on"; fi
 if [[ $iatest -gt 0 ]]; then bind "set show-all-if-ambiguous On"; fi
 
 # Set the default editor
-# export EDITOR=nvim
-# export VISUAL=nvim
+export EDITOR=nano
+export VISUAL=nano
 # alias pico='edit'
 # alias spico='sedit'
 # alias nano='edit'
@@ -136,7 +136,7 @@ alias da='date "+%Y-%m-%d %A %T %Z"'
 # Alias's to modified commands
 alias cp='cp -i'
 alias mv='mv -i'
-alias rm='trash -v'
+#alias rm='trash -v'
 alias mkdir='mkdir -p'
 alias ps='ps auxf'
 alias ping='ping -c 10'

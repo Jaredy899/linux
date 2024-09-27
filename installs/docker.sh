@@ -35,9 +35,14 @@ install_docker() {
             
             # If Fedora, adjust SELinux settings
             if [ "$DISTRO" = "fedora" ]; then
-                echo "Adjusting SELinux for Docker on Fedora..."
-                sudo setenforce 0
-                sudo sed -i --follow-symlinks 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+                selinux_status=$(sestatus | grep 'SELinux status:' | awk '{print $3}')
+                if [ "$selinux_status" = "enabled" ]; then
+                    echo "Adjusting SELinux for Docker on Fedora..."
+                    sudo setenforce 0
+                    sudo sed -i --follow-symlinks 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+                else
+                    echo "SELinux is disabled. No adjustment needed."
+                fi
             fi
             ;;
         arch)
@@ -52,6 +57,21 @@ install_docker() {
             # Check if Docker service is running
             if ! systemctl is-active --quiet docker; then
                 echo "Docker service failed to start on Arch-based system"
+                exit 1
+            fi
+            ;;
+        opensuse|suse|opensuse-tumbleweed)
+            echo "Detected openSUSE system"
+            sudo zypper refresh
+            sudo zypper install -y docker
+
+            # Enable and start Docker service
+            echo "Enabling and starting Docker service..."
+            sudo systemctl enable --now docker
+
+            # Check if Docker service is running
+            if ! systemctl is-active --quiet docker; then
+                echo "Docker service failed to start on openSUSE system"
                 exit 1
             fi
             ;;

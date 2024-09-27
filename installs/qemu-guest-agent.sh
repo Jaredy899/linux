@@ -51,6 +51,11 @@ install_qemu_guest_agent() {
             echo "Detected Arch-based system. Installing qemu-guest-agent..."
             sudo pacman -Syu --noconfirm qemu-guest-agent
             ;;
+        opensuse|suse|opensuse-tumbleweed)
+            echo "Detected openSUSE system. Installing qemu-guest-agent..."
+            sudo zypper refresh
+            sudo zypper install -y qemu-guest-agent
+            ;;
         *)
             echo "Unsupported distribution: $DISTRO. Please install qemu-guest-agent manually."
             exit 1
