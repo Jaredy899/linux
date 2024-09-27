@@ -3,15 +3,43 @@
 set -e  # Exit immediately if a command exits with a non-zero status
 IFS=$'\n\t'
 
-# Source the common script
-. <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)
-
-# Run the environment check
-checkEnv || exit 1
+# Debug: Print current directory and script location
+echo "Current directory: $(pwd)"
+echo "Script location: $0"
 
 # Set the GITPATH variable to the directory where the script is located
 GITPATH="$(cd "$(dirname "$0")" && pwd)"
 echo "GITPATH is set to: $GITPATH"
+
+# Source the common script from the same directory
+if [ -f "$GITPATH/common_script.sh" ]; then
+    echo "Sourcing common_script.sh from local directory"
+    . "$GITPATH/common_script.sh"
+else
+    echo "common_script.sh not found in local directory, attempting to download"
+    COMMON_SCRIPT_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh"
+    if curl -s "$COMMON_SCRIPT_URL" > "$GITPATH/common_script.sh"; then
+        echo "common_script.sh downloaded successfully"
+        . "$GITPATH/common_script.sh"
+    else
+        echo "Failed to download common_script.sh"
+        exit 1
+    fi
+fi
+
+echo "common_script.sh sourced successfully"
+
+# Debug: Check if required functions are available
+if ! command -v checkEnv > /dev/null 2>&1; then
+    echo "checkEnv function not found"
+    exit 1
+fi
+
+# Run the environment check
+if ! checkEnv; then
+    echo "Environment check failed"
+    exit 1
+fi
 
 # GitHub URL base for the necessary configuration files
 GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/"
