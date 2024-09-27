@@ -1,9 +1,10 @@
 #!/bin/sh -e
 
-https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh
+# Source the common script
+. "$(dirname "$0")/../common_script.sh"
 
 # Run the environment check
-checkEnv
+checkEnv || exit 1
 
 # Function to install a package
 install_package() {
