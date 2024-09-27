@@ -245,20 +245,11 @@ echo "-------------------------------------------------------------------------"
 
 # Function to set console font
 set_console_font() {
-    local font_list="ter-v18b"
-    local success=false
-
-    for font in $font_list; do
-        if setfont "$font" 2>/dev/null; then
-            echo "FONT=$font" | "$ESCALATION_TOOL" tee /etc/vconsole.conf > /dev/null
-            printf "%b\n" "${GREEN}Console font set to $font${RC}"
-            success=true
-            break
-        fi
-    done
-
-    if [ "$success" = false ]; then
-        printf "%b\n" "${YELLOW}Failed to set any of the preferred fonts. Using system default.${RC}"
+    if "$ESCALATION_TOOL" setfont ter-v18b; then
+        echo "FONT=ter-v18b" | "$ESCALATION_TOOL" tee /etc/vconsole.conf > /dev/null
+        printf "%b\n" "${GREEN}Console font set to ter-v18b${RC}"
+    else
+        printf "%b\n" "${YELLOW}Failed to set font ter-v18b. Using system default.${RC}"
         return 1
     fi
 }
