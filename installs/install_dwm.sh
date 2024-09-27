@@ -1,103 +1,66 @@
 #!/bin/sh -e
 
-# Function to detect the escalation tool (default is sudo)
-detect_escalation_tool() {
-    if [ "$(id -u)" -ne 0 ]; then
-        if command -v sudo >/dev/null 2>&1; then
-            ESCALATION_TOOL="sudo"
-        else
-            echo "No escalation tool found (sudo not installed), please run the script as root."
-            exit 1
-        fi
-    else
-        ESCALATION_TOOL=""
-    fi
-}
+# Source the common script
+. <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)
 
-# Function to detect the package manager
-detect_packager() {
-    if command -v pacman >/dev/null 2>&1; then
-        PACKAGER="pacman"
-    elif command -v dnf >/dev/null 2>&1; then
-        PACKAGER="dnf"
-    elif command -v apt >/dev/null 2>&1; then
-        PACKAGER="apt"
-    elif command -v zypper >/dev/null 2>&1; then
-        PACKAGER="zypper"
-    else
-        echo "No supported package manager found."
-        exit 1
-    fi
-}
-
-# Function to detect Linux distribution
-detect_distro() {
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        if [ "$ID" = "opensuse" ] && [ "$VERSION_ID" = "tumbleweed" ]; then
-            echo "opensuse-tumbleweed"
-        else
-            echo "$ID"
-        fi
-    else
-        echo "unknown"
-    fi
-}
+# Run the environment check
+checkEnv || exit 1
 
 # Function to install packages based on distribution
 install_packages() {
-    local distro="$1"
-    case "$distro" in
-        ubuntu|debian)
-            packages="nano thunar vlc feh pavucontrol pipewire pipewire-audio-client-libraries pipewire-pulse pipewire-alsa"
-            sudo apt-get update
-            sudo apt-get install -y $packages
+    # Common packages across all distributions
+    common_packages="nano thunar vlc feh pavucontrol"
+
+    case "$PACKAGER" in
+        apt)
+            packages="$common_packages pipewire pipewire-audio-client-libraries pipewire-pulse pipewire-alsa"
+            $ESCALATION_TOOL apt-get update
+            $ESCALATION_TOOL apt-get install -y $packages
             ;;
-        fedora|centos|rhel)
-            packages="nano thunar vlc network-manager-applet feh pavucontrol"
-            sudo dnf update -y
-            sudo dnf install -y $packages
+        dnf)
+            packages="$common_packages network-manager-applet"
+            $ESCALATION_TOOL dnf update -y
+            $ESCALATION_TOOL dnf install -y $packages
             ;;
-        arch)
-            packages="nano thunar vlc nm-connection-editor feh pavucontrol pipewire pipewire-pulse pipewire-alsa"
-            sudo pacman -Syu --noconfirm $packages
+        pacman)
+            packages="$common_packages nm-connection-editor pipewire pipewire-pulse pipewire-alsa"
+            $ESCALATION_TOOL pacman -Syu --noconfirm $packages
             ;;
-        opensuse-tumbleweed|opensuse-leap)
-            packages="nano thunar vlc NetworkManager-applet feh pavucontrol"
-            sudo zypper refresh
-            sudo zypper install -y $packages
+        zypper)
+            packages="$common_packages NetworkManager-applet"
+            $ESCALATION_TOOL zypper refresh
+            $ESCALATION_TOOL zypper install -y $packages
             ;;
         *)
-            echo "Unsupported distribution: $distro"
+            printf "%b\n" "${RED}Unsupported package manager: $PACKAGER${RC}"
             exit 1
             ;;
     esac
 
+    # Install individual packages
+    for package in $packages; do
+        if ! command_exists "$package"; then
+            printf "%b\n" "${YELLOW}Installing $package...${RC}"
+            $ESCALATION_TOOL $PACKAGER install -y "$package"
+        else
+            printf "%b\n" "${GREEN}$package is already installed.${RC}"
+        fi
+    done
+
     # Create or update the .xprofile file to autostart nm-applet for all distros
     if [ ! -f "$HOME/.xprofile" ]; then
-        echo "Creating .xprofile and adding nm-applet autostart..."
+        printf "%b\n" "${YELLOW}Creating .xprofile and adding nm-applet autostart...${RC}"
         echo "nm-applet &" > "$HOME/.xprofile"
     else
         if ! grep -q "nm-applet &" "$HOME/.xprofile"; then
-            echo "Adding nm-applet autostart to existing .xprofile..."
+            printf "%b\n" "${YELLOW}Adding nm-applet autostart to existing .xprofile...${RC}"
             echo "nm-applet &" >> "$HOME/.xprofile"
         fi
     fi
 }
 
-# Main function to orchestrate all actions
-main() {
-    distro=$(detect_distro)
-    if [ "$distro" = "unknown" ]; then
-        echo "Unable to detect Linux distribution. Exiting."
-        exit 1
-    fi
-
-    install_packages "$distro"
-}
-
 makeDWM() {
-    cd "$HOME" && git clone https://github.com/ChrisTitusTech/dwm-titus.git # CD to Home directory to install dwm-titus
+    cd "$HOME" && git clone https://github.com/ChrisTitusTech/dwm-titus.git
     cd dwm-titus/
     $ESCALATION_TOOL make clean install
     
@@ -108,7 +71,7 @@ makeDWM() {
 }
 
 setupDWM() {
-    echo "Installing DWM-Titus if not already installed"
+    printf "%b\n" "${YELLOW}Installing DWM-Titus if not already installed${RC}"
     case "$PACKAGER" in
         pacman)
             $ESCALATION_TOOL "$PACKAGER" -S --needed --noconfirm xorg-xinit xorg-server base-devel libx11 libxinerama libxft imlib2 libxcb meson libev uthash libconfig
@@ -124,7 +87,7 @@ setupDWM() {
             $ESCALATION_TOOL "$PACKAGER" install -y xorg-x11-server xinit gcc make libX11-devel libXinerama-devel libXft-devel imlib2-devel libev-devel libxcb-devel dbus-1-devel git meson uthash-devel
             ;;
         *)
-            echo "Unsupported package manager: $PACKAGER"
+            printf "%b\n" "${RED}Unsupported package manager: $PACKAGER${RC}"
             exit 1
             ;;
     esac
@@ -138,56 +101,56 @@ install_nerd_font() {
 
     # Check if Meslo Nerd-font is already installed
     if [ -n "$FONT_INSTALLED" ]; then
-        echo "Meslo Nerd-fonts are already installed."
+        printf "%b\n" "${GREEN}Meslo Nerd-fonts are already installed.${RC}"
         return 0
     fi
 
-    echo "Installing Meslo Nerd-fonts"
+    printf "%b\n" "${YELLOW}Installing Meslo Nerd-fonts${RC}"
 
     # Create the fonts directory if it doesn't exist
     if [ ! -d "$FONT_DIR" ]; then
-        mkdir -p "$FONT_DIR" || {
-            echo "Failed to create directory: $FONT_DIR"
+        if ! mkdir -p "$FONT_DIR"; then
+            printf "%b\n" "${RED}Failed to create directory: $FONT_DIR${RC}"
             return 1
-        }
+        fi
     else
-        echo "$FONT_DIR exists, skipping creation."
+        printf "%b\n" "${YELLOW}$FONT_DIR exists, skipping creation.${RC}"
     fi
 
     # Check if the font zip file already exists
     if [ ! -f "$FONT_ZIP" ]; then
         # Download the font zip file
         wget -P "$FONT_DIR" "$FONT_URL" || {
-            echo "Failed to download Meslo Nerd-fonts from $FONT_URL"
+            printf "%b\n" "${RED}Failed to download Meslo Nerd-fonts from $FONT_URL${RC}"
             return 1
         }
     else
-        echo "Meslo.zip already exists in $FONT_DIR, skipping download."
+        printf "%b\n" "${YELLOW}Meslo.zip already exists in $FONT_DIR, skipping download.${RC}"
     fi
 
     # Unzip the font file if it hasn't been unzipped yet
     if [ ! -d "$FONT_DIR/Meslo" ]; then
         unzip "$FONT_ZIP" -d "$FONT_DIR" || {
-            echo "Failed to unzip $FONT_ZIP"
+            printf "%b\n" "${RED}Failed to unzip $FONT_ZIP${RC}"
             return 1
         }
     else
-        echo "Meslo font files already unzipped in $FONT_DIR, skipping unzip."
+        printf "%b\n" "${YELLOW}Meslo font files already unzipped in $FONT_DIR, skipping unzip.${RC}"
     fi
 
     # Remove the zip file
     rm "$FONT_ZIP" || {
-        echo "Failed to remove $FONT_ZIP"
+        printf "%b\n" "${RED}Failed to remove $FONT_ZIP${RC}"
         return 1
     }
 
     # Rebuild the font cache
     fc-cache -fv || {
-        echo "Failed to rebuild font cache"
+        printf "%b\n" "${RED}Failed to rebuild font cache${RC}"
         return 1
     }
 
-    echo "Meslo Nerd-fonts installed successfully"
+    printf "%b\n" "${GREEN}Meslo Nerd-fonts installed successfully${RC}"
 }
 
 picom_animations() {
@@ -195,33 +158,32 @@ picom_animations() {
     mkdir -p ~/build
     if [ ! -d ~/build/picom ]; then
         if ! git clone https://github.com/FT-Labs/picom.git ~/build/picom; then
-            echo "Failed to clone the repository"
+            printf "%b\n" "${RED}Failed to clone the repository${RC}"
             return 1
         fi
     else
-        echo "Repository already exists, skipping clone"
+        printf "%b\n" "${YELLOW}Repository already exists, skipping clone${RC}"
     fi
 
-    cd ~/build/picom || { echo "Failed to change directory to picom"; return 1; }
+    cd ~/build/picom || { printf "%b\n" "${RED}Failed to change directory to picom${RC}"; return 1; }
 
     # Build the project
     if ! meson setup --buildtype=release build; then
-        echo "Meson setup failed"
+        printf "%b\n" "${RED}Meson setup failed${RC}"
         return 1
     fi
 
     if ! ninja -C build; then
-        echo "Ninja build failed"
+        printf "%b\n" "${RED}Ninja build failed${RC}"
         return 1
     fi
 
-    # Install the built binary
-    if ! sudo ninja -C build install; then
-        echo "Failed to install the built binary"
+    if ! $ESCALATION_TOOL ninja -C build install; then
+        printf "%b\n" "${RED}Failed to install the built binary${RC}"
         return 1
     fi
 
-    echo "Picom animations installed successfully"
+    printf "%b\n" "${GREEN}Picom animations installed successfully${RC}"
 }
 
 clone_config_folders() {
@@ -236,9 +198,9 @@ clone_config_folders() {
         # Clone the directory to ~/.config/
         if [ -d "$dir" ]; then
             cp -r "$dir" ~/.config/
-            echo "Cloned $dir_name to ~/.config/"
+            printf "%b\n" "${GREEN}Cloned $dir_name to ~/.config/${RC}"
         else
-            echo "Directory $dir_name does not exist, skipping"
+            printf "%b\n" "${YELLOW}Directory $dir_name does not exist, skipping${RC}"
         fi
     done
 }
@@ -249,39 +211,33 @@ configure_backgrounds() {
 
     # Check if the ~/Pictures directory exists
     if [ ! -d "$HOME/Pictures" ]; then
-        # If it doesn't exist, create the ~/Pictures directory
-        echo "Pictures directory does not exist, creating it."
+        printf "%b\n" "${YELLOW}Pictures directory does not exist, creating it.${RC}"
         mkdir -p "$HOME/Pictures" || {
-            echo "Failed to create Pictures directory."
+            printf "%b\n" "${RED}Failed to create Pictures directory.${RC}"
             return 1
         }
     fi
 
     # Check if the backgrounds directory (BG_DIR) exists
     if [ ! -d "$BG_DIR" ]; then
-        echo "Backgrounds directory does not exist, downloading backgrounds."
-        # If the backgrounds directory doesn't exist, clone the repository containing backgrounds
+        printf "%b\n" "${YELLOW}Backgrounds directory does not exist, downloading backgrounds.${RC}"
         if ! git clone https://github.com/ChrisTitusTech/nord-background.git "$BG_DIR"; then
-            echo "Failed to clone the repository."
+            printf "%b\n" "${RED}Failed to clone the repository.${RC}"
             return 1
         fi
-        echo "Downloaded desktop backgrounds to $BG_DIR."
+        printf "%b\n" "${GREEN}Downloaded desktop backgrounds to $BG_DIR.${RC}"
     else
-        echo "Backgrounds directory already exists at $BG_DIR, skipping download."
+        printf "%b\n" "${YELLOW}Backgrounds directory already exists at $BG_DIR, skipping download.${RC}"
     fi
 }
 
 setupDisplayManager() {
-    echo "Setting up Display Manager"
+    printf "%b\n" "${YELLOW}Setting up Display Manager${RC}"
 
-    # Ask if the user wants to autologin
-    read -p "Do you want to set up autologin? (y/n): " setup_autologin
+    printf "%b" "${CYAN}Do you want to set up autologin? (y/n): ${RC}"
+    read -r setup_autologin
 
     if [ "$setup_autologin" = "y" ] || [ "$setup_autologin" = "Y" ]; then
-        # Detect the current distribution
-        distro=$(detect_distro)
-
-        # Check if a display manager is already installed
         existing_dm=""
         for dm in sddm lightdm gdm; do
             if command -v $dm >/dev/null 2>&1; then
@@ -291,8 +247,9 @@ setupDisplayManager() {
         done
 
         if [ -n "$existing_dm" ]; then
-            echo "Existing display manager detected: $existing_dm"
-            read -p "Do you want to use $existing_dm? (y/n): " use_existing_dm
+            printf "%b\n" "${YELLOW}Existing display manager detected: $existing_dm${RC}"
+            printf "%b" "${CYAN}Do you want to use $existing_dm? (y/n): ${RC}"
+            read -r use_existing_dm
             if [ "$use_existing_dm" = "y" ] || [ "$use_existing_dm" = "Y" ]; then
                 DM=$existing_dm
             fi
@@ -300,7 +257,7 @@ setupDisplayManager() {
 
         # If no existing DM is chosen, select based on distribution
         if [ -z "$DM" ]; then
-            case "$distro" in
+            case "$DTYPE" in
                 arch|fedora|ubuntu|opensuse-tumbleweed)
                     DM="sddm"
                     ;;
@@ -308,36 +265,36 @@ setupDisplayManager() {
                     DM="lightdm"
                     ;;
                 *)
-                    echo "Unsupported distribution. Defaulting to SDDM."
+                    printf "%b\n" "${YELLOW}Unsupported distribution. Defaulting to SDDM.${RC}"
                     DM="sddm"
                     ;;
             esac
 
             # Install the chosen display manager if not already installed
             if ! command -v $DM >/dev/null 2>&1; then
-                echo "Installing $DM..."
+                printf "%b\n" "${YELLOW}Installing $DM...${RC}"
                 case $PACKAGER in
                     pacman)
-                        sudo pacman -S --noconfirm $DM
+                        $ESCALATION_TOOL pacman -S --noconfirm $DM
                         ;;
                     apt)
-                        sudo apt install -y $DM
+                        $ESCALATION_TOOL apt install -y $DM
                         ;;
                     dnf)
-                        sudo dnf install -y $DM
+                        $ESCALATION_TOOL dnf install -y $DM
                         ;;
                     zypper)
-                        sudo zypper install -y $DM
+                        $ESCALATION_TOOL zypper install -y $DM
                         ;;
                     *)
-                        echo "Unsupported package manager. Please install $DM manually."
+                        printf "%b\n" "${RED}Unsupported package manager. Please install $DM manually.${RC}"
                         return 1
                         ;;
                 esac
             fi
         fi
 
-        echo "Configuring $DM for autologin"
+        printf "%b\n" "${YELLOW}Configuring $DM for autologin${RC}"
 
         # Configure the chosen display manager for autologin
         case $DM in
@@ -345,97 +302,90 @@ setupDisplayManager() {
                 # SDDM configuration
                 SDDM_CONF="/etc/sddm.conf"
                 if [ ! -f "$SDDM_CONF" ]; then
-                    echo "[Autologin]" | sudo tee "$SDDM_CONF"
+                    echo "[Autologin]" | $ESCALATION_TOOL tee "$SDDM_CONF"
                 else
-                    sudo sed -i '/^\[Autologin\]/d' "$SDDM_CONF"
-                    sudo sed -i '/^User=/d' "$SDDM_CONF"
-                    sudo sed -i '/^Session=/d' "$SDDM_CONF"
-                    echo "[Autologin]" | sudo tee -a "$SDDM_CONF"
+                    $ESCALATION_TOOL sed -i '/^\[Autologin\]/d' "$SDDM_CONF"
+                    $ESCALATION_TOOL sed -i '/^User=/d' "$SDDM_CONF"
+                    $ESCALATION_TOOL sed -i '/^Session=/d' "$SDDM_CONF"
+                    echo "[Autologin]" | $ESCALATION_TOOL tee -a "$SDDM_CONF"
                 fi
-                echo "User=$USER" | sudo tee -a "$SDDM_CONF"
-                echo "Session=dwm" | sudo tee -a "$SDDM_CONF"
+                echo "User=$USER" | $ESCALATION_TOOL tee -a "$SDDM_CONF"
+                echo "Session=dwm" | $ESCALATION_TOOL tee -a "$SDDM_CONF"
                 ;;
             "lightdm")
                 # LightDM configuration
                 LIGHTDM_CONF="/etc/lightdm/lightdm.conf"
                 if [ ! -f "$LIGHTDM_CONF" ]; then
-                    echo "LightDM configuration file not found. Attempting to create it."
-                    sudo mkdir -p /etc/lightdm
-                    echo "[Seat:*]" | sudo tee "$LIGHTDM_CONF"
+                    printf "%b\n" "${YELLOW}LightDM configuration file not found. Attempting to create it.${RC}"
+                    $ESCALATION_TOOL mkdir -p /etc/lightdm
+                    echo "[Seat:*]" | $ESCALATION_TOOL tee "$LIGHTDM_CONF"
                 fi
                 
                 if [ -f "$LIGHTDM_CONF" ]; then
                     if ! grep -q "^\[Seat:\*\]" "$LIGHTDM_CONF"; then
-                        echo "[Seat:*]" | sudo tee -a "$LIGHTDM_CONF"
+                        echo "[Seat:*]" | $ESCALATION_TOOL tee -a "$LIGHTDM_CONF"
                     fi
-                    sudo sed -i "/^\[Seat:\*\]/a autologin-user=$USER" "$LIGHTDM_CONF"
-                    sudo sed -i "/^\[Seat:\*\]/a autologin-session=dwm" "$LIGHTDM_CONF"
-                    echo "LightDM configured for autologin."
+                    $ESCALATION_TOOL sed -i "/^\[Seat:\*\]/a autologin-user=$USER" "$LIGHTDM_CONF"
+                    $ESCALATION_TOOL sed -i "/^\[Seat:\*\]/a autologin-session=dwm" "$LIGHTDM_CONF"
+                    printf "%b\n" "${GREEN}LightDM configured for autologin.${RC}"
                 else
-                    echo "Failed to create or find LightDM configuration file. Autologin setup failed."
+                    printf "%b\n" "${RED}Failed to create or find LightDM configuration file. Autologin setup failed.${RC}"
                 fi
                 ;;
             "gdm")
                 # GDM configuration
                 GDM_CONF="/etc/gdm/custom.conf"
                 if [ ! -f "$GDM_CONF" ]; then
-                    echo "GDM configuration file not found. Attempting to create it."
-                    sudo mkdir -p /etc/gdm
-                    echo "[daemon]" | sudo tee "$GDM_CONF"
+                    printf "%b\n" "${YELLOW}GDM configuration file not found. Attempting to create it.${RC}"
+                    $ESCALATION_TOOL mkdir -p /etc/gdm
+                    echo "[daemon]" | $ESCALATION_TOOL tee "$GDM_CONF"
                 fi
                 
                 if [ -f "$GDM_CONF" ]; then
                     if ! grep -q "^\[daemon\]" "$GDM_CONF"; then
-                        echo "[daemon]" | sudo tee -a "$GDM_CONF"
+                        echo "[daemon]" | $ESCALATION_TOOL tee -a "$GDM_CONF"
                     fi
-                    sudo sed -i "/^\[daemon\]/a AutomaticLoginEnable=True" "$GDM_CONF"
-                    sudo sed -i "/^\[daemon\]/a AutomaticLogin=$USER" "$GDM_CONF"
+                    $ESCALATION_TOOL sed -i "/^\[daemon\]/a AutomaticLoginEnable=True" "$GDM_CONF"
+                    $ESCALATION_TOOL sed -i "/^\[daemon\]/a AutomaticLogin=$USER" "$GDM_CONF"
                     
                     # Set DWM as the default session
                     if [ -d "/usr/share/xsessions" ]; then
-                        echo "[Desktop]" | sudo tee /usr/share/xsessions/dwm.desktop
-                        echo "Name=DWM" | sudo tee -a /usr/share/xsessions/dwm.desktop
-                        echo "Exec=dwm" | sudo tee -a /usr/share/xsessions/dwm.desktop
+                        echo "[Desktop]" | $ESCALATION_TOOL tee /usr/share/xsessions/dwm.desktop
+                        echo "Name=DWM" | $ESCALATION_TOOL tee -a /usr/share/xsessions/dwm.desktop
+                        echo "Exec=dwm" | $ESCALATION_TOOL tee -a /usr/share/xsessions/dwm.desktop
                     fi
                     
-                    echo "GDM configured for autologin."
+                    printf "%b\n" "${GREEN}GDM configured for autologin.${RC}"
                 else
-                    echo "Failed to create or find GDM configuration file. Autologin setup failed."
+                    printf "%b\n" "${RED}Failed to create or find GDM configuration file. Autologin setup failed.${RC}"
                 fi
                 ;;
         esac
 
-        # Enable the display manager service
-        sudo systemctl enable $DM.service
+        $ESCALATION_TOOL systemctl enable $DM.service
 
-        # Set the system to boot into graphical.target
-        echo "Setting system to boot into graphical.target"
-        sudo systemctl set-default graphical.target
+        $ESCALATION_TOOL systemctl set-default graphical.target
 
-        echo "Display Manager setup complete with autologin."
+        printf "%b\n" "${GREEN}Display Manager setup complete with autologin.${RC}"
     else
-        echo "Autologin not selected. Setting up for manual login."
+        printf "%b\n" "${YELLOW}Autologin not selected. Setting up for manual login.${RC}"
         
-        # Set the system to boot into multi-user.target
-        sudo systemctl set-default multi-user.target
+        $ESCALATION_TOOL systemctl set-default multi-user.target
         
-        # Create .xinitrc file
-        echo "Creating .xinitrc file in the home directory."
+        printf "%b\n" "${YELLOW}Creating .xinitrc file in the home directory.${RC}"
         echo "exec dwm" > "$HOME/.xinitrc"
-        echo ".xinitrc file created with 'exec dwm'"
+        printf "%b\n" "${GREEN}.xinitrc file created with 'exec dwm'${RC}"
     fi
 }
 
 # Function Calls
-detect_escalation_tool || true
-detect_packager || true
-setupDisplayManager || true
-install_nerd_font || true
-clone_config_folders || true
-configure_backgrounds || true
-setupDWM || true
-picom_animations || true
-makeDWM || true
+install_packages
+setupDisplayManager
+install_nerd_font
+clone_config_folders
+configure_backgrounds
+setupDWM
+picom_animations
+makeDWM
 
-# Execute main
-main || true
+printf "%b\n" "${GREEN}DWM installation and setup complete.${RC}"
