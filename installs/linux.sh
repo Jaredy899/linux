@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-. /common_script.sh
+. ../common_script.sh
 
 # Check environment
 checkEnv
