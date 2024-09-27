@@ -1,40 +1,24 @@
 #!/bin/bash
 
-set -x  # Enable debug mode to print each command
 set -e  # Exit immediately if a command exits with a non-zero status
 IFS=$'\n\t'
 
+# Create a temporary directory
+TEMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TEMP_DIR"' EXIT
+
 # Debug: Print current directory and script location
 echo "Current directory: $(pwd)"
-echo "Script location: $0"
+echo "Temporary directory: $TEMP_DIR"
 
-# Set the GITPATH variable to the directory where the script is located
-GITPATH="$(cd "$(dirname "$0")" && pwd)"
-echo "GITPATH is set to: $GITPATH"
-
-# List contents of GITPATH
-echo "Contents of $GITPATH:"
-ls -la "$GITPATH"
-
-# Source the common script from the same directory
-if [ -f "$GITPATH/common_script.sh" ]; then
-    echo "common_script.sh found in local directory"
-    echo "Contents of common_script.sh:"
-    cat "$GITPATH/common_script.sh"
-    echo "Sourcing common_script.sh from local directory"
-    . "$GITPATH/common_script.sh"
+# Download the common script to the temporary directory
+COMMON_SCRIPT_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh"
+if curl -fsSL "$COMMON_SCRIPT_URL" > "$TEMP_DIR/common_script.sh"; then
+    echo "common_script.sh downloaded successfully"
+    . "$TEMP_DIR/common_script.sh"
 else
-    echo "common_script.sh not found in local directory, attempting to download"
-    COMMON_SCRIPT_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh"
-    if curl -s "$COMMON_SCRIPT_URL" > "$GITPATH/common_script.sh"; then
-        echo "common_script.sh downloaded successfully"
-        echo "Contents of downloaded common_script.sh:"
-        cat "$GITPATH/common_script.sh"
-        . "$GITPATH/common_script.sh"
-    else
-        echo "Failed to download common_script.sh"
-        exit 1
-    fi
+    echo "Failed to download common_script.sh"
+    exit 1
 fi
 
 echo "common_script.sh sourced successfully"
@@ -55,21 +39,13 @@ fi
 GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/"
 INSTALLS_URL="$GITHUB_BASE_URL/installs"
 
-# Function to run a script from local or GitHub
+# Function to run a script from GitHub
 run_script() {
     local script_name="$1"
-    local local_path="$2"
-    local url="$3"
+    local url="$2"
 
-    if [[ -f "$local_path/$script_name" ]]; then
-        printf "%b\n" "${CYAN}Running $script_name from local directory...${RC}"
-        bash "$local_path/$script_name"
-    else
-        printf "%b\n" "${CYAN}Running $script_name from GitHub...${RC}"
-        curl -fsSL "$url/$script_name" -o "/tmp/$script_name"
-        bash "/tmp/$script_name"
-        rm "/tmp/$script_name"
-    fi
+    echo "Running $script_name from GitHub..."
+    curl -fsSL "$url/$script_name" | bash
 }
 
 # Check if running in an Arch Linux ISO environment
@@ -78,14 +54,14 @@ if [ -d /run/archiso/bootmnt ]; then
     printf "%b" "${CYAN}Do you want to run the Arch install script? (y/n): ${RC}"
     read -r run_install
     if [[ "$run_install" =~ ^[Yy]$ ]]; then
-        run_script "arch_install.sh" "$GITPATH/installs" "$INSTALLS_URL"
+        run_script "arch_install.sh" "$INSTALLS_URL"
     fi
 fi
 
 # Ensure git is installed
 if ! command_exists git; then
     printf "%b\n" "${YELLOW}Git is not installed. Installing git...${RC}"
-    run_script "install_git.sh" "$GITPATH/installs" "$INSTALLS_URL"
+    run_script "install_git.sh" "$INSTALLS_URL"
 else
     printf "%b\n" "${GREEN}Git is already installed.${RC}"
 fi
@@ -113,31 +89,31 @@ while true; do
     case $choice in
         1) 
             printf "%b\n" "${YELLOW}Running Post Install Script...${RC}"
-            run_script "post_install.sh" "$GITPATH/installs" "$INSTALLS_URL"
+            run_script "post_install.sh" "$INSTALLS_URL"
             ;;
         2) 
             printf "%b\n" "${YELLOW}Running Chris Titus Tech's script...${RC}"
             curl -fsSL christitus.com/linuxdev | sh
             ;;
-        3) run_script "add_ssh_key.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
-        4) run_script "add_network_drive.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        3) run_script "add_ssh_key.sh" "$INSTALLS_URL" ;;
+        4) run_script "add_network_drive.sh" "$INSTALLS_URL" ;;
         5) 
             printf "%b\n" "${YELLOW}Installing Cockpit...${RC}"
-            run_script "cockpit.sh" "$GITPATH/installs" "$INSTALLS_URL"
+            run_script "cockpit.sh" "$INSTALLS_URL"
             ;;
         6) 
             printf "%b\n" "${YELLOW}Installing Tailscale...${RC}"
             curl -fsSL https://tailscale.com/install.sh | sh
             printf "%b\n" "${GREEN}Tailscale installed. Please run 'sudo tailscale up' to activate.${RC}"
             ;;
-        7) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        7) run_script "docker.sh" "$INSTALLS_URL" ;;
         8) 
             printf "%b\n" "${YELLOW}Running DWM Setup Script...${RC}"
-            run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL"
+            run_script "install_dwm.sh" "$INSTALLS_URL"
             ;;
         9)
             printf "%b\n" "${YELLOW}Replacing configs...${RC}"
-            run_script "replace_configs.sh" "$GITPATH/installs" "$INSTALLS_URL"
+            run_script "replace_configs.sh" "$INSTALLS_URL"
             ;;
         0) printf "%b\n" "${GREEN}Exiting script.${RC}"; break ;;
         *) printf "%b\n" "${RED}Invalid option. Please enter a number between 0 and 9.${RC}" ;;
