@@ -79,7 +79,6 @@ else
         echo "nm-applet &" >> "$HOME/.xprofile"
     fi
 fi
-}
 
 makeDWM() {
     cd "$HOME" && git clone https://github.com/ChrisTitusTech/dwm-titus.git
