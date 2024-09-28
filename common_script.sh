@@ -146,3 +146,40 @@ checkEnv() {
     fi
     return 0
 }
+
+# Function to get non-interactive installation flags
+getNonInteractiveFlags() {
+    case "$PACKAGER" in
+        pacman)
+            echo "--noconfirm"
+            ;;
+        apt-get|nala)
+            echo "-y"
+            ;;
+        dnf|zypper)
+            echo "-y"
+            ;;
+        *)
+            echo ""  # Default to empty string if package manager is unknown
+            ;;
+    esac
+}
+
+# Function to perform non-interactive package installation
+noninteractive() {
+    local package_name="$1"
+    local flags=$(getNonInteractiveFlags)
+
+    case "$PACKAGER" in
+        pacman)
+            $ESCALATION_TOOL $PACKAGER -S $flags "$package_name"
+            ;;
+        apt-get|nala|dnf|zypper)
+            $ESCALATION_TOOL $PACKAGER install $flags "$package_name"
+            ;;
+        *)
+            echo "Unsupported package manager: $PACKAGER"
+            return 1
+            ;;
+    esac
+}

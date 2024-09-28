@@ -11,14 +11,13 @@ install_package() {
     package_name="$1"
     if ! command_exists "$package_name"; then
         printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
-        case "$PACKAGER" in
-            pacman)
-                "$ESCALATION_TOOL" "$PACKAGER" -S --needed --noconfirm "$package_name"
-                ;;
-            *)
-                "$ESCALATION_TOOL" "$PACKAGER" install -y "$package_name"
-                ;;
-        esac
+        noninteractive "$package_name"
+        if [ $? -eq 0 ]; then
+            printf "%b\n" "${GREEN}$package_name installed successfully.${RC}"
+        else
+            printf "%b\n" "${RED}Failed to install $package_name. Please install it manually.${RC}"
+            exit 1
+        fi
     else
         printf "%b\n" "${GREEN}$package_name is already installed.${RC}"
     fi
