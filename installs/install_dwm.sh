@@ -84,7 +84,7 @@ setupDWM() {
             $ESCALATION_TOOL "$PACKAGER" install -y xorg-x11-xinit xorg-x11-server-Xorg libX11-devel libXinerama-devel libXft-devel imlib2-devel libxcb-devel dbus-devel gcc git libconfig-devel libdrm-devel libev-devel libX11-devel libX11-xcb libXext-devel libxcb-devel libGL-devel libEGL-devel libepoxy-devel meson pcre2-devel pixman-devel uthash-devel xcb-util-image-devel xcb-util-renderutil-devel xorg-x11-proto-devel xcb-util-devel meson
             ;;
         zypper)
-            $ESCALATION_TOOL "$PACKAGER" install -y xorg-x11-server xinit gcc make libX11-devel libXinerama-devel libXft-devel imlib2-devel libev-devel libxcb-devel dbus-1-devel git meson uthash-devel
+            $ESCALATION_TOOL "$PACKAGER" install -y xorg-x11-server xinit gcc make libX11-devel libXinerama-devel libXft-devel imlib2-devel libev-devel libpixman-1-0-devel sudo zypper install libxcb-image0 libxcb-devel dbus-1-devel git meson uthash-devel
             ;;
         *)
             printf "%b\n" "${RED}Unsupported package manager: $PACKAGER${RC}"
