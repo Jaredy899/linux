@@ -25,11 +25,15 @@ install_package() {
 }
 
 # Ask if the user wants to mount a CIFS (Samba) or NFS drive
-printf "%b" "${CYAN}Do you want to mount a CIFS (Samba) or NFS drive? (cifs/nfs): ${RC}"
-read -r mount_type
+printf "%b\n" "${CYAN}Choose the type of network drive to mount:${RC}"
+printf "%b\n" "${CYAN}1. CIFS (Samba)${RC}"
+printf "%b\n" "${CYAN}2. NFS${RC}"
+printf "%b" "${CYAN}Enter your choice (1 or 2): ${RC}"
+read -r mount_choice
 
-case "$mount_type" in
-    cifs)
+case "$mount_choice" in
+    1)
+        mount_type="cifs"
         # Ensure cifs-utils is installed
         install_package "cifs-utils"
 
@@ -62,7 +66,8 @@ case "$mount_type" in
         mount_options="credentials=$credentials_file"
         fs_type="cifs"
         ;;
-    nfs)
+    2)
+        mount_type="nfs"
         # Ensure nfs-utils is installed
         install_package "nfs-utils"
 
@@ -75,7 +80,7 @@ case "$mount_type" in
         fs_type="nfs"
         ;;
     *)
-        printf "%b\n" "${RED}Invalid option. Please specify 'cifs' or 'nfs'.${RC}"
+        printf "%b\n" "${RED}Invalid option. Please choose 1 for CIFS or 2 for NFS.${RC}"
         exit 1
         ;;
 esac
