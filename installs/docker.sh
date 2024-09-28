@@ -86,14 +86,20 @@ install_portainer() {
 install_docker
 install_portainer
 
-# Display instructions to manually add user to Docker group
-printf "%b\n" "${CYAN}######################################################################################################${RC}"
-printf "%b\n" "${CYAN}##                                                                                                  ##${RC}"
-printf "%b\n" "${CYAN}##  To add your user to the Docker group and apply the changes, please run the following commands:  ##${RC}"
-printf "%b\n" "${CYAN}##                                                                                                  ##${RC}"
-printf "%b\n" "${CYAN}##                            sudo usermod -aG docker \$USER                                         ##${RC}"
-printf "%b\n" "${CYAN}##                                     newgrp docker                                                ##${RC}"
-printf "%b\n" "${CYAN}##                                                                                                  ##${RC}"
-printf "%b\n" "${CYAN}##             After running these commands, you can use Docker without sudo.                       ##${RC}"
-printf "%b\n" "${CYAN}##                                                                                                  ##${RC}"
-printf "%b\n" "${CYAN}######################################################################################################${RC}"
+# Add current user to the Docker group using the escalation tool
+$ESCALATION_TOOL usermod -aG docker $USER
+
+# Display simplified instructions for applying changes
+printf "%b\n" "${CYAN}Your user has been added to the Docker group.${RC}"
+printf "%b\n" "${CYAN}To apply the changes, you have two options:${RC}"
+printf "%b\n"
+printf "%b\n" "${CYAN}1. Run the following command to apply changes immediately:${RC}"
+printf "%b\n" "${CYAN}   newgrp docker${RC}"
+printf "%b\n"
+printf "%b\n" "${CYAN}2. Log out and log back in to apply the changes.${RC}"
+printf "%b\n"
+printf "%b\n" "${CYAN}After applying the changes, you can use Docker without sudo.${RC}"
+
+# Provide an easy-to-copy version of the command
+echo -e "\nTo apply changes immediately, copy and run this command:"
+echo -e "${CYAN}newgrp docker${RC}\n"
