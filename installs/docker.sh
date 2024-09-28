@@ -12,12 +12,11 @@ install_docker() {
         printf "%b\n" "${YELLOW}Installing Docker...${RC}"
         case "$PACKAGER" in
             pacman)
-                "$ESCALATION_TOOL" "$PACKAGER" -Syu --noconfirm
-                "$ESCALATION_TOOL" "$PACKAGER" -S --needed --noconfirm docker docker-compose
+                noninteractive docker docker-compose
                 ;;
             zypper)
                 "$ESCALATION_TOOL" "$PACKAGER" refresh
-                "$ESCALATION_TOOL" "$PACKAGER" install -y docker
+                noninteractive docker
                 ;;
             *)
                 curl -fsSL https://get.docker.com | "$ESCALATION_TOOL" sh

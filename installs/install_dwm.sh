@@ -11,14 +11,7 @@ installPackage() {
     package_name="$1"
     if ! command_exists "$package_name"; then
         printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
-        case "$PACKAGER" in
-            pacman)
-                "$ESCALATION_TOOL" "$PACKAGER" -S --needed --noconfirm "$package_name"
-                ;;
-            *)
-                "$ESCALATION_TOOL" "$PACKAGER" install -y "$package_name"
-                ;;
-        esac
+        noninteractive "$package_name"
     else
         printf "%b\n" "${GREEN}$package_name is already installed.${RC}"
     fi
@@ -39,35 +32,25 @@ printf "%b\n" "${GREEN}Common package installation complete.${RC}"
 case "$PACKAGER" in
     pacman)
         packages="$common_packages pipewire pipewire-audio-client-libraries pipewire-pulse pipewire-alsa"
-        $ESCALATION_TOOL pacman -Sy --noconfirm $packages
+        noninteractive $packages
         ;;
     nala)
         packages="$common_packages pipewire pipewire-audio-client-libraries pipewire-pulse pipewire-alsa"
-        $ESCALATION_TOOL nala install -y $packages
+        noninteractive $packages
         ;;
     dnf)
         packages="$common_packages network-manager-applet"
-        $ESCALATION_TOOL dnf install -y $packages
+        noninteractive $packages
         ;;
     zypper)
         packages="$common_packages NetworkManager-applet"
-        $ESCALATION_TOOL zypper install -y $packages
+        noninteractive $packages
         ;;
     *)
         printf "%b\n" "${RED}Unsupported package manager: $PACKAGER${RC}"
         exit 1
         ;;
 esac
-
-# Install individual packages
-for package in $packages; do
-    if ! command_exists "$package"; then
-        printf "%b\n" "${YELLOW}Installing $package...${RC}"
-        $ESCALATION_TOOL $PACKAGER install -y "$package"
-    else
-        printf "%b\n" "${GREEN}$package is already installed.${RC}"
-    fi
-done
 
 # Create or update the .xprofile file to autostart nm-applet for all distros
 if [ ! -f "$HOME/.xprofile" ]; then
@@ -95,17 +78,17 @@ setupDWM() {
     printf "%b\n" "${YELLOW}Installing DWM-Titus if not already installed${RC}"
     case "$PACKAGER" in
         pacman)
-            $ESCALATION_TOOL "$PACKAGER" -S --needed --noconfirm xorg-xinit xorg-server base-devel libx11 libxinerama libxft imlib2 libxcb meson libev uthash libconfig
+            noninteractive xorg-xinit xorg-server base-devel libx11 libxinerama libxft imlib2 libxcb meson libev uthash libconfig
             ;;
         apt|nala)
-            $ESCALATION_TOOL $PACKAGER install -y xorg xinit build-essential libx11-dev libxinerama-dev libxft-dev libimlib2-dev libxcb1-dev libxcb-res0-dev libconfig-dev libdbus-1-dev libegl-dev libev-dev libgl-dev libepoxy-dev libpcre2-dev libpixman-1-dev libx11-xcb-dev libxcb1-dev libxcb-composite0-dev libxcb-damage0-dev libxcb-dpms0-dev libxcb-glx0-dev libxcb-image0-dev libxcb-present-dev libxcb-randr0-dev libxcb-render0-dev libxcb-render-util0-dev libxcb-shape0-dev libxcb-util-dev libxcb-xfixes0-dev libxext-dev meson ninja-build uthash-dev meson unzip
+            noninteractive xorg xinit build-essential libx11-dev libxinerama-dev libxft-dev libimlib2-dev libxcb1-dev libxcb-res0-dev libconfig-dev libdbus-1-dev libegl-dev libev-dev libgl-dev libepoxy-dev libpcre2-dev libpixman-1-dev libx11-xcb-dev libxcb1-dev libxcb-composite0-dev libxcb-damage0-dev libxcb-dpms0-dev libxcb-glx0-dev libxcb-image0-dev libxcb-present-dev libxcb-randr0-dev libxcb-render0-dev libxcb-render-util0-dev libxcb-shape0-dev libxcb-util-dev libxcb-xfixes0-dev libxext-dev meson ninja-build uthash-dev meson unzip
             ;;
         dnf)
-            $ESCALATION_TOOL "$PACKAGER" groupinstall -y "Development Tools"
-            $ESCALATION_TOOL "$PACKAGER" install -y xorg-x11-xinit xorg-x11-server-Xorg libX11-devel libXinerama-devel libXft-devel imlib2-devel libxcb-devel dbus-devel gcc git libconfig-devel libdrm-devel libev-devel libX11-devel libX11-xcb libXext-devel libxcb-devel libGL-devel libEGL-devel libepoxy-devel meson pcre2-devel pixman-devel uthash-devel xcb-util-image-devel xcb-util-renderutil-devel xorg-x11-proto-devel xcb-util-devel meson
+            noninteractive @"Development Tools"
+            noninteractive xorg-x11-xinit xorg-x11-server-Xorg libX11-devel libXinerama-devel libXft-devel imlib2-devel libxcb-devel dbus-devel gcc git libconfig-devel libdrm-devel libev-devel libX11-devel libX11-xcb libXext-devel libxcb-devel libGL-devel libEGL-devel libepoxy-devel meson pcre2-devel pixman-devel uthash-devel xcb-util-image-devel xcb-util-renderutil-devel xorg-x11-proto-devel xcb-util-devel meson
             ;;
         zypper)
-            $ESCALATION_TOOL "$PACKAGER" install -y xorg-x11-server xinit gcc make libX11-devel libXinerama-devel libXft-devel imlib2-devel libev-devel libpixman-1-0-devel sudo zypper install libxcb-image0 libxcb-devel dbus-1-devel git meson uthash-devel
+            noninteractive xorg-x11-server xinit gcc make libX11-devel libXinerama-devel libXft-devel imlib2-devel libev-devel libpixman-1-0-devel sudo zypper install libxcb-image0 libxcb-devel dbus-1-devel git meson uthash-devel
             ;;
         *)
             printf "%b\n" "${RED}Unsupported package manager: $PACKAGER${RC}"

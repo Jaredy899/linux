@@ -10,14 +10,7 @@ checkEnv || exit 1
 install_git() {
     if ! command_exists git; then
         printf "%b\n" "${YELLOW}Installing Git...${RC}"
-        case "$PACKAGER" in
-            pacman)
-                "$ESCALATION_TOOL" "$PACKAGER" -S --needed --noconfirm git
-                ;;
-            *)
-                "$ESCALATION_TOOL" "$PACKAGER" install -y git
-                ;;
-        esac
+        noninteractive git
         printf "%b\n" "${GREEN}Git installation complete.${RC}"
     else
         printf "%b\n" "${GREEN}Git is already installed.${RC}"

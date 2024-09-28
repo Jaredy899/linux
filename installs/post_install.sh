@@ -13,14 +13,7 @@ install_package() {
     for package_name in "$@"; do
         if ! command_exists "$package_name"; then
             printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
-            case "$PACKAGER" in
-                pacman)
-                    "$ESCALATION_TOOL" "$PACKAGER" -S --needed --noconfirm "$package_name"
-                    ;;
-                *)
-                    "$ESCALATION_TOOL" "$PACKAGER" install -y "$package_name"
-                    ;;
-            esac
+            noninteractive "$package_name"
         else
             printf "%b\n" "${GREEN}$package_name is already installed.${RC}"
         fi
@@ -42,7 +35,7 @@ install_nala() {
     printf "%b\n" "${CYAN}Checking if Nala should be installed...${RC}"
     if [ "$DTYPE" = "debian" ] || [ "$DTYPE" = "ubuntu" ]; then
         printf "%b\n" "${CYAN}Installing Nala...${RC}"
-        if "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive apt-get update && "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive apt-get install -y nala; then
+        if "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive apt-get update && noninteractive nala; then
             yes | "$ESCALATION_TOOL" nala fetch --auto --fetches 3 || printf "%b\n" "${YELLOW}Nala fetch failed, continuing...${RC}"
             printf "%b\n" "${CYAN}Configuring nala as an alternative to apt...${RC}"
             echo "alias apt='nala'" | "$ESCALATION_TOOL" tee -a /etc/bash.bashrc > /dev/null
@@ -86,12 +79,7 @@ gpu_type=$(lspci | grep -E "VGA|3D" || echo "No GPU detected")
 
 # Function to install packages based on OS
 install_gpu_packages() {
-    case "$DTYPE" in
-        arch) "$ESCALATION_TOOL" pacman -S --noconfirm --needed $1 ;;
-        debian|ubuntu) "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive apt install -y $1 ;;
-        fedora) "$ESCALATION_TOOL" dnf install -y $1 ;;
-        opensuse-tumbleweed|opensuse-leap) "$ESCALATION_TOOL" zypper install -y $1 ;;
-    esac
+    noninteractive $1
 }
 
 # Graphics Drivers installation
@@ -131,23 +119,23 @@ if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
         ubuntu)
             "$ESCALATION_TOOL" apt update
             if [[ "$1" == "--gpgpu" ]]; then
-                "$ESCALATION_TOOL" apt install -y nvidia-driver-535-server nvidia-utils-535-server nvidia-cuda-toolkit
+                install_gpu_packages "nvidia-driver-535-server nvidia-utils-535-server nvidia-cuda-toolkit"
             else
                 if command -v ubuntu-drivers &> /dev/null; then
                     "$ESCALATION_TOOL" ubuntu-drivers autoinstall
                 else
-                    "$ESCALATION_TOOL" apt install -y nvidia-driver-535
+                    install_gpu_packages "nvidia-driver-535"
                 fi
             fi
             ;;
         fedora)
-            "$ESCALATION_TOOL" dnf install -y kernel-devel kernel-headers gcc make dkms acpid libglvnd-glx libglvnd-opengl libglvnd-devel pkgconfig
+            install_gpu_packages "kernel-devel kernel-headers gcc make dkms acpid libglvnd-glx libglvnd-opengl libglvnd-devel pkgconfig"
             if ! "$ESCALATION_TOOL" dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm; then
                 echo "Failed to add RPM Fusion repositories. Exiting."
                 return 1
             fi
             "$ESCALATION_TOOL" dnf makecache
-            "$ESCALATION_TOOL" dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda
+            install_gpu_packages "akmod-nvidia xorg-x11-drv-nvidia-cuda"
             "$ESCALATION_TOOL" dracut --force
             echo "NVIDIA drivers installed. Please reboot your system to complete the installation."
             ;;
