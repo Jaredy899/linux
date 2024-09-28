@@ -1,62 +1,84 @@
 #!/bin/sh -e
 
-# Source the common script
+# Source the common script directly from GitHub
 . <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)
 
 # Run the environment check
 checkEnv || exit 1
 
-# Function to install packages based on distribution
-install_packages() {
-    # Common packages across all distributions
-    common_packages="nano thunar vlc feh pavucontrol"
-
-    case "$PACKAGER" in
-        apt|nala)
-            packages="$common_packages pipewire pipewire-audio-client-libraries pipewire-pulse pipewire-alsa"
-            $ESCALATION_TOOL $PACKAGER update
-            $ESCALATION_TOOL $PACKAGER install -y $packages
-            ;;
-        dnf)
-            packages="$common_packages network-manager-applet"
-            $ESCALATION_TOOL dnf update -y
-            $ESCALATION_TOOL dnf install -y $packages
-            ;;
-        pacman)
-            packages="$common_packages nm-connection-editor pipewire pipewire-pulse pipewire-alsa"
-            $ESCALATION_TOOL pacman -Syu --noconfirm $packages
-            ;;
-        zypper)
-            packages="$common_packages NetworkManager-applet"
-            $ESCALATION_TOOL zypper refresh
-            $ESCALATION_TOOL zypper install -y $packages
-            ;;
-        *)
-            printf "%b\n" "${RED}Unsupported package manager: $PACKAGER${RC}"
-            exit 1
-            ;;
-    esac
-
-    # Install individual packages
-    for package in $packages; do
-        if ! command_exists "$package"; then
-            printf "%b\n" "${YELLOW}Installing $package...${RC}"
-            $ESCALATION_TOOL $PACKAGER install -y "$package"
-        else
-            printf "%b\n" "${GREEN}$package is already installed.${RC}"
-        fi
-    done
-
-    # Create or update the .xprofile file to autostart nm-applet for all distros
-    if [ ! -f "$HOME/.xprofile" ]; then
-        printf "%b\n" "${YELLOW}Creating .xprofile and adding nm-applet autostart...${RC}"
-        echo "nm-applet &" > "$HOME/.xprofile"
+# Function to install a package
+installPackage() {
+    package_name="$1"
+    if ! command_exists "$package_name"; then
+        printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
+        case "$PACKAGER" in
+            pacman)
+                "$ESCALATION_TOOL" "$PACKAGER" -S --needed --noconfirm "$package_name"
+                ;;
+            *)
+                "$ESCALATION_TOOL" "$PACKAGER" install -y "$package_name"
+                ;;
+        esac
     else
-        if ! grep -q "nm-applet &" "$HOME/.xprofile"; then
-            printf "%b\n" "${YELLOW}Adding nm-applet autostart to existing .xprofile...${RC}"
-            echo "nm-applet &" >> "$HOME/.xprofile"
-        fi
+        printf "%b\n" "${GREEN}$package_name is already installed.${RC}"
     fi
+}
+
+# List of common packages to install
+common_packages="nano thunar vlc feh pavucontrol alacritty"
+
+# Install common packages
+printf "%b\n" "${YELLOW}Installing common packages...${RC}"
+for package in $common_packages; do
+    installPackage "$package"
+done
+
+printf "%b\n" "${GREEN}Common package installation complete.${RC}"
+
+# Install distribution-specific packages
+case "$PACKAGER" in
+    pacman)
+        packages="$common_packages pipewire pipewire-audio-client-libraries pipewire-pulse pipewire-alsa"
+        $ESCALATION_TOOL pacman -Sy --noconfirm $packages
+        ;;
+    nala)
+        packages="$common_packages pipewire pipewire-audio-client-libraries pipewire-pulse pipewire-alsa"
+        $ESCALATION_TOOL nala install -y $packages
+        ;;
+    dnf)
+        packages="$common_packages network-manager-applet"
+        $ESCALATION_TOOL dnf install -y $packages
+        ;;
+    zypper)
+        packages="$common_packages NetworkManager-applet"
+        $ESCALATION_TOOL zypper install -y $packages
+        ;;
+    *)
+        printf "%b\n" "${RED}Unsupported package manager: $PACKAGER${RC}"
+        exit 1
+        ;;
+esac
+
+# Install individual packages
+for package in $packages; do
+    if ! command_exists "$package"; then
+        printf "%b\n" "${YELLOW}Installing $package...${RC}"
+        $ESCALATION_TOOL $PACKAGER install -y "$package"
+    else
+        printf "%b\n" "${GREEN}$package is already installed.${RC}"
+    fi
+done
+
+# Create or update the .xprofile file to autostart nm-applet for all distros
+if [ ! -f "$HOME/.xprofile" ]; then
+    printf "%b\n" "${YELLOW}Creating .xprofile and adding nm-applet autostart...${RC}"
+    echo "nm-applet &" > "$HOME/.xprofile"
+else
+    if ! grep -q "nm-applet &" "$HOME/.xprofile"; then
+        printf "%b\n" "${YELLOW}Adding nm-applet autostart to existing .xprofile...${RC}"
+        echo "nm-applet &" >> "$HOME/.xprofile"
+    fi
+fi
 }
 
 makeDWM() {
@@ -379,7 +401,6 @@ setupDisplayManager() {
 }
 
 # Function Calls
-install_packages
 setupDisplayManager
 install_nerd_font
 clone_config_folders
