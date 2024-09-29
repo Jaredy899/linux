@@ -254,10 +254,17 @@ case "$DTYPE" in
         fi
         ;;
     debian|ubuntu)
-        "$ESCALATION_TOOL" sed -i 's/^FONTFACE=.*/FONTFACE="Terminus"/' /etc/default/console-setup
-        "$ESCALATION_TOOL" sed -i 's/^FONTSIZE=.*/FONTSIZE="16x28"/' /etc/default/console-setup
+        "$ESCALATION_TOOL" sed -i 's/^FONTFACE=.*/FONTFACE="TerminusBold"/' /etc/default/console-setup
+        "$ESCALATION_TOOL" sed -i 's/^FONTSIZE=.*/FONTSIZE="24x12"/' /etc/default/console-setup
         "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive dpkg-reconfigure -f noninteractive console-setup
         "$ESCALATION_TOOL" update-initramfs -u
+        # Apply the font changes immediately
+        if command -v setupcon >/dev/null 2>&1; then
+            "$ESCALATION_TOOL" setupcon --force
+            printf "%b\n" "${GREEN}Console font settings applied immediately.${RC}"
+        else
+            printf "%b\n" "${YELLOW}setupcon command not found. Font changes will apply after reboot.${RC}"
+        fi
         printf "%b\n" "${GREEN}Console font settings configured for Debian/Ubuntu.${RC}"
         ;;
 esac
