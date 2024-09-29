@@ -1,5 +1,8 @@
 #!/bin/sh -e
 
+# Set SKIP_AUR_CHECK to ignore AUR helper check
+SKIP_AUR_CHECK=true
+
 # Source the common script directly from GitHub
 . <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)
 
