@@ -27,7 +27,11 @@ install_package() {
 detected_timezone="$(curl --fail https://ipapi.co/timezone)"
 if [ -n "$detected_timezone" ]; then
     printf "%b\n" "${CYAN}Detected timezone: $detected_timezone${RC}"
-    "$ESCALATION_TOOL" timedatectl set-timezone "$detected_timezone"
+    if [ -e /usr/bin/timedatectl ]; then
+        "$ESCALATION_TOOL" timedatectl set-timezone "$detected_timezone" || printf "%b\n" "${YELLOW}Failed to set timezone. This may be due to running in a chroot environment.${RC}"
+    else
+        "$ESCALATION_TOOL" ln -sf /usr/share/zoneinfo/$detected_timezone /etc/localtime
+    fi
     printf "%b\n" "${GREEN}Timezone set to $detected_timezone${RC}"
 else
     printf "%b\n" "${YELLOW}Failed to detect timezone. Please set it manually if needed.${RC}"
@@ -222,11 +226,11 @@ esac
 
 # Enable and start services
 for service in NetworkManager sshd qemu-guest-agent; do
-    if systemctl is-active --quiet $service; then
+    if systemctl is-active --quiet $service 2>/dev/null; then
         printf "%b\n" "${GREEN}$service is already running${RC}"
     else
         "$ESCALATION_TOOL" systemctl enable $service &>/dev/null && printf "%b\n" "${GREEN}$service enabled${RC}" || printf "%b\n" "${YELLOW}Failed to enable $service${RC}"
-        "$ESCALATION_TOOL" systemctl start $service &>/dev/null && printf "%b\n" "${GREEN}$service started${RC}" || printf "%b\n" "${YELLOW}Failed to start $service${RC}"
+        "$ESCALATION_TOOL" systemctl start $service &>/dev/null && printf "%b\n" "${GREEN}$service started${RC}" || printf "%b\n" "${YELLOW}Failed to start $service. This may be due to running in a chroot environment.${RC}"
     fi
 done
 
