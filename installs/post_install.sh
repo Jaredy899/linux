@@ -1,64 +1,80 @@
-#!/bin/bash
+#!/bin/sh -e
 
-set +e
+# Set SKIP_AUR_CHECK to ignore AUR helper check
+SKIP_AUR_CHECK=true
+
+# Source the common script directly from GitHub
+. <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)
+
+# Run the environment check
+checkEnv || exit 1
+
 reboot_required=false
 
-# OS Detection
-if [ -f /etc/arch-release ]; then
-    OS="arch"
-elif [ -f /etc/debian_version ]; then
-    OS=$(grep -q "Ubuntu" /etc/lsb-release && echo "ubuntu" || echo "debian")
-elif [ -f /etc/fedora-release ]; then
-    OS="fedora"
-elif [ -f /etc/os-release ] && grep -q "openSUSE Tumbleweed" /etc/os-release; then
-    OS="opensuse-tumbleweed"
-elif [ -f /etc/os-release ] && grep -q "openSUSE Leap" /etc/os-release; then
-    OS="opensuse-leap"
-else
-    echo "Unsupported OS, but continuing with best-effort installation..."
-    OS="unknown"
-fi
+# Function to install a package
+install_package() {
+    for package_name in "$@"; do
+        if ! command_exists "$package_name"; then
+            printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
+            noninteractive "$package_name"
+        else
+            printf "%b\n" "${GREEN}$package_name is already installed.${RC}"
+        fi
+    done
+}
 
 # Detect timezone
 detected_timezone="$(curl --fail https://ipapi.co/timezone)"
 if [ -n "$detected_timezone" ]; then
-    echo "Detected timezone: $detected_timezone"
-    sudo timedatectl set-timezone "$detected_timezone"
-    echo "Timezone set to $detected_timezone"
+    printf "%b\n" "${CYAN}Detected timezone: $detected_timezone${RC}"
+    if [ -e /usr/bin/timedatectl ]; then
+        "$ESCALATION_TOOL" timedatectl set-timezone "$detected_timezone" || printf "%b\n" "${YELLOW}Failed to set timezone. This may be due to running in a chroot environment.${RC}"
+    else
+        "$ESCALATION_TOOL" ln -sf /usr/share/zoneinfo/$detected_timezone /etc/localtime
+    fi
+    printf "%b\n" "${GREEN}Timezone set to $detected_timezone${RC}"
 else
-    echo "Failed to detect timezone. Please set it manually if needed."
+    printf "%b\n" "${YELLOW}Failed to detect timezone. Please set it manually if needed.${RC}"
 fi
 
 # Function to install and configure Nala
 install_nala() {
-    [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ] || return
-    echo "Installing Nala..."
-    if sudo DEBIAN_FRONTEND=noninteractive apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nala; then
-        yes | sudo nala fetch --auto --fetches 3 || echo "Nala fetch failed, continuing..."
-        echo "Configuring nala as an alternative to apt..."
-        echo "alias apt='nala'" | sudo tee -a /etc/bash.bashrc > /dev/null
-        sudo tee /usr/local/bin/apt << EOF > /dev/null
+    printf "%b\n" "${CYAN}Checking if Nala should be installed...${RC}"
+    if [ "$DTYPE" = "debian" ] || [ "$DTYPE" = "ubuntu" ]; then
+        printf "%b\n" "${CYAN}Installing Nala...${RC}"
+        if "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive apt-get update && noninteractive nala; then
+            yes | "$ESCALATION_TOOL" nala fetch --auto --fetches 3 || printf "%b\n" "${YELLOW}Nala fetch failed, continuing...${RC}"
+            printf "%b\n" "${CYAN}Configuring nala as an alternative to apt...${RC}"
+            echo "alias apt='nala'" | "$ESCALATION_TOOL" tee -a /etc/bash.bashrc > /dev/null
+            "$ESCALATION_TOOL" tee /usr/local/bin/apt << EOF > /dev/null
 #!/bin/sh
 echo "apt has been replaced by nala. Running nala instead."
 nala "\$@"
 EOF
-        sudo chmod +x /usr/local/bin/apt
-        echo "Nala has been installed and set as an alternative to apt."
+            "$ESCALATION_TOOL" chmod +x /usr/local/bin/apt
+            printf "%b\n" "${GREEN}Nala has been installed and set as an alternative to apt.${RC}"
+        else
+            printf "%b\n" "${YELLOW}Nala installation failed. Continuing with apt...${RC}"
+        fi
     else
-        echo "Nala installation failed. Continuing with apt..."
+        printf "%b\n" "${YELLOW}Not a Debian/Ubuntu system. Skipping Nala installation.${RC}"
     fi
 }
 
-# Install Nala if on Debian/Ubuntu
+# Debug output to check the detected distribution type
+printf "%b\n" "${CYAN}Current distribution type detected as: $DTYPE${RC}"
+
+# Explicitly call the install_nala function
+printf "%b\n" "${CYAN}Attempting to install Nala...${RC}"
 install_nala
 
 # Enable parallel downloads
-if [[ -f /etc/pacman.conf ]]; then
-    sudo sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf || echo "Failed to enable ParallelDownloads for Pacman. Continuing..."
-elif [[ -f /etc/dnf/dnf.conf ]] && ! grep -q '^max_parallel_downloads' /etc/dnf/dnf.conf; then
-    echo 'max_parallel_downloads=10' | sudo tee -a /etc/dnf/dnf.conf || echo "Failed to enable max_parallel_downloads for DNF. Continuing..."
-elif [[ -f /etc/zypp/zypp.conf ]] && ! grep -q '^multiversion' /etc/zypp/zypp.conf; then
-    sudo sed -i 's/^# download.use_deltarpm = true/download.use_deltarpm = true/' /etc/zypp/zypp.conf || echo "Failed to enable parallel downloads for Zypper. Continuing..."
+if [ -f /etc/pacman.conf ]; then
+    "$ESCALATION_TOOL" sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf || printf "%b\n" "${YELLOW}Failed to enable ParallelDownloads for Pacman. Continuing...${RC}"
+elif [ -f /etc/dnf/dnf.conf ] && ! grep -q '^max_parallel_downloads' /etc/dnf/dnf.conf; then
+    echo 'max_parallel_downloads=10' | "$ESCALATION_TOOL" tee -a /etc/dnf/dnf.conf || printf "%b\n" "${YELLOW}Failed to enable max_parallel_downloads for DNF. Continuing...${RC}"
+elif [ -f /etc/zypp/zypp.conf ] && ! grep -q '^multiversion' /etc/zypp/zypp.conf; then
+    "$ESCALATION_TOOL" sed -i 's/^# download.use_deltarpm = true/download.use_deltarpm = true/' /etc/zypp/zypp.conf || printf "%b\n" "${YELLOW}Failed to enable parallel downloads for Zypper. Continuing...${RC}"
 fi
 
 echo "-------------------------------------------------------------------------"
@@ -70,18 +86,13 @@ gpu_type=$(lspci | grep -E "VGA|3D" || echo "No GPU detected")
 
 # Function to install packages based on OS
 install_gpu_packages() {
-    case "$OS" in
-        arch) sudo pacman -S --noconfirm --needed $1 ;;
-        debian|ubuntu) sudo DEBIAN_FRONTEND=noninteractive apt install -y $1 ;;
-        fedora) sudo dnf install -y $1 ;;
-        opensuse-tumbleweed|opensuse-leap) sudo zypper install -y $1 ;;
-    esac
+    noninteractive $1
 }
 
 # Graphics Drivers installation
 if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
     echo "Detected NVIDIA GPU"
-    case "$OS" in
+    case "$DTYPE" in
         arch)
             if [ -e /proc/version ]; then
                 [[ $(uname -r) == *lts* ]] && nvidia_pkg="nvidia-lts" || nvidia_pkg="nvidia"
@@ -98,14 +109,14 @@ if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
             debian_version=$(grep -oP '(?<=VERSION_CODENAME=).+' /etc/os-release)
             case $debian_version in
                 bookworm|bullseye)
-                    sed -i 's/main$/main contrib non-free non-free-firmware/' /etc/apt/sources.list
+                    "$ESCALATION_TOOL" sed -i 's/main$/main contrib non-free non-free-firmware/' /etc/apt/sources.list
                     if command -v nala &> /dev/null; then
-                        sed -i 's/main$/main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/nala-sources.list
+                        "$ESCALATION_TOOL" sed -i 's/main$/main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/nala-sources.list
                     fi
                     if command -v nala &> /dev/null; then
-                        nala update
+                        "$ESCALATION_TOOL" nala update
                     else
-                        apt update
+                        "$ESCALATION_TOOL" apt update
                     fi
                     install_gpu_packages "nvidia-driver firmware-misc-nonfree"
                     ;;
@@ -113,71 +124,67 @@ if echo "${gpu_type}" | grep -qE "NVIDIA|GeForce"; then
             esac
             ;;
         ubuntu)
-            # Update package lists
-            sudo apt update
+            "$ESCALATION_TOOL" apt update
             if [[ "$1" == "--gpgpu" ]]; then
-                sudo apt install -y nvidia-driver-535-server nvidia-utils-535-server
+                install_gpu_packages "nvidia-driver-535-server nvidia-utils-535-server nvidia-cuda-toolkit"
             else
                 if command -v ubuntu-drivers &> /dev/null; then
-                    sudo ubuntu-drivers autoinstall
+                    "$ESCALATION_TOOL" ubuntu-drivers autoinstall
                 else
-                    sudo apt install -y nvidia-driver-535
+                    install_gpu_packages "nvidia-driver-535"
                 fi
-            fi
-            if [[ "$1" == "--gpgpu" ]]; then
-                sudo apt install -y nvidia-cuda-toolkit
             fi
             ;;
         fedora)
-            sudo dnf install -y kernel-devel kernel-headers gcc make dkms acpid libglvnd-glx libglvnd-opengl libglvnd-devel pkgconfig
-            if ! sudo dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm; then
+            install_gpu_packages "kernel-devel kernel-headers gcc make dkms acpid libglvnd-glx libglvnd-opengl libglvnd-devel pkgconfig"
+            if ! "$ESCALATION_TOOL" dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm; then
                 echo "Failed to add RPM Fusion repositories. Exiting."
                 return 1
             fi
-            sudo dnf makecache
-            sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda
-            sudo dracut --force
+            "$ESCALATION_TOOL" dnf makecache
+            install_gpu_packages "akmod-nvidia xorg-x11-drv-nvidia-cuda"
+            "$ESCALATION_TOOL" dracut --force
             echo "NVIDIA drivers installed. Please reboot your system to complete the installation."
             ;;
         opensuse-tumbleweed)
-            if ! yes | sudo zypper --non-interactive addrepo --refresh https://download.nvidia.com/opensuse/tumbleweed/ NVIDIA; then
+            if ! yes | "$ESCALATION_TOOL" zypper --non-interactive addrepo --refresh https://download.nvidia.com/opensuse/tumbleweed/ NVIDIA; then
                 echo "Failed to add NVIDIA repository. Exiting."
                 return 1
             fi
-            yes | sudo zypper --non-interactive --gpg-auto-import-keys refresh
+            yes | "$ESCALATION_TOOL" zypper --non-interactive --gpg-auto-import-keys refresh
             install_gpu_packages "nvidia-glG06 nvidia-computeG06 nvidia-gfxG06-kmp-default"
             ;;
         opensuse-leap)
             leap_version=$(grep VERSION_ID /etc/os-release | cut -d '"' -f 2)
-            if ! yes | sudo zypper --non-interactive addrepo --refresh "https://download.nvidia.com/opensuse/leap/$leap_version/" NVIDIA; then
+            if ! yes | "$ESCALATION_TOOL" zypper --non-interactive addrepo --refresh "https://download.nvidia.com/opensuse/leap/$leap_version/" NVIDIA; then
                 echo "Failed to add NVIDIA repository. Exiting."
                 return 1
             fi
-            yes | sudo zypper --non-interactive --gpg-auto-import-keys refresh
+            yes | "$ESCALATION_TOOL" zypper --non-interactive --gpg-auto-import-keys refresh
             install_gpu_packages "nvidia-glG06 nvidia-computeG06 nvidia-gfxG06-kmp-default"
             ;;
     esac
     reboot_required=true
 elif echo "${gpu_type}" | grep -qE "Radeon|AMD"; then
     echo "Detected AMD GPU"
-    case "$OS" in
+    case "$DTYPE" in
         arch) install_gpu_packages "mesa lib32-mesa vulkan-radeon lib32-vulkan-radeon libva-mesa-driver libva-utils" ;;
         debian)
-            sudo sed -i 's/main$/main contrib non-free non-free-firmware/' /etc/apt/sources.list
-            sudo apt update
+            "$ESCALATION_TOOL" sed -i 's/main$/main contrib non-free non-free-firmware/' /etc/apt/sources.list
+            "$ESCALATION_TOOL" apt update
             install_gpu_packages "firmware-amd-graphics libgl1-mesa-dri libglx-mesa0 mesa-vulkan-drivers xserver-xorg-video-all"
             ;;
         ubuntu)
-            sudo add-apt-repository ppa:kisak/kisak-mesa -y
-            sudo apt update
+            "$ESCALATION_TOOL" add-apt-repository ppa:kisak/kisak-mesa -y
+            "$ESCALATION_TOOL" apt update
             install_gpu_packages "mesa-vulkan-drivers mesa-vdpau-drivers libdrm-amdgpu1 xserver-xorg-video-amdgpu"
-            echo 'Section "Device"\n    Identifier "AMD"\n    Driver "amdgpu"\n    Option "DRI" "3"\nEndSection' | sudo tee /etc/X11/xorg.conf.d/20-amdgpu.conf
-            sudo update-initramfs -u
+            echo 'Section "Device"\n    Identifier "AMD"\n    Driver "amdgpu"\n    Option "DRI" "3"\nEndSection' | "$ESCALATION_TOOL" tee /etc/X11/xorg.conf.d/20-amdgpu.conf
+            "$ESCALATION_TOOL" update-initramfs -u
             ;;
         fedora)
             install_gpu_packages "mesa-dri-drivers mesa-vulkan-drivers xorg-x11-drv-amdgpu"
-            echo 'Section "Device"\n    Identifier "AMD"\n    Driver "amdgpu"\n    Option "DRI" "3"\nEndSection' | sudo tee /etc/X11/xorg.conf.d/20-amdgpu.conf
-            sudo dracut --force
+            echo 'Section "Device"\n    Identifier "AMD"\n    Driver "amdgpu"\n    Option "DRI" "3"\nEndSection' | "$ESCALATION_TOOL" tee /etc/X11/xorg.conf.d/20-amdgpu.conf
+            "$ESCALATION_TOOL" dracut --force
             ;;
         opensuse-tumbleweed|opensuse-leap)
             install_gpu_packages "xf86-video-amdgpu"
@@ -186,7 +193,7 @@ elif echo "${gpu_type}" | grep -qE "Radeon|AMD"; then
     reboot_required=true
 elif echo "${gpu_type}" | grep -qE "Intel"; then
     echo "Detected Intel GPU"
-    case "$OS" in
+    case "$DTYPE" in
         arch) install_gpu_packages "libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-utils lib32-mesa" ;;
         debian|ubuntu) install_gpu_packages "intel-media-va-driver i965-va-driver vainfo mesa-vulkan-drivers" ;;
         fedora) install_gpu_packages "intel-media-driver mesa-va-drivers mesa-vdpau-drivers mesa-vulkan-drivers libva-intel-driver" ;;
@@ -203,17 +210,6 @@ echo "-------------------------------------------------------------------------"
 echo "                Installing Applications and Network Manager              "
 echo "-------------------------------------------------------------------------"
 
-# Function to install a package
-install_package() {
-    case "$OS" in
-        arch) sudo pacman -S --noconfirm --needed $1 ;;
-        debian|ubuntu) sudo DEBIAN_FRONTEND=noninteractive nala install -y $1 ;;
-        fedora) sudo dnf install -y $1 ;;
-        opensuse-tumbleweed|opensuse-leap) sudo zypper install -y $1 ;;
-        *) echo "Unable to install $1 on this OS. Continuing..." ;;
-    esac
-}
-
 # Install common packages
 common_packages="nano git wget ncdu qemu-guest-agent timeshift unzip"
 for package in $common_packages; do
@@ -221,45 +217,75 @@ for package in $common_packages; do
 done
 
 # OS-specific packages including NetworkManager
-case "$OS" in
-    arch) install_package "networkmanager terminus-font yazi openssh" ;;
-    debian|ubuntu) install_package "network-manager console-setup xfonts-terminus openssh-server" ;;
-    fedora) install_package "NetworkManager terminus-fonts-console openssh-server" ;;
-    opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager terminus-bitmap-fonts openssh" ;;
+case "$DTYPE" in
+    arch) install_package "networkmanager" "terminus-font" "yazi" "openssh" ;;
+    debian|ubuntu) install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server" ;;
+    fedora) install_package "NetworkManager" "terminus-fonts-console" "openssh-server" ;;
+    opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager" "terminus-bitmap-fonts" "openssh" ;;
 esac
 
 # Enable and start services
-for service in NetworkManager ssh sshd qemu-guest-agent; do
-    sudo systemctl enable $service &>/dev/null && echo "$service enabled" || echo "Failed to enable $service"
-    sudo systemctl start $service &>/dev/null && echo "$service started" || echo "Failed to start $service"
+for service in NetworkManager sshd qemu-guest-agent; do
+    if systemctl is-active --quiet $service 2>/dev/null; then
+        printf "%b\n" "${GREEN}$service is already running${RC}"
+    else
+        "$ESCALATION_TOOL" systemctl enable $service &>/dev/null && printf "%b\n" "${GREEN}$service enabled${RC}" || printf "%b\n" "${YELLOW}Failed to enable $service${RC}"
+        "$ESCALATION_TOOL" systemctl start $service &>/dev/null && printf "%b\n" "${GREEN}$service started${RC}" || printf "%b\n" "${YELLOW}Failed to start $service. This may be due to running in a chroot environment.${RC}"
+    fi
 done
 
 echo "-------------------------------------------------------------------------"
 echo "                    Setting Permanent Console Font"
 echo "-------------------------------------------------------------------------"
 
+# Function to set console font
+set_console_font() {
+    if "$ESCALATION_TOOL" setfont ter-v18b; then
+        echo "FONT=ter-v18b" | "$ESCALATION_TOOL" tee /etc/vconsole.conf > /dev/null
+        printf "%b\n" "${GREEN}Console font set to ter-v18b${RC}"
+    else
+        printf "%b\n" "${YELLOW}Failed to set font ter-v18b. Using system default.${RC}"
+        return 1
+    fi
+}
+
 # Set permanent console font
-if [ "$OS" == "arch" ] || [ "$OS" == "fedora" ] || [[ "$OS" == opensuse-* ]]; then
-    echo "FONT=ter-v18b" | sudo tee /etc/vconsole.conf > /dev/null
-    sudo setfont ter-v18b
-elif [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
-    sudo sed -i 's/^FONTFACE=.*/FONTFACE="Terminus"/' /etc/default/console-setup
-    sudo sed -i 's/^FONTSIZE=.*/FONTSIZE="18x10"/' /etc/default/console-setup
-    sudo sed -i 's/^CODESET=.*/CODESET="Uni2"/' /etc/default/console-setup
-    sudo DEBIAN_FRONTEND=noninteractive dpkg-reconfigure -f noninteractive console-setup
-    sudo update-initramfs -u
-    sudo setupcon --force
-fi
-echo "Console font settings have been applied and should persist after reboot."
+case "$DTYPE" in
+    arch|fedora|opensuse-tumbleweed|opensuse-leap)
+        if command -v setfont >/dev/null 2>&1; then
+            if ! set_console_font; then
+                printf "%b\n" "${YELLOW}Font setting failed. Check if terminus-font package is installed.${RC}"
+            fi
+        else
+            printf "%b\n" "${YELLOW}setfont command not found. Console font setting may not be supported.${RC}"
+        fi
+        ;;
+    debian|ubuntu)
+        "$ESCALATION_TOOL" sed -i 's/^FONTFACE=.*/FONTFACE="TerminusBold"/' /etc/default/console-setup
+        "$ESCALATION_TOOL" sed -i 's/^FONTSIZE=.*/FONTSIZE="24x12"/' /etc/default/console-setup
+        "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive dpkg-reconfigure -f noninteractive console-setup
+        "$ESCALATION_TOOL" update-initramfs -u
+        # Apply the font changes immediately
+        if command -v setupcon >/dev/null 2>&1; then
+            "$ESCALATION_TOOL" setupcon --force
+            printf "%b\n" "${GREEN}Console font settings applied immediately.${RC}"
+        else
+            printf "%b\n" "${YELLOW}setupcon command not found. Font changes will apply after reboot.${RC}"
+        fi
+        printf "%b\n" "${GREEN}Console font settings configured for Debian/Ubuntu.${RC}"
+        ;;
+esac
+
+printf "%b\n" "${GREEN}Console font settings have been configured and should persist after reboot.${RC}"
 
 echo "-------------------------------------------------------------------------"
 echo "                        Installation Complete                            "
 echo "-------------------------------------------------------------------------"
 
 if [ "$reboot_required" = true ]; then
-    echo "Rebooting the system in 10 seconds due to driver installations..."
+    printf "%b\n" "${YELLOW}Rebooting the system in 10 seconds due to driver installations...${RC}"
     sleep 10
-    sudo reboot
+    "$ESCALATION_TOOL" reboot
 else
-    echo "No reboot required. All changes have been applied."
+    printf "%b\n" "${GREEN}No reboot required. All changes have been applied.${RC}"
 fi

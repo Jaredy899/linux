@@ -1,76 +1,86 @@
-#!/bin/bash
+#!/bin/sh -e
 
-# Check if zsh is being used
-if [ -n "$ZSH_VERSION" ]; then
-  echo "Detected zsh. Using zsh for script execution."
-  exec zsh "$0" "$@"
-  exit
-fi
+# Source the common script directly from GitHub
+. <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)
+
+# Run the environment check
+checkEnv || exit 1
 
 # Variables
 SSH_DIR="$HOME/.ssh"
 AUTHORIZED_KEYS="$SSH_DIR/authorized_keys"
 
-# Ensure the .ssh directory exists
-if [ ! -d "$SSH_DIR" ]; then
-  mkdir -p "$SSH_DIR"
-  chmod 700 "$SSH_DIR"
-  echo "Created $SSH_DIR and set permissions to 700."
-else
-  echo "$SSH_DIR already exists."
-fi
-
-# Ensure the authorized_keys file exists
-if [ ! -f "$AUTHORIZED_KEYS" ]; then
-  touch "$AUTHORIZED_KEYS"
-  chmod 600 "$AUTHORIZED_KEYS"
-  echo "Created $AUTHORIZED_KEYS and set permissions to 600."
-else
-  echo "$AUTHORIZED_KEYS already exists."
-fi
-
-# Function to import SSH keys from GitHub
-import_ssh_keys() {
-    read -p "Enter the GitHub username: " github_user
-
-    # Fetch the SSH keys from the GitHub user's profile
-    ssh_keys_url="https://github.com/$github_user.keys"
-    keys=$(curl -s $ssh_keys_url)
-
-    if [ -z "$keys" ]; then
-        echo "No SSH keys found for GitHub user: $github_user"
+# Function to ensure directory and file exist with correct permissions
+ensure_ssh_setup() {
+    if [ ! -d "$SSH_DIR" ]; then
+        mkdir -p "$SSH_DIR"
+        chmod 700 "$SSH_DIR"
+        printf "%b\n" "${GREEN}Created $SSH_DIR and set permissions to 700.${RC}"
     else
-        echo "SSH keys found! Appending to $AUTHORIZED_KEYS."
+        printf "%b\n" "${YELLOW}$SSH_DIR already exists.${RC}"
+    fi
 
-        # Append the keys to the authorized_keys file
-        echo "$keys" >> "$AUTHORIZED_KEYS"
+    if [ ! -f "$AUTHORIZED_KEYS" ]; then
+        touch "$AUTHORIZED_KEYS"
         chmod 600 "$AUTHORIZED_KEYS"
-
-        echo "SSH keys imported successfully!"
+        printf "%b\n" "${GREEN}Created $AUTHORIZED_KEYS and set permissions to 600.${RC}"
+    else
+        printf "%b\n" "${YELLOW}$AUTHORIZED_KEYS already exists.${RC}"
     fi
 }
 
-# Main prompt
-echo "Do you want to import SSH keys from GitHub or enter your own?"
-echo "1) Import from GitHub"
-echo "2) Enter your own public key"
-read -p "Choose an option [1/2]: " choice
+# Function to import SSH keys from GitHub
+import_ssh_keys() {
+    printf "%b" "${CYAN}Enter the GitHub username: ${RC}"
+    read -r github_user
 
-if [ "$choice" == "1" ]; then
-    import_ssh_keys
-elif [ "$choice" == "2" ]; then
-    # Add the public key to the authorized_keys file if not already added
-    read -p "Enter the public key to add: " PUBLIC_KEY
+    ssh_keys_url="https://github.com/$github_user.keys"
+    keys=$(curl -s "$ssh_keys_url")
+
+    if [ -z "$keys" ]; then
+        printf "%b\n" "${RED}No SSH keys found for GitHub user: $github_user${RC}"
+    else
+        printf "%b\n" "${GREEN}SSH keys found! Appending to $AUTHORIZED_KEYS.${RC}"
+        printf "%s\n" "$keys" >> "$AUTHORIZED_KEYS"
+        chmod 600 "$AUTHORIZED_KEYS"
+        printf "%b\n" "${GREEN}SSH keys imported successfully!${RC}"
+    fi
+}
+
+# Function to add a manually entered public key
+add_manual_key() {
+    printf "%b" "${CYAN}Enter the public key to add: ${RC}"
+    read -r PUBLIC_KEY
 
     if grep -q "$PUBLIC_KEY" "$AUTHORIZED_KEYS"; then
-        echo "Public key already exists in $AUTHORIZED_KEYS."
+        printf "%b\n" "${YELLOW}Public key already exists in $AUTHORIZED_KEYS.${RC}"
     else
-        echo "$PUBLIC_KEY" >> "$AUTHORIZED_KEYS"
+        printf "%s\n" "$PUBLIC_KEY" >> "$AUTHORIZED_KEYS"
         chmod 600 "$AUTHORIZED_KEYS"
-        echo "Public key added to $AUTHORIZED_KEYS."
+        printf "%b\n" "${GREEN}Public key added to $AUTHORIZED_KEYS.${RC}"
     fi
-else
-    echo "Invalid option. Exiting."
-fi
+}
 
-echo "Done."
+# Main script
+ensure_ssh_setup
+
+printf "%b\n" "${CYAN}Do you want to import SSH keys from GitHub or enter your own?${RC}"
+printf "%b\n" "${CYAN}1) Import from GitHub${RC}"
+printf "%b\n" "${CYAN}2) Enter your own public key${RC}"
+printf "%b" "${CYAN}Choose an option [1/2]: ${RC}"
+read -r choice
+
+case "$choice" in
+    1)
+        import_ssh_keys
+        ;;
+    2)
+        add_manual_key
+        ;;
+    *)
+        printf "%b\n" "${RED}Invalid option. Exiting.${RC}"
+        exit 1
+        ;;
+esac
+
+printf "%b\n" "${GREEN}Done.${RC}"
