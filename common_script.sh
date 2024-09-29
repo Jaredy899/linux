@@ -14,7 +14,7 @@ command_exists() {
 
 checkAURHelper() {
     ## Check & Install AUR helper
-    if [ "$PACKAGER" = "pacman" ]; then
+    if [ "$PACKAGER" = "pacman" ] && [ -z "$SKIP_AUR_CHECK" ]; then
         if [ -z "$AUR_HELPER_CHECKED" ]; then
             AUR_HELPERS="yay paru"
             for helper in ${AUR_HELPERS}; do
