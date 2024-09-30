@@ -31,7 +31,7 @@ printf "%b\n" "${GREEN}Common package installation complete.${RC}"
 # Install distribution-specific packages
 case "$PACKAGER" in
     pacman)
-        packages="$common_packages pipewire pipewire-audio-client-libraries pipewire-pulse pipewire-alsa"
+        packages="$common_packages --needed pipewire pipewire-audio-client-libraries pipewire-pulse pipewire-alsa"
         noninteractive $packages
         ;;
     nala)
@@ -78,7 +78,7 @@ setupDWM() {
     printf "%b\n" "${YELLOW}Installing DWM-Titus if not already installed${RC}"
     case "$PACKAGER" in
         pacman)
-            sudo pacman -S --noconfirm xorg-xinit xorg-server base-devel libx11 libxinerama libxft imlib2 libxcb meson libev uthash libconfig
+            sudo pacman -S --needed --noconfirm xorg-xinit xorg-server base-devel libx11 libxinerama libxft imlib2 libxcb meson libev uthash libconfig
             ;;
         apt|nala)
             sudo apt-get install -y xorg xinit build-essential libx11-dev libxinerama-dev libxft-dev libimlib2-dev libxcb1-dev libxcb-res0-dev libconfig-dev libdbus-1-dev libegl-dev libev-dev libgl-dev libepoxy-dev libpcre2-dev libpixman-1-dev libx11-xcb-dev libxcb1-dev libxcb-composite0-dev libxcb-damage0-dev libxcb-dpms0-dev libxcb-glx0-dev libxcb-image0-dev libxcb-present-dev libxcb-randr0-dev libxcb-render0-dev libxcb-render-util0-dev libxcb-shape0-dev libxcb-util-dev libxcb-xfixes0-dev libxext-dev meson ninja-build uthash-dev meson unzip
@@ -278,7 +278,7 @@ setupDisplayManager() {
                 printf "%b\n" "${YELLOW}Installing $DM...${RC}"
                 case $PACKAGER in
                     pacman)
-                        $ESCALATION_TOOL pacman -S --noconfirm $DM
+                        $ESCALATION_TOOL pacman -S --needed --noconfirm $DM
                         ;;
                     apt|nala)
                         $ESCALATION_TOOL $PACKAGER install -y $DM
