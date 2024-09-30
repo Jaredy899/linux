@@ -151,7 +151,7 @@ checkEnv() {
 getNonInteractiveFlags() {
     case "$PACKAGER" in
         pacman)
-            echo "--noconfirm"
+            echo "--noconfirm --needed"
             ;;
         apt-get|nala)
             echo "-y"
