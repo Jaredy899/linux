@@ -261,7 +261,7 @@ function install_arch {
     select_disk
     select_filesystem
     get_user_input
-    update_mirrorlist
+#    update_mirrorlist
     detect_boot_mode
 
     # Unmount any partitions on the selected disk
