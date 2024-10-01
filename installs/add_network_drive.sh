@@ -11,6 +11,9 @@ install_package() {
     package_name="$1"
     if ! command_exists "$package_name"; then
         printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
+        if [ "$PACKAGER" = "apt" ] || [ "$PACKAGER" = "nala" ] && [ "$package_name" = "nfs-utils" ]; then
+            package_name="nfs-common"
+        fi
         noninteractive "$package_name"
         if [ $? -eq 0 ]; then
             printf "%b\n" "${GREEN}$package_name installed successfully.${RC}"
@@ -67,8 +70,12 @@ case "$mount_choice" in
         ;;
     2)
         mount_type="nfs"
-        # Ensure nfs-utils is installed
-        install_package "nfs-utils"
+        # Ensure nfs-utils or nfs-common is installed
+        if [ "$PACKAGER" = "apt" ] || [ "$PACKAGER" = "nala" ]; then
+            install_package "nfs-common"
+        else
+            install_package "nfs-utils"
+        fi
 
         # Prompt the user for the remote mount location
         printf "%b" "${CYAN}Enter the remote NFS mount location (e.g., 192.168.1.1:/path/to/share): ${RC}"
