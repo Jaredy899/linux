@@ -112,24 +112,24 @@ function select_timezone {
 }
 
 # Function to update mirrorlist using reflector
-function update_mirrorlist {
-    # Synchronize system clock
-    timedatectl set-ntp true
+# function update_mirrorlist {
+#     # Synchronize system clock
+#     timedatectl set-ntp true
     
-    COUNTRY=$(curl --fail https://ipapi.co/country_name)
-    if [ $? -eq 0 ] && [ -n "$COUNTRY" ]; then
-        echo "Detected country: $COUNTRY"
-        echo "Updating mirrorlist for $COUNTRY..."
-        reflector --country "$COUNTRY" --latest 10 --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
-        if [ $? -eq 0 ]; then
-            echo "Mirrorlist updated successfully."
-        else
-            echo "Failed to update mirrorlist for $COUNTRY within 1 second. Using default mirrorlist."
-        fi
-    else
-        echo "Unable to detect country. Using default mirrorlist."
-    fi
-}
+#     COUNTRY=$(curl --fail https://ipapi.co/country_name)
+#     if [ $? -eq 0 ] && [ -n "$COUNTRY" ]; then
+#         echo "Detected country: $COUNTRY"
+#         echo "Updating mirrorlist for $COUNTRY..."
+#         reflector --country "$COUNTRY" --latest 10 --age 12 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+#         if [ $? -eq 0 ]; then
+#             echo "Mirrorlist updated successfully."
+#         else
+#             echo "Failed to update mirrorlist for $COUNTRY within 1 second. Using default mirrorlist."
+#         fi
+#     else
+#         echo "Unable to detect country. Using default mirrorlist."
+#     fi
+# }
 
 # Function to get user input
 function get_user_input {
