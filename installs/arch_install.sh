@@ -131,6 +131,36 @@ function update_mirrorlist {
     fi
 }
 
+# Function to select kernel
+function select_kernel {
+    echo "Select kernel:"
+    echo "1. linux (latest stable kernel)"
+    echo "2. linux-lts (long-term support kernel)"
+    echo "3. linux-zen (optimized for desktop performance)"
+    echo "4. linux-hardened (security-focused kernel)"
+    read KERNEL_NUMBER
+    case $KERNEL_NUMBER in
+        1)
+            KERNEL="linux"
+            ;;
+        2)
+            KERNEL="linux-lts"
+            ;;
+        3)
+            KERNEL="linux-zen"
+            ;;
+        4)
+            KERNEL="linux-hardened"
+            ;;
+        *)
+            echo "Invalid selection. Please try again."
+            select_kernel
+            return
+            ;;
+    esac
+    export KERNEL
+}
+
 # Function to get user input
 function get_user_input {
     echo "Enter username:"
@@ -147,6 +177,7 @@ function get_user_input {
     read HOSTNAME
     detect_timezone
     select_keymap
+    select_kernel
 }
 
 # Function to detect boot mode (UEFI or BIOS)
@@ -273,7 +304,7 @@ function install_arch {
     format_and_mount
 
     # Install base system
-    pacstrap /mnt base base-devel linux-lts linux-lts-headers linux-firmware
+    pacstrap /mnt base base-devel $KERNEL ${KERNEL}-headers linux-firmware
 
     # Generate fstab
     genfstab -U /mnt >> /mnt/etc/fstab
