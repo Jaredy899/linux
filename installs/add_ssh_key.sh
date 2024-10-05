@@ -40,10 +40,21 @@ import_ssh_keys() {
     if [ -z "$keys" ]; then
         printf "%b\n" "${RED}No SSH keys found for GitHub user: $github_user${RC}"
     else
-        printf "%b\n" "${GREEN}SSH keys found! Appending to $AUTHORIZED_KEYS.${RC}"
-        printf "%s\n" "$keys" >> "$AUTHORIZED_KEYS"
-        chmod 600 "$AUTHORIZED_KEYS"
-        printf "%b\n" "${GREEN}SSH keys imported successfully!${RC}"
+        printf "%b\n" "${GREEN}SSH keys found for $github_user:${RC}"
+        printf "%s\n" "$keys"
+        printf "%b" "${CYAN}Do you want to import these keys? [Y/n]: ${RC}"
+        read -r confirm
+
+        case "$confirm" in
+            [Nn]*)
+                printf "%b\n" "${YELLOW}SSH key import cancelled.${RC}"
+                ;;
+            *)
+                printf "%s\n" "$keys" >> "$AUTHORIZED_KEYS"
+                chmod 600 "$AUTHORIZED_KEYS"
+                printf "%b\n" "${GREEN}SSH keys imported successfully!${RC}"
+                ;;
+        esac
     fi
 }
 
