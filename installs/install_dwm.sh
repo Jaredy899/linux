@@ -6,6 +6,10 @@
 # Run the environment check
 checkEnv || exit 1
 
+# Ask about autologin at the beginning
+printf "%b" "${CYAN}Do you want to set up autologin? (y/n): ${RC}"
+read -r setup_autologin
+
 # Function to install a package
 installPackage() {
     package_name="$1"
@@ -235,10 +239,8 @@ configure_backgrounds() {
 }
 
 setupDisplayManager() {
+    setup_autologin="$1"
     printf "%b\n" "${YELLOW}Setting up Display Manager${RC}"
-
-    printf "%b" "${CYAN}Do you want to set up autologin? (y/n): ${RC}"
-    read -r setup_autologin
 
     if [ "$setup_autologin" = "y" ] || [ "$setup_autologin" = "Y" ]; then
         existing_dm=""
@@ -381,13 +383,15 @@ setupDisplayManager() {
     fi
 }
 
-# Function Calls
-setupDisplayManager
+# Main execution flow
 install_nerd_font
 clone_config_folders
 configure_backgrounds
 setupDWM
 picom_animations
 makeDWM
+
+# Move setupDisplayManager to the end and pass the autologin choice
+setupDisplayManager "$setup_autologin"
 
 printf "%b\n" "${GREEN}DWM installation and setup complete.${RC}"
