@@ -27,7 +27,7 @@ function clear_with_banner {
 pacman-key --init
 pacman-key --populate archlinux
 #pacman -Sy --noconfirm archlinux-keyring
-pacman -S --noconfirm --needed pacman-contrib terminus-font reflector curl rsync grub
+pacman -Sy --noconfirm --needed pacman-contrib terminus-font reflector curl rsync grub
 setfont ter-v18b
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
 cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
