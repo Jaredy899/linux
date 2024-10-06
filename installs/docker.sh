@@ -23,7 +23,8 @@ install_docker() {
         esac
 
         # Enable and start Docker service
-        "$ESCALATION_TOOL" systemctl enable --now docker
+        "$ESCALATION_TOOL" systemctl enable docker
+        "$ESCALATION_TOOL" systemctl start docker
         printf "%b\n" "${GREEN}Docker service enabled and started.${RC}"
 
         # Check if Docker service is running
