@@ -219,7 +219,17 @@ done
 # OS-specific packages including NetworkManager
 case "$DTYPE" in
     arch) install_package "networkmanager" "terminus-font" "yazi" "openssh" ;;
-    debian|ubuntu) install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server" ;;
+    debian)
+        install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server"
+        # Stop and disable networking service
+        "$ESCALATION_TOOL" systemctl stop networking
+        "$ESCALATION_TOOL" systemctl disable networking
+        # Modify /etc/network/interfaces
+        "$ESCALATION_TOOL" cp /etc/network/interfaces /etc/network/interfaces.backup
+        echo -e "# This file describes the network interfaces available on your system\n# and how to activate them. For more information, see interfaces(5).\n\nauto lo\niface lo inet loopback" | "$ESCALATION_TOOL" tee /etc/network/interfaces > /dev/null
+        printf "%b\n" "${GREEN}Networking configuration updated for Debian${RC}"
+        ;;
+    ubuntu) install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server" ;;
     fedora) install_package "NetworkManager" "terminus-fonts-console" "openssh-server" ;;
     opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager" "terminus-bitmap-fonts" "openssh" ;;
 esac
