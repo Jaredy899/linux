@@ -15,8 +15,7 @@ install_docker() {
                 noninteractive docker docker-compose
                 ;;
             zypper)
-                "$ESCALATION_TOOL" "$PACKAGER" refresh
-                noninteractive docker
+                noninteractive docker docker-compose docker-compose-switch
                 ;;
             *)
                 curl -fsSL https://get.docker.com | "$ESCALATION_TOOL" sh
