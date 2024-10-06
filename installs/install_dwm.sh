@@ -91,7 +91,7 @@ setupDWM() {
             $ESCALATION_TOOL dnf install -y @"Development Tools" xorg-x11-xinit xorg-x11-server-Xorg libX11-devel libXinerama-devel libXft-devel imlib2-devel libxcb-devel dbus-devel gcc git libconfig-devel libdrm-devel libev-devel libX11-devel libX11-xcb libXext-devel libxcb-devel libGL-devel libEGL-devel libepoxy-devel meson pcre2-devel pixman-devel uthash-devel xcb-util-image-devel xcb-util-renderutil-devel xorg-x11-proto-devel xcb-util-devel meson
             ;;
         zypper)
-            $ESCALATION_TOOL zypper install -y patterns-devel-base-devel xorg-x11-xinit xorg-x11-server libX11-devel libXinerama-devel libXft-devel imlib2-devel libxcb-devel dbus-1-devel gcc git libconfig-devel libdrm-devel libev-devel libX11-devel libX11-xcb1 libXext-devel libxcb-devel libGL-devel libEGL-devel libepoxy-devel meson pcre2-devel libpixman-1-0-devel uthash-devel xcb-util-image-devel xcb-util-renderutil-devel xorgproto-devel xcb-util-devel meson
+            $ESCALATION_TOOL zypper install -y patterns-devel-base-devel xorg-x11-xinit xorg-x11-server libX11-devel libXinerama-devel libXft-devel imlib2-devel libxcb-devel dbus-1-devel gcc git libconfig-devel libdrm-devel libev-devel libX11-devel libX11-xcb1 libXext-devel libxcb-devel libGL-devel libEGL-devel libepoxy-devel pcre2-devel libpixman-1-0-devel uthash-devel xcb-util-image-devel xcb-util-renderutil-devel xorgproto-devel xcb-util-devel meson
             ;;
         *)
             printf "%b\n" "${RED}Unsupported package manager: $PACKAGER${RC}"
