@@ -234,8 +234,11 @@ case "$DTYPE" in
     opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager" "terminus-bitmap-fonts" "openssh" ;;
 esac
 
+# Define services to enable and start
+services=("NetworkManager" "qemu-guest-agent" "sshd" "ssh")
+
 # Enable and start services
-for service in NetworkManager sshd qemu-guest-agent; do
+for service in "${services[@]}"; do
     # Check if the service exists
     if systemctl list-unit-files | grep -q "$service"; then
         # Enable the service
@@ -252,7 +255,10 @@ for service in NetworkManager sshd qemu-guest-agent; do
             printf "%b\n" "${YELLOW}Failed to start $service. It will start on next boot.${RC}"
         fi
     else
-        printf "%b\n" "${YELLOW}$service not found, skipping${RC}"
+        # For SSH, only print "not found" if both sshd and ssh are missing
+        if [[ "$service" != "sshd" && "$service" != "ssh" ]] || [[ "$service" == "ssh" && ! -e /usr/lib/systemd/system/sshd.service ]]; then
+            printf "%b\n" "${YELLOW}$service not found, skipping${RC}"
+        fi
     fi
 done
 
