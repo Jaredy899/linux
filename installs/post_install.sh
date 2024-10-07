@@ -237,29 +237,26 @@ esac
 # Enable and start services
 for service in NetworkManager sshd qemu-guest-agent; do
     # Check if the service exists
-    if ! systemctl list-unit-files | grep -q "$service"; then
-        printf "%b\n" "${YELLOW}$service not found, skipping${RC}"
-        continue
-    fi
-
-    # Enable the service
-    if systemctl is-enabled --quiet $service 2>/dev/null; then
-        printf "%b\n" "${GREEN}$service is already enabled${RC}"
-    else
-        "$ESCALATION_TOOL" systemctl enable $service &>/dev/null && printf "%b\n" "${GREEN}$service enabled${RC}" || printf "%b\n" "${YELLOW}Failed to enable $service${RC}"
-    fi
-
-    # Start the service if not in chroot
-    if [ "$(stat -c %d:%i /)" = "$(stat -c %d:%i /proc/1/root/.)" ]; then
-        if systemctl is-active --quiet $service 2>/dev/null; then
-            printf "%b\n" "${GREEN}$service is already running${RC}"
+    if systemctl list-unit-files | grep -q "$service"; then
+        # Enable the service
+        if "$ESCALATION_TOOL" systemctl enable "$service" &>/dev/null; then
+            printf "%b\n" "${GREEN}$service enabled${RC}"
         else
-            "$ESCALATION_TOOL" systemctl enable --now $service &>/dev/null && printf "%b\n" "${GREEN}$service started${RC}" || printf "%b\n" "${YELLOW}Failed to start $service${RC}"
+            printf "%b\n" "${YELLOW}Failed to enable $service${RC}"
+        fi
+
+        # Start the service
+        if "$ESCALATION_TOOL" systemctl start "$service" &>/dev/null; then
+            printf "%b\n" "${GREEN}$service started${RC}"
+        else
+            printf "%b\n" "${YELLOW}Failed to start $service. It will start on next boot.${RC}"
         fi
     else
-        printf "%b\n" "${YELLOW}Skipping start of $service due to chroot environment${RC}"
+        printf "%b\n" "${YELLOW}$service not found, skipping${RC}"
     fi
 done
+
+printf "%b\n" "${GREEN}Services processed. Some may require a system reboot to start properly.${RC}"
 
 echo "-------------------------------------------------------------------------"
 echo "                    Setting Permanent Console Font"
