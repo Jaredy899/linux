@@ -15,7 +15,10 @@ installPackage() {
     package_name="$1"
     if ! command_exists "$package_name"; then
         printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
-        noninteractive "$package_name"
+        if ! noninteractive "$package_name"; then
+            printf "%b\n" "${RED}Failed to install $package_name. Please install it manually.${RC}"
+            return 1
+        fi
     else
         printf "%b\n" "${GREEN}$package_name is already installed.${RC}"
     fi
@@ -30,31 +33,31 @@ for package in $common_packages; do
     installPackage "$package"
 done
 
-printf "%b\n" "${GREEN}Common package installation complete.${RC}"
-
 # Install distribution-specific packages
 case "$PACKAGER" in
     pacman)
-        packages="$common_packages --needed pipewire-audio-client-libraries pipewire-pulse"
-        noninteractive $packages
+        packages="pipewire-audio-client-libraries pipewire-pulse"
         ;;
     nala)
-        packages="$common_packages pipewire-audio-client-libraries pipewire-pulse"
-        noninteractive $packages
+        packages="pipewire-audio-client-libraries pipewire-pulse"
         ;;
     dnf)
-        packages="$common_packages network-manager-applet"
-        noninteractive $packages
+        packages="network-manager-applet"
         ;;
     zypper)
-        packages="$common_packages NetworkManager-applet pipewire-pulseaudio"
-        noninteractive $packages
+        packages="NetworkManager-applet pipewire-pulseaudio"
         ;;
     *)
         printf "%b\n" "${RED}Unsupported package manager: $PACKAGER${RC}"
         exit 1
         ;;
 esac
+
+for package in $packages; do
+    installPackage "$package"
+done
+
+printf "%b\n" "${GREEN}Common package installation complete.${RC}"
 
 # Create or update the .xprofile file to autostart nm-applet for all distros
 if [ ! -f "$HOME/.xprofile" ]; then
@@ -278,24 +281,10 @@ setupDisplayManager() {
             # Install the chosen display manager if not already installed
             if ! command -v $DM >/dev/null 2>&1; then
                 printf "%b\n" "${YELLOW}Installing $DM...${RC}"
-                case $PACKAGER in
-                    pacman)
-                        $ESCALATION_TOOL pacman -S --needed --noconfirm $DM
-                        ;;
-                    apt|nala)
-                        $ESCALATION_TOOL $PACKAGER install -y $DM
-                        ;;
-                    dnf)
-                        $ESCALATION_TOOL dnf install -y $DM
-                        ;;
-                    zypper)
-                        $ESCALATION_TOOL zypper install -y $DM
-                        ;;
-                    *)
-                        printf "%b\n" "${RED}Unsupported package manager. Please install $DM manually.${RC}"
-                        return 1
-                        ;;
-                esac
+                if ! noninteractive "$DM"; then
+                    printf "%b\n" "${RED}Failed to install $DM. Please install it manually.${RC}"
+                    return 1
+                fi
             fi
         fi
 
