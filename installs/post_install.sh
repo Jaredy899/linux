@@ -254,7 +254,7 @@ for service in NetworkManager sshd qemu-guest-agent; do
         if systemctl is-active --quiet $service 2>/dev/null; then
             printf "%b\n" "${GREEN}$service is already running${RC}"
         else
-            "$ESCALATION_TOOL" systemctl start $service &>/dev/null && printf "%b\n" "${GREEN}$service started${RC}" || printf "%b\n" "${YELLOW}Failed to start $service${RC}"
+            "$ESCALATION_TOOL" systemctl enable --now $service &>/dev/null && printf "%b\n" "${GREEN}$service started${RC}" || printf "%b\n" "${YELLOW}Failed to start $service${RC}"
         fi
     else
         printf "%b\n" "${YELLOW}Skipping start of $service due to chroot environment${RC}"
