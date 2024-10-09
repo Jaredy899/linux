@@ -140,6 +140,7 @@ checkEnv() {
     checkDistro
     checkEscalationTool
     checkAURHelper
+    setupNonInteractive
 
     if [ "$all_checks_passed" = false ]; then
         return 1
@@ -147,39 +148,41 @@ checkEnv() {
     return 0
 }
 
-# Function to get non-interactive installation flags
-getNonInteractiveFlags() {
+# Function to set up the non-interactive installation command
+setupNonInteractive() {
     case "$PACKAGER" in
         pacman)
-            echo "--noconfirm --needed"
+            NONINTERACTIVE="$ESCALATION_TOOL $PACKAGER -S --noconfirm --needed"
             ;;
-        apt-get|nala)
-            echo "-y"
-            ;;
-        dnf|zypper)
-            echo "-y"
+        apt-get|nala|dnf|zypper)
+            NONINTERACTIVE="$ESCALATION_TOOL $PACKAGER install -y"
             ;;
         *)
-            echo ""  # Default to empty string if package manager is unknown
+            echo "Unsupported package manager: $PACKAGER"
+            return 1
             ;;
     esac
 }
 
 # Function to perform non-interactive package installation
 noninteractive() {
-    local package_name="$1"
-    local flags=$(getNonInteractiveFlags)
+    if [ -z "$NONINTERACTIVE" ]; then
+        setupNonInteractive
+    fi
+    $NONINTERACTIVE "$@"
+}
 
+# Function to get non-interactive installation flags (if needed elsewhere)
+getNonInteractiveFlags() {
     case "$PACKAGER" in
         pacman)
-            $ESCALATION_TOOL $PACKAGER -S $flags "$package_name"
+            echo "--noconfirm --needed"
             ;;
         apt-get|nala|dnf|zypper)
-            $ESCALATION_TOOL $PACKAGER install $flags "$package_name"
+            echo "-y"
             ;;
         *)
-            echo "Unsupported package manager: $PACKAGER"
-            return 1
+            echo ""  # Default to empty string if package manager is unknown
             ;;
     esac
 }
