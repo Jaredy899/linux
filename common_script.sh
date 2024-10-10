@@ -83,6 +83,15 @@ checkPackageManager() {
         if command_exists "${pgm}"; then
             PACKAGER=${pgm}
             printf "%b\n" "${CYAN}Using ${pgm} as package manager${RC}"
+
+            if [ $PACKAGER = 'nix-env' ] && [ -z "$NIXOS_CONFIG" ]; then
+                NIXOS_CONFIG="/etc/nixos/configuration.nix"
+                while [ ! -f "$NIXOS_CONFIG" ]; do
+                    printf "%b\n" "${RED}configuration.nix not found.${RC}"
+                    printf "%b" "${YELLOW}Enter the path manually: ${RC}"
+                    read -r NIXOS_CONFIG
+                done
+            fi
             break
         fi
     done
@@ -132,7 +141,7 @@ checkEnv() {
     if ! checkCommandRequirements 'curl groups sudo'; then
         all_checks_passed=false
     fi
-    checkPackageManager 'nala apt-get dnf pacman zypper'
+    checkPackageManager 'nala apt-get dnf pacman zypper nix-env'
     checkCurrentDirectoryWritable
     if ! checkSuperUser; then
         all_checks_passed=false
