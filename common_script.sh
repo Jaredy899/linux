@@ -148,14 +148,14 @@ checkEnv() {
     return 0
 }
 
-# Function to set up the non-interactive installation command
+# Function to set up the non-interactive installation flags
 setupNonInteractive() {
     case "$PACKAGER" in
         pacman)
-            NONINTERACTIVE="$ESCALATION_TOOL $PACKAGER -S --noconfirm --needed"
+            NONINTERACTIVE="--noconfirm --needed"
             ;;
         apt-get|nala|dnf|zypper)
-            NONINTERACTIVE="$ESCALATION_TOOL $PACKAGER install -y"
+            NONINTERACTIVE="-y"
             ;;
         *)
             echo "Unsupported package manager: $PACKAGER"
@@ -169,7 +169,7 @@ noninteractive() {
     if [ -z "$NONINTERACTIVE" ]; then
         setupNonInteractive
     fi
-    $NONINTERACTIVE "$@"
+    $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
 }
 
 # Function to get non-interactive installation flags (if needed elsewhere)
