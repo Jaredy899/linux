@@ -42,7 +42,7 @@ case "$PACKAGER" in
         packages="pipewire-audio-client-libraries pipewire-pulse"
         ;;
     dnf)
-        packages="network-manager-applet"
+        packages="network-manager-applet pipewire-pulseaudio"
         ;;
     zypper)
         packages="NetworkManager-applet pipewire-pulseaudio"
