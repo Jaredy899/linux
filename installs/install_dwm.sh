@@ -36,7 +36,7 @@ done
 # Install distribution-specific packages
 case "$PACKAGER" in
     pacman)
-        packages="pipewire-audio-client-libraries pipewire-pulse"
+        packages="pipewire-pulse"
         ;;
     nala)
         packages="pipewire-audio-client-libraries pipewire-pulse"
