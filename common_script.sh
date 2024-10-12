@@ -178,7 +178,17 @@ noninteractive() {
     if [ -z "$NONINTERACTIVE" ]; then
         setupNonInteractive
     fi
-    $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
+    case "$PACKAGER" in
+        apt-get|apt)
+            $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
+            ;;
+        pacman)
+            $ESCALATION_TOOL $PACKAGER -S --noconfirm "$@"
+            ;;
+        *)
+            $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
+            ;;
+    esac
 }
 
 # Function to get non-interactive installation flags (if needed elsewhere)
