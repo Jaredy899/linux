@@ -13,7 +13,7 @@ fi
 echo "GITPATH is set to: $GITPATH"
 
 # GitHub URL base for the necessary configuration files
-GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/"
+GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/"
 INSTALLS_URL="${GITHUB_BASE_URL}/installs"
 
 # Function to check if a command exists

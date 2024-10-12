@@ -83,6 +83,15 @@ checkPackageManager() {
         if command_exists "${pgm}"; then
             PACKAGER=${pgm}
             printf "%b\n" "${CYAN}Using ${pgm} as package manager${RC}"
+
+            if [ $PACKAGER = 'nix-env' ] && [ -z "$NIXOS_CONFIG" ]; then
+                NIXOS_CONFIG="/etc/nixos/configuration.nix"
+                while [ ! -f "$NIXOS_CONFIG" ]; do
+                    printf "%b\n" "${RED}configuration.nix not found.${RC}"
+                    printf "%b" "${YELLOW}Enter the path manually: ${RC}"
+                    read -r NIXOS_CONFIG
+                done
+            fi
             break
         fi
     done
@@ -132,7 +141,7 @@ checkEnv() {
     if ! checkCommandRequirements 'curl groups sudo'; then
         all_checks_passed=false
     fi
-    checkPackageManager 'nala apt-get dnf pacman zypper'
+    checkPackageManager 'nala apt-get dnf pacman zypper nix-env'
     checkCurrentDirectoryWritable
     if ! checkSuperUser; then
         all_checks_passed=false
@@ -140,6 +149,7 @@ checkEnv() {
     checkDistro
     checkEscalationTool
     checkAURHelper
+    setupNonInteractive
 
     if [ "$all_checks_passed" = false ]; then
         return 1
@@ -147,39 +157,41 @@ checkEnv() {
     return 0
 }
 
-# Function to get non-interactive installation flags
-getNonInteractiveFlags() {
+# Function to set up the non-interactive installation flags
+setupNonInteractive() {
     case "$PACKAGER" in
         pacman)
-            echo "--noconfirm --needed"
+            NONINTERACTIVE="--noconfirm --needed"
             ;;
-        apt-get|nala)
-            echo "-y"
-            ;;
-        dnf|zypper)
-            echo "-y"
+        apt-get|nala|dnf|zypper)
+            NONINTERACTIVE="-y"
             ;;
         *)
-            echo ""  # Default to empty string if package manager is unknown
+            echo "Unsupported package manager: $PACKAGER"
+            return 1
             ;;
     esac
 }
 
 # Function to perform non-interactive package installation
 noninteractive() {
-    local package_name="$1"
-    local flags=$(getNonInteractiveFlags)
+    if [ -z "$NONINTERACTIVE" ]; then
+        setupNonInteractive
+    fi
+    $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
+}
 
+# Function to get non-interactive installation flags (if needed elsewhere)
+getNonInteractiveFlags() {
     case "$PACKAGER" in
         pacman)
-            $ESCALATION_TOOL $PACKAGER -S $flags "$package_name"
+            echo "--noconfirm --needed"
             ;;
         apt-get|nala|dnf|zypper)
-            $ESCALATION_TOOL $PACKAGER install $flags "$package_name"
+            echo "-y"
             ;;
         *)
-            echo "Unsupported package manager: $PACKAGER"
-            return 1
+            echo ""  # Default to empty string if package manager is unknown
             ;;
     esac
 }
