@@ -16,9 +16,11 @@ replace_configs() {
 
     # Create directories and download files for mybash
     mkdir -p "$MYBASH_DIR"
+    mkdir -p "$HOME/.config/fastfetch"
+    mkdir -p "$HOME/.config"
     curl -sSfL -o "$MYBASH_DIR/.bashrc" "$BASE_URL/.bashrc"
     curl -sSfL -o "$HOME/.config/fastfetch/config.jsonc" "$BASE_URL/config.jsonc"
-    curl -sSfL -o "$MYBASH_DIR/starship.toml" "$BASE_URL/starship.toml"
+    curl -sSfL -o "$HOME/.config/starship.toml" "$BASE_URL/starship.toml"
 
     # Create directory and download file for dwm-titus
     mkdir -p "$DWM_TITUS_DIR"
