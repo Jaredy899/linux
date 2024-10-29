@@ -99,9 +99,10 @@ export LESS_TERMCAP_us=$'\E[01;32m'
 #######################################################
 # MACHINE SPECIFIC ALIAS'S
 #######################################################
-alias linutil='curl -fsSL christitus.com/linux | sh'
+#alias linutil='curl -fsSL christitus.com/linux | sh'
 alias ff='fastfetch -c all'
 alias jc='bash -c "$(curl -fsSL jaredcervantes.com/linux)"'
+alias nfzf='nano $(fzf -m --preview="bat --color=always {}")'
 
 # Alias's for SSH
 # alias SERVERNAME='ssh YOURWEBSITE.com -l USERNAME -p PORTNUMBERHERE'
