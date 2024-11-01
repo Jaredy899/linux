@@ -235,7 +235,14 @@ case "$DTYPE" in
 esac
 
 # Define services to enable and start
-services=("NetworkManager" "qemu-guest-agent" "sshd" "ssh")
+services=("NetworkManager" "qemu-guest-agent")
+
+# Determine SSH service name based on system
+if [ -e /usr/lib/systemd/system/sshd.service ]; then
+    services+=("sshd")
+elif [ -e /usr/lib/systemd/system/ssh.service ]; then
+    services+=("ssh")
+fi
 
 # Enable and start services
 for service in "${services[@]}"; do
@@ -255,10 +262,7 @@ for service in "${services[@]}"; do
             printf "%b\n" "${YELLOW}Failed to start $service. It will start on next boot.${RC}"
         fi
     else
-        # For SSH, only print "not found" if both sshd and ssh are missing
-        if [[ "$service" != "sshd" && "$service" != "ssh" ]] || [[ "$service" == "ssh" && ! -e /usr/lib/systemd/system/sshd.service ]]; then
-            printf "%b\n" "${YELLOW}$service not found, skipping${RC}"
-        fi
+        printf "%b\n" "${YELLOW}$service not found, skipping${RC}"
     fi
 done
 
