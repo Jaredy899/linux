@@ -211,7 +211,7 @@ echo "                Installing Applications and Network Manager              "
 echo "-------------------------------------------------------------------------"
 
 # Install common packages
-common_packages="nano git wget ncdu qemu-guest-agent timeshift unzip"
+common_packages="nano git wget btop ncdu qemu-guest-agent timeshift unzip"
 for package in $common_packages; do
     install_package $package
 done
