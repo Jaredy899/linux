@@ -29,17 +29,19 @@ replace_configs() {
     printf "%b\n" "${GREEN}Configurations downloaded and replaced successfully.${RC}"
 }
 
+# First check if dwm-titus directory exists
+if [ ! -d "$DWM_TITUS_DIR" ]; then
+    printf "%b\n" "${YELLOW}dwm-titus directory not found. Skipping DWM and slstatus compilation.${RC}"
+    return 0  # or exit 0 depending on how this script is used
+fi
+
 # Function to compile and install dwm-titus
 compile_install_dwm_titus() {
-    if [ -d "$DWM_TITUS_DIR" ]; then
-        printf "%b\n" "${YELLOW}Compiling and installing dwm-titus...${RC}"
-        cd "$DWM_TITUS_DIR" || exit 1
-        "$ESCALATION_TOOL" make clean install
-        cd - || exit 1
-        printf "%b\n" "${GREEN}dwm-titus compiled and installed successfully.${RC}"
-    else
-        printf "%b\n" "${YELLOW}dwm-titus directory not found. Skipping compilation.${RC}"
-    fi
+    printf "%b\n" "${YELLOW}Compiling and installing dwm-titus...${RC}"
+    cd "$DWM_TITUS_DIR" || exit 1
+    "$ESCALATION_TOOL" make clean install
+    cd - || exit 1
+    printf "%b\n" "${GREEN}dwm-titus compiled and installed successfully.${RC}"
 }
 
 # Function to compile and install slstatus
