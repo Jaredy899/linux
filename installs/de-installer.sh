@@ -6,7 +6,7 @@
 # Function to install desktop environment on Arch
 install_arch_de() {
     case $1 in
-        1) noninteractive cinnamon lightdm lightdm-gtk-greeter xorg-server feh ;;
+        1) noninteractive cinnamon sddm xorg-server feh ;;
         2) noninteractive plasma plasma-wayland-protocols plasma-desktop sddm plasma-pa plasma-nm konsole dolphin xorg-server feh ;;
         3) run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
     esac
@@ -15,7 +15,7 @@ install_arch_de() {
 # Function to install desktop environment on Fedora
 install_fedora_de() {
     case $1 in
-        1) noninteractive @"Cinnamon Desktop" feh ;;
+        1) noninteractive @"Cinnamon Desktop" sddm feh ;;
         2) noninteractive @"KDE Plasma Workspaces" feh ;;
         3) noninteractive run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
     esac
@@ -25,7 +25,7 @@ install_fedora_de() {
 install_debian_de() {
     case $1 in
         1) noninteractive cinnamon lightdm feh ;;
-        2) noninteractive kde-plasma-desktop sddm plasma-workspace dolphin konsole feh ;;
+        2) noninteractive kde-plasma-desktop lightdm plasma-workspace dolphin konsole feh ;;
         3) noninteractive run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
     esac
 }
@@ -72,10 +72,19 @@ if [ "$choice" -ge 1 ] && [ "$choice" -le 3 ]; then
     esac
 
     # Enable display manager
-    case $choice in
-        1) $ESCALATION_TOOL systemctl enable lightdm ;;
-        2) $ESCALATION_TOOL systemctl enable sddm ;;
-        3) : ;; # DWM handles its own display manager setup
+    case $DTYPE in
+        "arch"|"fedora")
+            case $choice in
+                1|2) $ESCALATION_TOOL systemctl enable sddm ;;
+                3) : ;; # DWM handles its own display manager setup
+            esac
+            ;;
+        "debian"|"ubuntu")
+            case $choice in
+                1|2) $ESCALATION_TOOL systemctl enable lightdm ;;
+                3) : ;; # DWM handles its own display manager setup
+            esac
+            ;;
     esac
 
     # Setup wallpapers
