@@ -87,10 +87,11 @@ while true; do
     echo "7) Install Docker and Portainer"
     echo "8) Run DWM Setup Script"
     echo "9) Replace configs"
+    echo "10) Install Desktop Environment"
     echo "0) Exit"
     echo
 
-    printf "Enter your choice (0-9): "
+    printf "Enter your choice (0-10): "
     read -r choice
 
     case $choice in
@@ -122,8 +123,12 @@ while true; do
             echo "Replacing configs..."
             run_script "replace_configs.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
+        10)
+            echo "Installing Desktop Environment..."
+            run_script "de-installer.sh" "$GITPATH/installs" "$INSTALLS_URL"
+            ;;
         0) echo "Exiting script."; break ;;
-        *) echo "Invalid option. Please enter a number between 0 and 9." ;;
+        *) echo "Invalid option. Please enter a number between 0 and 10." ;;
     esac
 done
 
