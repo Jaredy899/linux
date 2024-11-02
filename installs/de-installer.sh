@@ -8,7 +8,7 @@ install_arch_de() {
     case $1 in
         1) noninteractive cinnamon lightdm lightdm-gtk-greeter xorg-server feh ;;
         2) noninteractive plasma plasma-wayland-protocols plasma-desktop sddm plasma-pa plasma-nm konsole dolphin xorg-server feh ;;
-        3) noninteractive feh && run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        3) run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
     esac
 }
 
@@ -17,6 +17,7 @@ install_fedora_de() {
     case $1 in
         1) noninteractive @"Cinnamon Desktop" feh ;;
         2) noninteractive @"KDE Plasma Workspaces" feh ;;
+        3) noninteractive run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
     esac
 }
 
@@ -25,6 +26,7 @@ install_debian_de() {
     case $1 in
         1) noninteractive cinnamon lightdm feh ;;
         2) noninteractive kde-plasma-desktop plasma-workspace kio sddm kde-plasma-desktop plasma-desktop-data kwin-x11 plasma-workspace-wayland dolphin konsole plasma-nm plasma-pa feh ;;
+        3) noninteractive run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
     esac
 }
 
