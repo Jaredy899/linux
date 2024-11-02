@@ -7,7 +7,7 @@
 install_arch_de() {
     case $1 in
         1) noninteractive cinnamon lightdm lightdm-gtk-greeter ;;
-        2) noninteractive plasma plasma-wayland-session sddm ;;
+        2) noninteractive plasma plasma-wayland-protocols plasma-desktop sddm plasma-pa plasma-nm konsole dolphin ;;
         3) noninteractive gnome gnome-extra gdm ;;
         4) noninteractive i3-gaps i3status i3blocks dmenu lightdm lightdm-gtk-greeter ;;
     esac
