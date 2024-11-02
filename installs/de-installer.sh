@@ -10,6 +10,7 @@ install_arch_de() {
         2) noninteractive plasma plasma-wayland-protocols plasma-desktop sddm plasma-pa plasma-nm konsole dolphin xorg-server ;;
         3) noninteractive gnome gnome-extra gdm xorg-server ;;
         4) noninteractive i3-gaps i3status i3blocks dmenu lightdm lightdm-gtk-greeter xorg-server ;;
+        5) run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
     esac
 }
 
@@ -50,10 +51,11 @@ echo "1. Cinnamon"
 echo "2. KDE Plasma"
 echo "3. GNOME"
 echo "4. i3"
-printf "%b" "${YELLOW}Select your desired desktop environment (1-4): ${RC}"
+echo "5. DWM"
+printf "%b" "${YELLOW}Select your desired desktop environment (1-5): ${RC}"
 read -r choice
 
-if [ "$choice" -ge 1 ] && [ "$choice" -le 4 ]; then
+if [ "$choice" -ge 1 ] && [ "$choice" -le 5 ]; then
     # Update system first
     case $PACKAGER in
         pacman) $ESCALATION_TOOL $PACKAGER -Syu $(getNonInteractiveFlags) ;;
@@ -86,10 +88,11 @@ if [ "$choice" -ge 1 ] && [ "$choice" -le 4 ]; then
                 $ESCALATION_TOOL systemctl enable gdm
             fi
             ;;
+        5) : ;; # DWM handles its own display manager setup
     esac
 
     printf "%b\n" "${GREEN}Installation complete! Please reboot your system.${RC}"
 else
-    printf "%b\n" "${RED}Invalid choice. Please select a number between 1 and 4.${RC}"
+    printf "%b\n" "${RED}Invalid choice. Please select a number between 1 and 5.${RC}"
     exit 1
 fi 
