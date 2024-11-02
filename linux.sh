@@ -61,7 +61,7 @@ if [ -d /run/archiso/bootmnt ]; then
     printf "Do you want to run the Arch install script? (y/n): "
     read -r run_install
     if [ "$run_install" = "y" ] || [ "$run_install" = "Y" ]; then
-        run_script "arch_install.sh" "$GITPATH/installs" "$INSTALLS_URL"
+        run_script "arch_install2.sh" "$GITPATH/installs" "$INSTALLS_URL"
     fi
 fi
 
