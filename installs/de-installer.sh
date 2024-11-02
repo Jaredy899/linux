@@ -7,7 +7,7 @@
 install_arch_de() {
     case $1 in
         1) noninteractive cinnamon lightdm lightdm-gtk-greeter xorg-server ;;
-        2) noninteractive plasma plasma-wayland-protocols plasma-desktop sddm plasma-pa plasma-nm konsole dolphin xorg-server ;;
+        2) noninteractive plasma plasma-wayland-protocols plasma-desktop sddm plasma-pa plasma-nm konsole thunar xorg-server ;;
         3) run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
     esac
 }
