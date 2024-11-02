@@ -85,13 +85,12 @@ while true; do
     echo "5) Install Cockpit"
     echo "6) Install Tailscale"
     echo "7) Install Docker and Portainer"
-    echo "8) Run DWM Setup Script"
+    echo "8) Install Desktop Environment"
     echo "9) Replace configs"
-    echo "10) Install Desktop Environment"
     echo "0) Exit"
     echo
 
-    printf "Enter your choice (0-10): "
+    printf "Enter your choice (0-9): "
     read -r choice
 
     case $choice in
@@ -115,20 +114,16 @@ while true; do
             echo "Tailscale installed. Please run 'sudo tailscale up' to activate."
             ;;
         7) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
-        8) 
-            echo "Running DWM Setup Script..."
-            run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL"
+        8)
+            echo "Installing Desktop Environment..."
+            run_script "de-installer.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         9)
             echo "Replacing configs..."
             run_script "replace_configs.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
-        10)
-            echo "Installing Desktop Environment..."
-            run_script "de-installer.sh" "$GITPATH/installs" "$INSTALLS_URL"
-            ;;
         0) echo "Exiting script."; break ;;
-        *) echo "Invalid option. Please enter a number between 0 and 10." ;;
+        *) echo "Invalid option. Please enter a number between 0 and 9." ;;
     esac
 done
 
