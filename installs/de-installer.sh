@@ -24,7 +24,7 @@ install_fedora_de() {
 install_debian_de() {
     case $1 in
         1) noninteractive cinnamon lightdm ;;
-        2) noninteractive kde-plasma-desktop sddm ;;
+        2) noninteractive kde-plasma-desktop plasma-workspace kio sddm kde-plasma-desktop plasma-desktop-data kwin-x11 plasma-workspace-wayland dolphin konsole plasma-nm plasma-pa ;;
     esac
 }
 
