@@ -6,25 +6,25 @@
 # Function to install desktop environment on Arch
 install_arch_de() {
     case $1 in
-        1) noninteractive cinnamon lightdm lightdm-gtk-greeter xorg-server ;;
-        2) noninteractive plasma plasma-wayland-protocols plasma-desktop sddm plasma-pa plasma-nm konsole thunar xorg-server ;;
-        3) run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        1) noninteractive cinnamon lightdm lightdm-gtk-greeter xorg-server feh ;;
+        2) noninteractive plasma plasma-wayland-protocols plasma-desktop sddm plasma-pa plasma-nm konsole dolphin xorg-server feh ;;
+        3) noninteractive feh && run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
     esac
 }
 
 # Function to install desktop environment on Fedora
 install_fedora_de() {
     case $1 in
-        1) noninteractive @"Cinnamon Desktop" ;;
-        2) noninteractive @"KDE Plasma Workspaces" ;;
+        1) noninteractive @"Cinnamon Desktop" feh ;;
+        2) noninteractive @"KDE Plasma Workspaces" feh ;;
     esac
 }
 
 # Function to install desktop environment on Debian/Ubuntu
 install_debian_de() {
     case $1 in
-        1) noninteractive cinnamon lightdm ;;
-        2) noninteractive kde-plasma-desktop plasma-workspace kio sddm kde-plasma-desktop plasma-desktop-data kwin-x11 plasma-workspace-wayland dolphin konsole plasma-nm plasma-pa ;;
+        1) noninteractive cinnamon lightdm feh ;;
+        2) noninteractive kde-plasma-desktop plasma-workspace kio sddm kde-plasma-desktop plasma-desktop-data kwin-x11 plasma-workspace-wayland dolphin konsole plasma-nm plasma-pa feh ;;
     esac
 }
 
@@ -75,6 +75,14 @@ if [ "$choice" -ge 1 ] && [ "$choice" -le 3 ]; then
         2) $ESCALATION_TOOL systemctl enable sddm ;;
         3) : ;; # DWM handles its own display manager setup
     esac
+
+    # Setup wallpapers
+    mkdir -p "$HOME/Pictures"
+    cd "$HOME/Pictures" || exit
+    if [ ! -d "nord-background" ]; then
+        git clone https://github.com/ChrisTitusTech/nord-background.git
+    fi
+    feh --bg-scale --randomize "$HOME/Pictures/nord-background/"
 
     printf "%b\n" "${GREEN}Installation complete! Please reboot your system.${RC}"
 else
