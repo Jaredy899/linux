@@ -29,12 +29,6 @@ replace_configs() {
     printf "%b\n" "${GREEN}Configurations downloaded and replaced successfully.${RC}"
 }
 
-# First check if dwm-titus directory exists
-if [ ! -d "$DWM_TITUS_DIR" ]; then
-    printf "%b\n" "${YELLOW}dwm-titus directory not found. Skipping DWM and slstatus compilation.${RC}"
-    exit 0  # or exit 0 depending on how this script is used
-fi
-
 # Function to compile and install dwm-titus
 compile_install_dwm_titus() {
     printf "%b\n" "${YELLOW}Compiling and installing dwm-titus...${RC}"
