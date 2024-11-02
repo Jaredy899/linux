@@ -8,9 +8,7 @@ install_arch_de() {
     case $1 in
         1) noninteractive cinnamon lightdm lightdm-gtk-greeter xorg-server ;;
         2) noninteractive plasma plasma-wayland-protocols plasma-desktop sddm plasma-pa plasma-nm konsole dolphin xorg-server ;;
-        3) noninteractive gnome gnome-extra gdm xorg-server ;;
-        4) noninteractive i3-gaps i3status i3blocks dmenu lightdm lightdm-gtk-greeter xorg-server ;;
-        5) run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        3) run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
     esac
 }
 
@@ -19,8 +17,6 @@ install_fedora_de() {
     case $1 in
         1) noninteractive @"Cinnamon Desktop" ;;
         2) noninteractive @"KDE Plasma Workspaces" ;;
-        3) noninteractive @"GNOME Desktop Environment" ;;
-        4) noninteractive i3 i3status dmenu lightdm ;;
     esac
 }
 
@@ -29,8 +25,6 @@ install_debian_de() {
     case $1 in
         1) noninteractive cinnamon lightdm ;;
         2) noninteractive kde-plasma-desktop sddm ;;
-        3) noninteractive gnome gnome-shell gdm3 ;;
-        4) noninteractive i3 i3status dmenu lightdm ;;
     esac
 }
 
@@ -49,13 +43,11 @@ printf "%b\n" "${CYAN}Detected Distribution: $DTYPE${RC}"
 echo -e "\nAvailable Desktop Environments:"
 echo "1. Cinnamon"
 echo "2. KDE Plasma"
-echo "3. GNOME"
-echo "4. i3"
-echo "5. DWM"
-printf "%b" "${YELLOW}Select your desired desktop environment (1-5): ${RC}"
+echo "3. DWM"
+printf "%b" "${YELLOW}Select your desired desktop environment (1-3): ${RC}"
 read -r choice
 
-if [ "$choice" -ge 1 ] && [ "$choice" -le 5 ]; then
+if [ "$choice" -ge 1 ] && [ "$choice" -le 3 ]; then
     # Update system first
     case $PACKAGER in
         pacman) $ESCALATION_TOOL $PACKAGER -Syu $(getNonInteractiveFlags) ;;
@@ -79,20 +71,13 @@ if [ "$choice" -ge 1 ] && [ "$choice" -le 5 ]; then
 
     # Enable display manager
     case $choice in
-        1|4) $ESCALATION_TOOL systemctl enable lightdm ;;
+        1) $ESCALATION_TOOL systemctl enable lightdm ;;
         2) $ESCALATION_TOOL systemctl enable sddm ;;
-        3) 
-            if [ "$DTYPE" = "debian" ] || [ "$DTYPE" = "ubuntu" ]; then
-                $ESCALATION_TOOL systemctl enable gdm3
-            else
-                $ESCALATION_TOOL systemctl enable gdm
-            fi
-            ;;
-        5) : ;; # DWM handles its own display manager setup
+        3) : ;; # DWM handles its own display manager setup
     esac
 
     printf "%b\n" "${GREEN}Installation complete! Please reboot your system.${RC}"
 else
-    printf "%b\n" "${RED}Invalid choice. Please select a number between 1 and 5.${RC}"
+    printf "%b\n" "${RED}Invalid choice. Please select a number between 1 and 3.${RC}"
     exit 1
 fi 
