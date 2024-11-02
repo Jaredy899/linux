@@ -25,7 +25,7 @@ install_fedora_de() {
 install_debian_de() {
     case $1 in
         1) noninteractive cinnamon lightdm feh ;;
-        2) noninteractive kde-plasma-desktop plasma-workspace kio sddm kde-plasma-desktop plasma-desktop-data kwin-x11 plasma-workspace-wayland dolphin konsole plasma-nm plasma-pa feh ;;
+        2) noninteractive kde-plasma-desktop sddm plasma-workspace dolphin konsole feh ;;
         3) noninteractive run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
     esac
 }
