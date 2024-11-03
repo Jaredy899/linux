@@ -101,9 +101,19 @@ if [ "$choice" -ge 1 ] && [ "$choice" -le 3 ]; then
 
     # Enable display manager
     case $DTYPE in
-        "arch"|"fedora"|"opensuse"|"debian"|"ubuntu")
+        "arch"|"fedora"|"debian"|"ubuntu")
             case $choice in
                 1|2) $ESCALATION_TOOL systemctl enable sddm ;;
+                3) : ;; # DWM handles its own display manager setup
+            esac
+            ;;
+        "opensuse"|"opensuse-tumbleweed"|"opensuse-leap")
+            case $choice in
+                1|2)
+                    # Configure and enable SDDM for openSUSE
+                    $ESCALATION_TOOL sed -i 's/^DISPLAYMANAGER=.*/DISPLAYMANAGER="sddm"/' /etc/sysconfig/displaymanager
+                    $ESCALATION_TOOL systemctl enable sddm
+                    ;;
                 3) : ;; # DWM handles its own display manager setup
             esac
             ;;
