@@ -39,7 +39,7 @@ install_fedora_de() {
 install_debian_de() {
     case $1 in
         1) noninteractive cinnamon-core sddm feh ;;
-        2) noninteractive kde-standard qml-module-org-kde-kitemmodels sddm feh ;;
+        2) noninteractive task-kde-desktop qml-module-org-kde-kitemmodels sddm feh ;;
         3) install_dwm ;;
     esac
 }
