@@ -3,12 +3,23 @@
 # Source the common script
 . <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)
 
+# Common DWM installation function
+install_dwm() {
+    DWM_SCRIPT_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/installs/install_dwm.sh"
+    if ! curl -s "$DWM_SCRIPT_URL" -o /tmp/install_dwm.sh; then
+        echo "Failed to download DWM install script"
+        exit 1
+    fi
+    chmod +x /tmp/install_dwm.sh
+    /tmp/install_dwm.sh
+}
+
 # Function to install desktop environment on Arch
 install_arch_de() {
     case $1 in
         1) noninteractive cinnamon sddm xorg-server feh ;;
         2) noninteractive plasma plasma-wayland-protocols plasma-desktop sddm plasma-pa plasma-nm thunar konsole xorg-server feh ;;
-        3) run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        3) install_dwm ;;
     esac
 }
 
@@ -17,7 +28,7 @@ install_fedora_de() {
     case $1 in
         1) noninteractive @"Cinnamon Desktop" sddm feh ;;
         2) noninteractive @"KDE Plasma Workspaces" feh ;;
-        3) noninteractive run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        3) install_dwm ;;
     esac
 }
 
@@ -26,7 +37,7 @@ install_debian_de() {
     case $1 in
         1) noninteractive cinnamon lightdm feh ;;
         2) noninteractive kde-plasma-desktop lightdm plasma-workspace thunar konsole feh ;;
-        3) noninteractive run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        3) install_dwm ;;
     esac
 }
 
@@ -37,7 +48,7 @@ install_opensuse_de() {
     case $1 in
         1) base_packages="patterns-desktop-cinnamon sddm xorg-x11-server feh" ;;
         2) base_packages="patterns-desktop-plasma plasma-desktop plasma-systemmonitor plasma-nm plasma-pa sddm konsole dolphin feh" ;;
-        3) noninteractive run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" 
+        3) install_dwm
            return ;;
     esac
 
