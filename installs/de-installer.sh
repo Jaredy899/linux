@@ -116,18 +116,11 @@ if [ "$choice" -ge 1 ] && [ "$choice" -le 3 ]; then
             ;;
     esac
 
-    # Setup wallpapers (create script to run after first login)
-    mkdir -p "$HOME/.config/autostart"
-    cat > "$HOME/.config/autostart/wallpaper-setup.desktop" << 'EOF'
-    [Desktop Entry]
-    Type=Application
-    Name=Wallpaper Setup
-    Exec=bash -c 'mkdir -p "$HOME/Pictures" && cd "$HOME/Pictures" && [ ! -d "nord-background" ] && git clone https://github.com/ChrisTitusTech/nord-background.git; feh --bg-scale --randomize "$HOME/Pictures/nord-background/"'
-    Hidden=false
-    X-GNOME-Autostart-enabled=true
-    EOF
-
-    chmod +x "$HOME/.config/autostart/wallpaper-setup.desktop"
+    # Setup wallpapers
+    mkdir -p "$HOME/Pictures"
+    cd "$HOME/Pictures" || exit
+    git clone https://github.com/ChrisTitusTech/nord-background.git
+    echo 'feh --bg-scale --randomize "$HOME/Pictures/nord-background/"' >> "$HOME/.xinitrc"
 
     printf "%b\n" "${GREEN}Installation complete! Please reboot your system.${RC}"
 else
