@@ -118,7 +118,7 @@ if [ "$choice" -ge 1 ] && [ "$choice" -le 3 ]; then
 
     # Setup wallpapers (create script to run after first login)
     mkdir -p "$HOME/.config/autostart"
-    cat > "$HOME/.config/autostart/wallpaper-setup.desktop" << EOF
+    cat > "$HOME/.config/autostart/wallpaper-setup.desktop" << 'EOF'
     [Desktop Entry]
     Type=Application
     Name=Wallpaper Setup
