@@ -45,10 +45,7 @@ install_debian_de() {
 install_opensuse_de() {
     case $1 in
         1) noninteractive -t pattern cinnamon ;;
-        2) 
-            # Install KDE patterns as documented in the wiki
-            noninteractive -t pattern kde kde_plasma
-            # Set SDDM as the display manager
+        2) noninteractive -t pattern kde kde_plasma
             $ESCALATION_TOOL sed -i 's/^DISPLAYMANAGER=.*/DISPLAYMANAGER="sddm"/' /etc/sysconfig/displaymanager
             ;;
         3) install_dwm
