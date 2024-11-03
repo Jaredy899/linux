@@ -35,8 +35,8 @@ install_fedora_de() {
 # Function to install desktop environment on Debian/Ubuntu
 install_debian_de() {
     case $1 in
-        1) noninteractive cinnamon-core sddm feh ;;
-        2) noninteractive kde-standard sddm feh ;;
+        1) noninteractive cinnamon-core sddm konsole feh ;;
+        2) noninteractive kde-standard sddm konsole feh ;;
         3) install_dwm ;;
     esac
 }
