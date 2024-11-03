@@ -17,8 +17,8 @@ install_dwm() {
 # Function to install desktop environment on Arch
 install_arch_de() {
     case $1 in
-        1) noninteractive cinnamon sddm xorg-server feh ;;
-        2) noninteractive plasma plasma-wayland-protocols plasma-desktop sddm plasma-pa plasma-nm thunar konsole xorg-server feh ;;
+        1) noninteractive cinnamon dolphin konsole sddm xed xreader feh ;;
+        2) noninteractive plasma-meta sddm plasma-wayland-session dolphin konsole feh ;;
         3) install_dwm ;;
     esac
 }
@@ -26,8 +26,8 @@ install_arch_de() {
 # Function to install desktop environment on Fedora
 install_fedora_de() {
     case $1 in
-        1) noninteractive @"cinnamon-desktop-environment" sddm feh ;;
-        2) noninteractive @"kde-desktop-environment" sddm plasma-workspace plasma-nm plasma-pa konsole feh ;;
+        1) noninteractive @"cinnamon-desktop" sddm feh ;;
+        2) noninteractive @"kde-desktop-environment" sddm feh ;;
         3) install_dwm ;;
     esac
 }
@@ -46,8 +46,8 @@ install_opensuse_de() {
     # Common packages between Leap and Tumbleweed
     local base_packages
     case $1 in
-        1) base_packages="patterns-desktop-cinnamon sddm xorg-x11-server feh" ;;
-        2) base_packages="plasma6-desktop plasma6-session plasma6-workspace plasma6-systemmonitor plasma6-nm plasma6-pa sddm konsole dolphin discover feh" ;;
+        1) base_packages="-t pattern cinnamon sddm feh" ;;
+        2) base_packages="-t pattern kde kde_plasma sddm konsole dolphin feh" ;;
         3) install_dwm
            return ;;
     esac
