@@ -30,6 +30,29 @@ install_debian_de() {
     esac
 }
 
+# Update function for openSUSE (both Leap and Tumbleweed)
+install_opensuse_de() {
+    # Common packages between Leap and Tumbleweed
+    local base_packages
+    case $1 in
+        1) base_packages="patterns-cinnamon sddm xorg-x11-server feh" ;;
+        2) base_packages="patterns-kde plasma5-desktop sddm plasma5-pa plasma5-workspace thunar konsole feh" ;;
+        3) noninteractive run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" 
+           return ;;
+    esac
+
+    # Check if it's Leap or Tumbleweed and install accordingly
+    if grep -q "Tumbleweed" /etc/os-release; then
+        noninteractive $base_packages
+    elif grep -q "Leap" /etc/os-release; then
+        # For Leap, we might need to add specific version-dependent packages
+        noninteractive $base_packages
+    else
+        printf "%b\n" "${RED}Unsupported openSUSE variant${RC}"
+        exit 1
+    fi
+}
+
 # Main script
 clear
 printf "%b\n" "${BLUE}Desktop Environment Installer${RC}"
@@ -65,6 +88,7 @@ if [ "$choice" -ge 1 ] && [ "$choice" -le 3 ]; then
         "arch") install_arch_de "$choice" ;;
         "fedora") install_fedora_de "$choice" ;;
         "debian"|"ubuntu") install_debian_de "$choice" ;;
+        "opensuse"|"opensuse-tumbleweed"|"opensuse-leap") install_opensuse_de "$choice" ;;
         *)
             printf "%b\n" "${RED}Unsupported distribution: $DTYPE${RC}"
             exit 1
