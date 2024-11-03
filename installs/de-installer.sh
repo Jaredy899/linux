@@ -126,6 +126,7 @@ if [ "$choice" -ge 1 ] && [ "$choice" -le 3 ]; then
     Hidden=false
     X-GNOME-Autostart-enabled=true
     EOF
+
     chmod +x "$HOME/.config/autostart/wallpaper-setup.desktop"
 
     printf "%b\n" "${GREEN}Installation complete! Please reboot your system.${RC}"
