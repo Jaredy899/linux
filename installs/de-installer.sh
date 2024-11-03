@@ -36,7 +36,7 @@ install_fedora_de() {
 install_debian_de() {
     case $1 in
         1) noninteractive cinnamon lightdm feh ;;
-        2) noninteractive kde-plasma-desktop lightdm plasma-workspace thunar konsole feh ;;
+        2) noninteractive kde-plasma-desktop sddm plasma-workspace thunar konsole feh ;;
         3) install_dwm ;;
     esac
 }
@@ -101,7 +101,7 @@ if [ "$choice" -ge 1 ] && [ "$choice" -le 3 ]; then
 
     # Enable display manager
     case $DTYPE in
-        "arch"|"fedora")
+        "arch"|"fedora"|"opensuse")
             case $choice in
                 1|2) $ESCALATION_TOOL systemctl enable sddm ;;
                 3) : ;; # DWM handles its own display manager setup
@@ -109,19 +109,24 @@ if [ "$choice" -ge 1 ] && [ "$choice" -le 3 ]; then
             ;;
         "debian"|"ubuntu")
             case $choice in
-                1|2) $ESCALATION_TOOL systemctl enable lightdm ;;
+                1) $ESCALATION_TOOL systemctl enable lightdm ;;
+                2) $ESCALATION_TOOL systemctl enable sddm ;;
                 3) : ;; # DWM handles its own display manager setup
             esac
             ;;
     esac
 
-    # Setup wallpapers
-    mkdir -p "$HOME/Pictures"
-    cd "$HOME/Pictures" || exit
-    if [ ! -d "nord-background" ]; then
-        git clone https://github.com/ChrisTitusTech/nord-background.git
-    fi
-    feh --bg-scale --randomize "$HOME/Pictures/nord-background/"
+    # Setup wallpapers (create script to run after first login)
+    mkdir -p "$HOME/.config/autostart"
+    cat > "$HOME/.config/autostart/wallpaper-setup.desktop" << EOF
+    [Desktop Entry]
+    Type=Application
+    Name=Wallpaper Setup
+    Exec=bash -c 'mkdir -p "$HOME/Pictures" && cd "$HOME/Pictures" && [ ! -d "nord-background" ] && git clone https://github.com/ChrisTitusTech/nord-background.git; feh --bg-scale --randomize "$HOME/Pictures/nord-background/"'
+    Hidden=false
+    X-GNOME-Autostart-enabled=true
+    EOF
+    chmod +x "$HOME/.config/autostart/wallpaper-setup.desktop"
 
     printf "%b\n" "${GREEN}Installation complete! Please reboot your system.${RC}"
 else
