@@ -18,7 +18,7 @@ install_dwm() {
 install_arch_de() {
     case $1 in
         1) noninteractive cinnamon dolphin konsole sddm xed xreader feh ;;
-        2) noninteractive plasma-meta sddm plasma-wayland-session dolphin konsole feh ;;
+        2) noninteractive plasma-meta sddm dolphin konsole feh ;;
         3) install_dwm ;;
     esac
 }
