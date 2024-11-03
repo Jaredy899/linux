@@ -46,8 +46,8 @@ install_opensuse_de() {
     # Common packages between Leap and Tumbleweed
     local base_packages
     case $1 in
-        1) base_packages="-t pattern cinnamon sddm feh" ;;
-        2) base_packages="-t pattern kde kde_plasma sddm konsole dolphin feh" ;;
+        1) base_packages="-t pattern cinnamon" ;;
+        2) base_packages="-t pattern kde kde_plasma" ;;
         3) install_dwm
            return ;;
     esac
