@@ -35,8 +35,8 @@ install_fedora_de() {
 # Function to install desktop environment on Debian/Ubuntu
 install_debian_de() {
     case $1 in
-        1) noninteractive cinnamon lightdm feh ;;
-        2) noninteractive kde-standard kde-plasma-desktop plasma-desktop plasma-workspace sddm plasma-nm plasma-pa dolphin konsole kwin-x11 systemsettings feh ;;
+        1) noninteractive cinnamon-core sddm feh ;;
+        2) noninteractive kde-standard sddm feh ;;
         3) install_dwm ;;
     esac
 }
@@ -101,16 +101,9 @@ if [ "$choice" -ge 1 ] && [ "$choice" -le 3 ]; then
 
     # Enable display manager
     case $DTYPE in
-        "arch"|"fedora"|"opensuse")
+        "arch"|"fedora"|"opensuse"|"debian"|"ubuntu")
             case $choice in
                 1|2) $ESCALATION_TOOL systemctl enable sddm ;;
-                3) : ;; # DWM handles its own display manager setup
-            esac
-            ;;
-        "debian"|"ubuntu")
-            case $choice in
-                1) $ESCALATION_TOOL systemctl enable lightdm ;;
-                2) $ESCALATION_TOOL systemctl enable sddm ;;
                 3) : ;; # DWM handles its own display manager setup
             esac
             ;;
