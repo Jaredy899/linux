@@ -26,8 +26,11 @@ install_arch_de() {
 # Function to install desktop environment on Fedora
 install_fedora_de() {
     case $1 in
-        1) noninteractive @"cinnamon-desktop" sddm feh ;;
-        2) noninteractive @"kde-desktop-environment" sddm feh ;;
+        1) noninteractive @"cinnamon-desktop" sddm-wayland-generic feh ;;
+        2) 
+            # Remove generic SDDM if installed
+            $ESCALATION_TOOL $PACKAGER remove -y sddm-wayland-generic
+            noninteractive @"kde-desktop-environment" sddm feh ;;
         3) install_dwm ;;
     esac
 }
@@ -35,8 +38,8 @@ install_fedora_de() {
 # Function to install desktop environment on Debian/Ubuntu
 install_debian_de() {
     case $1 in
-        1) noninteractive cinnamon-core sddm konsole feh ;;
-        2) noninteractive kde-standard sddm konsole feh ;;
+        1) noninteractive cinnamon-core sddm feh ;;
+        2) noninteractive kde-standard qml-module-org-kde-kitemmodels sddm feh ;;
         3) install_dwm ;;
     esac
 }
@@ -45,7 +48,8 @@ install_debian_de() {
 install_opensuse_de() {
     case $1 in
         1) noninteractive -t pattern cinnamon ;;
-        2) noninteractive -t pattern kde kde_plasma
+        2) 
+            noninteractive -t pattern kde kde_plasma
             $ESCALATION_TOOL sed -i 's/^DISPLAYMANAGER=.*/DISPLAYMANAGER="sddm"/' /etc/sysconfig/displaymanager
             ;;
         3) install_dwm
