@@ -43,18 +43,17 @@ install_debian_de() {
 
 # Update function for openSUSE (both Leap and Tumbleweed)
 install_opensuse_de() {
-    # Common packages between Leap and Tumbleweed
-    local base_packages
     case $1 in
-        1) base_packages="-t pattern cinnamon" ;;
-        2) base_packages="-t pattern kde kde_plasma" ;;
+        1) noninteractive -t pattern cinnamon ;;
+        2) 
+            # Install KDE patterns as documented in the wiki
+            noninteractive -t pattern kde kde_plasma
+            # Set SDDM as the display manager
+            $ESCALATION_TOOL sed -i 's/^DISPLAYMANAGER=.*/DISPLAYMANAGER="sddm"/' /etc/sysconfig/displaymanager
+            ;;
         3) install_dwm
            return ;;
     esac
-
-    # Install feh first to avoid the command not found error
-    noninteractive feh
-    noninteractive $base_packages
 }
 
 # Main script
