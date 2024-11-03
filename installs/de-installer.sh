@@ -36,11 +36,7 @@ install_opensuse_de() {
     local base_packages
     case $1 in
         1) base_packages="patterns-desktop-cinnamon sddm xorg-x11-server feh" ;;
-        2) if grep -q "Tumbleweed" /etc/os-release; then
-               base_packages="patterns-desktop-plasma plasma-desktop plasma-systemmonitor plasma-nm plasma-pa sddm konsole dolphin feh"
-           else
-               base_packages="patterns-desktop-plasma plasma5-desktop plasma5-pa plasma5-workspace sddm konsole dolphin feh"
-           fi ;;
+        2) base_packages="patterns-desktop-plasma plasma-desktop plasma-systemmonitor plasma-nm plasma-pa sddm konsole dolphin feh" ;;
         3) noninteractive run_script "install_dwm.sh" "$GITPATH/installs" "$INSTALLS_URL" 
            return ;;
     esac
