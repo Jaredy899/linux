@@ -26,8 +26,8 @@ install_arch_de() {
 # Function to install desktop environment on Fedora
 install_fedora_de() {
     case $1 in
-        1) noninteractive @"Cinnamon Desktop" sddm feh ;;
-        2) noninteractive @"KDE Plasma Workspaces" feh ;;
+        1) noninteractive @"cinnamon-desktop-environment" sddm feh ;;
+        2) noninteractive @"kde-desktop-environment" sddm plasma-workspace plasma-nm plasma-pa konsole feh ;;
         3) install_dwm ;;
     esac
 }
