@@ -47,7 +47,7 @@ install_opensuse_de() {
     local base_packages
     case $1 in
         1) base_packages="patterns-desktop-cinnamon sddm xorg-x11-server feh" ;;
-        2) base_packages="patterns-desktop-plasma plasma-desktop plasma-systemmonitor plasma-nm plasma-pa sddm konsole dolphin feh" ;;
+        2) base_packages="patterns-kde kde-plasma6 plasma6-desktop plasma6-systemmonitor plasma6-nm plasma6-pa sddm konsole dolphin feh" ;;
         3) install_dwm
            return ;;
     esac
