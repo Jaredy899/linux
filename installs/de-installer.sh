@@ -47,7 +47,10 @@ install_debian_de() {
             # Pre-configure SDDM to avoid prompts
             $ESCALATION_TOOL debconf-set-selections <<< "sddm shared/default-display-manager select sddm"
             noninteractive cinnamon-core sddm feh ;;
-        2) noninteractive kde-full qml-module-org-kde-kitemmodels sddm feh ;;
+        2) 
+            # Pre-configure SDDM to avoid prompts
+            $ESCALATION_TOOL debconf-set-selections <<< "sddm shared/default-display-manager select sddm"
+            noninteractive kde-plasma-desktop plasma-desktop plasma-workspace sddm plasma-nm plasma-pa dolphin konsole kwin-x11 systemsettings plasma-workspace-wayland feh ;;
         3) install_dwm ;;
     esac
 }
