@@ -26,11 +26,16 @@ install_arch_de() {
 # Function to install desktop environment on Fedora
 install_fedora_de() {
     case $1 in
-        1) noninteractive @"cinnamon-desktop" sddm-wayland-generic feh ;;
+        1) 
+            noninteractive @"cinnamon-desktop" sddm-wayland-generic feh
+            $ESCALATION_TOOL systemctl enable sddm
+            $ESCALATION_TOOL systemctl start sddm ;;
         2) 
             # Remove generic SDDM if installed
             $ESCALATION_TOOL $PACKAGER remove -y sddm-wayland-generic
-            noninteractive @"kde-desktop-environment" sddm feh ;;
+            noninteractive @"kde-desktop-environment" sddm feh
+            $ESCALATION_TOOL systemctl enable sddm
+            $ESCALATION_TOOL systemctl start sddm ;;
         3) install_dwm ;;
     esac
 }
@@ -38,8 +43,11 @@ install_fedora_de() {
 # Function to install desktop environment on Debian/Ubuntu
 install_debian_de() {
     case $1 in
-        1) noninteractive cinnamon-core sddm feh ;;
-        2) noninteractive task-kde-desktop qml-module-org-kde-kitemmodels sddm feh ;;
+        1) 
+            # Pre-configure SDDM to avoid prompts
+            $ESCALATION_TOOL debconf-set-selections <<< "sddm shared/default-display-manager select sddm"
+            noninteractive cinnamon-core sddm feh ;;
+        2) noninteractive kde-full qml-module-org-kde-kitemmodels sddm feh ;;
         3) install_dwm ;;
     esac
 }
@@ -47,14 +55,19 @@ install_debian_de() {
 # Update function for openSUSE (both Leap and Tumbleweed)
 install_opensuse_de() {
     case $1 in
-        1) noninteractive -t pattern cinnamon ;;
+        1) 
+            noninteractive -t pattern cinnamon
+            noninteractive sddm ;;
         2) 
             noninteractive -t pattern kde kde_plasma
-            $ESCALATION_TOOL sed -i 's/^DISPLAYMANAGER=.*/DISPLAYMANAGER="sddm"/' /etc/sysconfig/displaymanager
-            ;;
+            $ESCALATION_TOOL sed -i 's/^DISPLAYMANAGER=.*/DISPLAYMANAGER="sddm"/' /etc/sysconfig/displaymanager ;;
         3) install_dwm
            return ;;
     esac
+
+    # Enable and start SDDM
+    $ESCALATION_TOOL systemctl enable sddm
+    $ESCALATION_TOOL systemctl start sddm
 }
 
 # Main script
