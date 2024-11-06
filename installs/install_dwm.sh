@@ -6,9 +6,43 @@
 # Run the environment check
 checkEnv || exit 1
 
-# Ask about autologin at the beginning
+# Check for existing display manager
+existing_dm=""
+for dm in sddm lightdm gdm; do
+    if command -v $dm >/dev/null 2>&1; then
+        existing_dm=$dm
+        break
+    fi
+done
+
+# Ask about autologin and display manager at the beginning
 printf "%b" "${CYAN}Do you want to set up autologin? (y/n): ${RC}"
 read -r setup_autologin
+
+if [ "$setup_autologin" = "y" ] || [ "$setup_autologin" = "Y" ]; then
+    if [ -n "$existing_dm" ]; then
+        printf "%b\n" "${YELLOW}Existing display manager detected: $existing_dm${RC}"
+        printf "%b" "${CYAN}Do you want to use $existing_dm? (y/n): ${RC}"
+        read -r use_existing_dm
+        if [ "$use_existing_dm" = "y" ] || [ "$use_existing_dm" = "Y" ]; then
+            DM=$existing_dm
+        fi
+    fi
+fi
+
+# Ask about picom animations
+printf "%b" "${CYAN}Do you want to install picom animations? (y/n): ${RC}"
+read -r install_picom
+
+# Ask about media packages
+printf "%b" "${CYAN}Do you want to install media packages (vlc, pavucontrol, pipewire)? (y/n): ${RC}"
+read -r install_media
+
+# Debug output
+echo "Autologin choice: $setup_autologin"
+echo "Display Manager choice: $DM"
+echo "Picom animations choice: $install_picom"
+echo "Media packages choice: $install_media"
 
 # Function to install a package
 installPackage() {
@@ -25,7 +59,7 @@ installPackage() {
 }
 
 # List of common packages to install
-common_packages="nano thunar vlc feh pavucontrol pipewire pipewire-alsa alacritty unzip flameshot lxappearance mate-polkit"
+common_packages="thunar feh alacritty unzip flameshot lxappearance mate-polkit"
 
 # Install common packages
 printf "%b\n" "${YELLOW}Installing common packages...${RC}"
@@ -33,31 +67,35 @@ for package in $common_packages; do
     installPackage "$package"
 done
 
-# Install distribution-specific packages
-case "$PACKAGER" in
-    pacman)
-        packages="pipewire-pulse"
-        ;;
-    nala)
-        packages="pipewire-audio-client-libraries pipewire-pulse"
-        ;;
-    dnf)
-        packages="network-manager-applet pipewire-pulseaudio"
-        ;;
-    zypper)
-        packages="NetworkManager-applet pipewire-pulseaudio"
-        ;;
-    *)
-        printf "%b\n" "${RED}Unsupported package manager: $PACKAGER${RC}"
-        exit 1
-        ;;
-esac
+# Media packages installation
+if [ "$install_media" = "y" ] || [ "$install_media" = "Y" ]; then
+    printf "%b\n" "${YELLOW}Installing media packages...${RC}"
+    media_packages="vlc pavucontrol pipewire pipewire-alsa"
+    for package in $media_packages; do
+        installPackage "$package"
+    done
 
-for package in $packages; do
-    installPackage "$package"
-done
+    # Install distribution-specific media packages
+    case "$PACKAGER" in
+        pacman)
+            installPackage "pipewire-pulse"
+            ;;
+        nala)
+            installPackage "pipewire-audio-client-libraries"
+            installPackage "pipewire-pulse"
+            ;;
+        dnf)
+            installPackage "pipewire-pulseaudio"
+            ;;
+        zypper)
+            installPackage "pipewire-pulseaudio"
+            ;;
+    esac
 
-printf "%b\n" "${GREEN}Common package installation complete.${RC}"
+    printf "%b\n" "${GREEN}Media package installation complete.${RC}"
+else
+    printf "%b\n" "${YELLOW}Skipping media package installation.${RC}"
+fi
 
 # Create or update the .xprofile file to autostart nm-applet for all distros
 if [ ! -f "$HOME/.xprofile" ]; then
@@ -86,17 +124,17 @@ setupDWM() {
     
     case "$PACKAGER" in
         pacman)
-            noninteractive xorg-xinit xorg-server base-devel libx11 libxinerama libxft imlib2 libxcb meson libev uthash libconfig
+            noninteractive xorg-xinit xorg-server base-devel libx11 libxinerama libxft imlib2
             ;;
         apt-get|nala)
-            $ESCALATION_TOOL apt-get install $NONINTERACTIVE xorg xinit build-essential libx11-dev libxinerama-dev libxft-dev libimlib2-dev libxcb1-dev libxcb-res0-dev libconfig-dev libdbus-1-dev libegl-dev libev-dev libgl-dev libepoxy-dev libpcre2-dev libpixman-1-dev libx11-xcb-dev libxcb1-dev libxcb-composite0-dev libxcb-damage0-dev libxcb-dpms0-dev libxcb-glx0-dev libxcb-image0-dev libxcb-present-dev libxcb-randr0-dev libxcb-render0-dev libxcb-render-util0-dev libxcb-shape0-dev libxcb-util-dev libxcb-xfixes0-dev libxext-dev meson ninja-build uthash-dev unzip
+            $ESCALATION_TOOL apt-get install $NONINTERACTIVE xorg xinit build-essential libx11-dev libxinerama-dev libxft-dev libimlib2-dev
             ;;
         dnf)
             noninteractive "@Development Tools"
-            noninteractive xorg-x11-xinit xorg-x11-server-Xorg libX11-devel libXinerama-devel libXft-devel imlib2-devel libxcb-devel dbus-devel gcc git libconfig-devel libdrm-devel libev-devel libX11-devel libX11-xcb libXext-devel libxcb-devel libGL-devel libEGL-devel libepoxy-devel meson pcre2-devel pixman-devel uthash-devel xcb-util-image-devel xcb-util-renderutil-devel xorg-x11-proto-devel xcb-util-devel
+            noninteractive xorg-x11-xinit xorg-x11-server-Xorg libX11-devel libXinerama-devel libXft-devel imlib2-devel
             ;;
         zypper)
-            noninteractive make xinit xorg-x11-server libX11-devel libXinerama-devel libXft-devel imlib2-devel libxcb-devel libxcb-devel dbus-1-devel gcc git libconfig-devel libdrm-devel libev-devel libX11-devel libX11-xcb1 libXext-devel libxcb-devel Mesa-libGL-devel Mesa-libEGL-devel libepoxy-devel meson pcre2-devel uthash-devel xcb-util-image-devel libpixman-1-0-devel xcb-util-renderutil-devel xcb-util-devel
+            noninteractive make xinit xorg-x11-server libX11-devel libXinerama-devel libXft-devel imlib2-devel gcc
             ;;
         *)
             printf "%b\n" "${RED}Unsupported package manager: $PACKAGER${RC}"
@@ -105,6 +143,31 @@ setupDWM() {
     esac
 
     printf "%b\n" "${GREEN}DWM-Titus dependencies installed successfully${RC}"
+}
+
+setup_picom_dependencies() {
+    printf "%b\n" "${YELLOW}Installing Picom dependencies if not already installed${RC}"
+    
+    case "$PACKAGER" in
+        pacman)
+            noninteractive libxcb meson libev uthash libconfig
+            ;;
+        apt-get|nala)
+            $ESCALATION_TOOL apt-get install $NONINTERACTIVE libxcb1-dev libxcb-res0-dev libconfig-dev libdbus-1-dev libegl-dev libev-dev libgl-dev libepoxy-dev libpcre2-dev libpixman-1-dev libx11-xcb-dev libxcb1-dev libxcb-composite0-dev libxcb-damage0-dev libxcb-dpms0-dev libxcb-glx0-dev libxcb-image0-dev libxcb-present-dev libxcb-randr0-dev libxcb-render0-dev libxcb-render-util0-dev libxcb-shape0-dev libxcb-util-dev libxcb-xfixes0-dev libxext-dev meson ninja-build uthash-dev
+            ;;
+        dnf)
+            noninteractive libxcb-devel dbus-devel gcc git libconfig-devel libdrm-devel libev-devel libX11-devel libX11-xcb libXext-devel libxcb-devel libGL-devel libEGL-devel libepoxy-devel meson pcre2-devel pixman-devel uthash-devel xcb-util-image-devel xcb-util-renderutil-devel xorg-x11-proto-devel xcb-util-devel
+            ;;
+        zypper)
+            noninteractive libxcb-devel libxcb-devel dbus-1-devel gcc git libconfig-devel libdrm-devel libev-devel libX11-devel libX11-xcb1 libXext-devel libxcb-devel Mesa-libGL-devel Mesa-libEGL-devel libepoxy-devel meson pcre2-devel uthash-devel xcb-util-image-devel libpixman-1-0-devel xcb-util-renderutil-devel xcb-util-devel
+            ;;
+        *)
+            printf "%b\n" "${RED}Unsupported package manager: $PACKAGER${RC}"
+            exit 1
+            ;;
+    esac
+
+    printf "%b\n" "${GREEN}Picom dependencies installed successfully${RC}"
 }
 
 install_nerd_font() {
@@ -250,23 +313,6 @@ setupDisplayManager() {
     printf "%b\n" "${YELLOW}Setting up Display Manager${RC}"
 
     if [ "$setup_autologin" = "y" ] || [ "$setup_autologin" = "Y" ]; then
-        existing_dm=""
-        for dm in sddm lightdm gdm; do
-            if command -v $dm >/dev/null 2>&1; then
-                existing_dm=$dm
-                break
-            fi
-        done
-
-        if [ -n "$existing_dm" ]; then
-            printf "%b\n" "${YELLOW}Existing display manager detected: $existing_dm${RC}"
-            printf "%b" "${CYAN}Do you want to use $existing_dm? (y/n): ${RC}"
-            read -r use_existing_dm
-            if [ "$use_existing_dm" = "y" ] || [ "$use_existing_dm" = "Y" ]; then
-                DM=$existing_dm
-            fi
-        fi
-
         # If no existing DM is chosen, select based on distribution
         if [ -z "$DM" ]; then
             case "$DTYPE" in
@@ -381,8 +427,14 @@ install_nerd_font
 clone_config_folders
 configure_backgrounds
 setupDWM
-picom_animations
 makeDWM
+
+if [ "$install_picom" = "y" ] || [ "$install_picom" = "Y" ]; then
+    setup_picom_dependencies
+    picom_animations
+else
+    printf "%b\n" "${YELLOW}Skipping picom animations installation.${RC}"
+fi
 
 # Move setupDisplayManager to the end and pass the autologin choice
 setupDisplayManager "$setup_autologin"
