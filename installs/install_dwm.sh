@@ -423,20 +423,20 @@ setupDisplayManager() {
 }
 
 # Main execution flow
-install_nerd_font
-clone_config_folders
-configure_backgrounds
-setupDWM
-makeDWM
+install_nerd_font || true
+clone_config_folders || true
+configure_backgrounds || true
+setupDWM || true
+makeDWM || true
 
 if [ "$install_picom" = "y" ] || [ "$install_picom" = "Y" ]; then
-    setup_picom_dependencies
-    picom_animations
+    setup_picom_dependencies || true
+    picom_animations || true
 else
     printf "%b\n" "${YELLOW}Skipping picom animations installation.${RC}"
 fi
 
 # Move setupDisplayManager to the end and pass the autologin choice
-setupDisplayManager "$setup_autologin"
+setupDisplayManager || true "$setup_autologin"
 
 printf "%b\n" "${GREEN}DWM installation and setup complete.${RC}"
