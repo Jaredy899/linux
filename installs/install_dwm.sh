@@ -437,6 +437,6 @@ else
 fi
 
 # Move setupDisplayManager to the end and pass the autologin choice
-setupDisplayManager || true "$setup_autologin"
+setupDisplayManager "$setup_autologin"
 
 printf "%b\n" "${GREEN}DWM installation and setup complete.${RC}"
