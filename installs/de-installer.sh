@@ -29,13 +29,15 @@ install_fedora_de() {
         1) 
             noninteractive @"cinnamon-desktop" sddm-wayland-generic feh
             $ESCALATION_TOOL systemctl enable sddm
-            $ESCALATION_TOOL systemctl start sddm ;;
+            $ESCALATION_TOOL systemctl start sddm
+            $ESCALATION_TOOL systemctl set-default graphical.target ;;
         2) 
             # Remove generic SDDM if installed
             $ESCALATION_TOOL $PACKAGER remove -y sddm-wayland-generic
             noninteractive @"kde-desktop-environment" sddm feh
             $ESCALATION_TOOL systemctl enable sddm
-            $ESCALATION_TOOL systemctl start sddm ;;
+            $ESCALATION_TOOL systemctl start sddm
+            $ESCALATION_TOOL systemctl set-default graphical.target ;;
         3) install_dwm ;;
     esac
 }
@@ -71,6 +73,7 @@ install_opensuse_de() {
     # Enable and start SDDM
     $ESCALATION_TOOL systemctl enable sddm
     $ESCALATION_TOOL systemctl start sddm
+    $ESCALATION_TOOL systemctl set-default graphical.target
 }
 
 # Main script
