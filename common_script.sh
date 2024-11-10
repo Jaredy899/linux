@@ -183,7 +183,7 @@ noninteractive() {
             $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
             ;;
         pacman)
-            $ESCALATION_TOOL $PACKAGER -S --noconfirm "$@"
+            $ESCALATION_TOOL $PACKAGER -S --noconfirm --needed "$@"
             ;;
         *)
             $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
