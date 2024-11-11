@@ -11,19 +11,6 @@ install_docker() {
     if ! command_exists docker; then
         printf "%b\n" "${YELLOW}Installing Docker...${RC}"
         case "$PACKAGER" in
-            apk)
-                # Update package index and add community repository
-                "$ESCALATION_TOOL" apk update
-                "$ESCALATION_TOOL" apk add --no-cache docker docker-compose-plugin
-
-                # Enable and start Docker service
-                "$ESCALATION_TOOL" rc-update add docker boot
-                "$ESCALATION_TOOL" service docker start
-
-                # Wait for Docker to start
-                printf "%b\n" "${YELLOW}Waiting for Docker service to start...${RC}"
-                sleep 5
-                ;;
             pacman)
                 noninteractive docker docker-compose
                 ;;
@@ -35,22 +22,26 @@ install_docker() {
                 ;;
         esac
 
-        if command -v systemctl >/dev/null 2>&1; then
-            # SystemD systems
-            "$ESCALATION_TOOL" systemctl enable docker
-            "$ESCALATION_TOOL" systemctl start docker
-            printf "%b\n" "${GREEN}Docker service enabled and started.${RC}"
+        # Enable and start Docker service
+        "$ESCALATION_TOOL" systemctl enable docker
+        "$ESCALATION_TOOL" systemctl start docker
+        printf "%b\n" "${GREEN}Docker service enabled and started.${RC}"
 
-            # Check if Docker service is running
-            if ! systemctl is-active --quiet docker; then
-                printf "%b\n" "${RED}Docker service failed to start.${RC}"
-                exit 1
-            fi
-        else
-            # OpenRC systems (Alpine)
-            if ! "$ESCALATION_TOOL" service docker status >/dev/null 2>&1; then
-                printf "%b\n" "${RED}Docker service failed to start.${RC}"
-                exit 1
+        # Check if Docker service is running
+        if ! systemctl is-active --quiet docker; then
+            printf "%b\n" "${RED}Docker service failed to start.${RC}"
+            exit 1
+        fi
+
+        # If Fedora, adjust SELinux settings
+        if [ "$DISTRO" = "fedora" ]; then
+            selinux_status=$(sestatus | grep 'SELinux status:' | awk '{print $3}')
+            if [ "$selinux_status" = "enabled" ]; then
+                printf "%b\n" "${YELLOW}Adjusting SELinux for Docker on Fedora...${RC}"
+                "$ESCALATION_TOOL" setenforce 0
+                "$ESCALATION_TOOL" sed -i --follow-symlinks 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+            else
+                printf "%b\n" "${GREEN}SELinux is disabled. No adjustment needed.${RC}"
             fi
         fi
 
@@ -67,7 +58,7 @@ install_portainer() {
         "$ESCALATION_TOOL" docker volume create portainer_data
         "$ESCALATION_TOOL" docker run -d \
             -p 8000:8000 \
-            -p 9443:9443 \
+            -p 9000:9000 \
             --name=portainer \
             --restart=always \
             -v /var/run/docker.sock:/var/run/docker.sock \

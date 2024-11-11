@@ -43,22 +43,17 @@ checkAURHelper() {
 }
 
 checkEscalationTool() {
-    ## Check for escalation tools based on distribution
+    ## Check for escalation tools.
     if [ -z "$ESCALATION_TOOL_CHECKED" ]; then
-        # Prefer doas on Alpine, sudo on others
-        if [ "$PACKAGER" = "apk" ]; then
-            if command_exists doas; then
-                ESCALATION_TOOL="doas"
-                printf "%b\n" "${CYAN}Using doas for privilege escalation${RC}"
+        ESCALATION_TOOLS='sudo doas'
+        for tool in ${ESCALATION_TOOLS}; do
+            if command_exists "${tool}"; then
+                ESCALATION_TOOL=${tool}
+                printf "%b\n" "${CYAN}Using ${tool} for privilege escalation${RC}"
                 ESCALATION_TOOL_CHECKED=true
                 return 0
             fi
-        elif command_exists sudo; then
-            ESCALATION_TOOL="sudo"
-            printf "%b\n" "${CYAN}Using sudo for privilege escalation${RC}"
-            ESCALATION_TOOL_CHECKED=true
-            return 0
-        fi
+        done
 
         printf "%b\n" "${RED}Can't find a supported escalation tool${RC}"
         exit 1
@@ -70,10 +65,6 @@ checkCommandRequirements() {
     REQUIREMENTS=$1
     MISSING_REQS=""
     for req in ${REQUIREMENTS}; do
-        # Skip escalation tool check since it's handled by checkEscalationTool
-        if [ "$req" = "sudo" ]; then
-            continue
-        fi
         if ! command_exists "${req}"; then
             MISSING_REQS="$MISSING_REQS $req"
         fi
@@ -150,7 +141,7 @@ checkEnv() {
     if ! checkCommandRequirements 'curl groups sudo'; then
         all_checks_passed=false
     fi
-    checkPackageManager 'nala apt-get dnf pacman zypper nix-env apk'
+    checkPackageManager 'nala apt-get dnf pacman zypper nix-env'
     checkCurrentDirectoryWritable
     if ! checkSuperUser; then
         all_checks_passed=false
@@ -171,9 +162,6 @@ setupNonInteractive() {
     case "$PACKAGER" in
         pacman)
             NONINTERACTIVE="--noconfirm --needed"
-            ;;
-        apk)
-            NONINTERACTIVE="--no-interactive"
             ;;
         apt-get|nala|dnf|zypper)
             NONINTERACTIVE="-y"
@@ -197,9 +185,6 @@ noninteractive() {
         pacman)
             $ESCALATION_TOOL $PACKAGER -S --noconfirm --needed "$@"
             ;;
-        apk)
-            $ESCALATION_TOOL $PACKAGER add $NONINTERACTIVE "$@"
-            ;;
         *)
             $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
             ;;
@@ -211,9 +196,6 @@ getNonInteractiveFlags() {
     case "$PACKAGER" in
         pacman)
             echo "--noconfirm --needed"
-            ;;
-        apk)
-            echo "--no-interactive"
             ;;
         apt-get|nala|dnf|zypper)
             echo "-y"
