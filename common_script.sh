@@ -65,6 +65,9 @@ checkCommandRequirements() {
     REQUIREMENTS=$1
     MISSING_REQS=""
     for req in ${REQUIREMENTS}; do
+        if [ "$req" = "sudo" ] && [ "$PACKAGER" = "apk" ] && command_exists doas; then
+            continue
+        fi
         if ! command_exists "${req}"; then
             MISSING_REQS="$MISSING_REQS $req"
         fi
@@ -87,7 +90,7 @@ checkPackageManager() {
             if [ "$PACKAGER" = "apk" ]; then
                 if ! command_exists sudo; then
                     printf "%b\n" "${YELLOW}Installing sudo for Alpine Linux...${RC}"
-                    su -c "apk add sudo"
+                    su -c "apk update && apk add sudo"
                 fi
             fi
 
