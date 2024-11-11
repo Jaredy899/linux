@@ -210,8 +210,17 @@ echo "-------------------------------------------------------------------------"
 echo "                Installing Applications and Network Manager              "
 echo "-------------------------------------------------------------------------"
 
+# Modify the common packages list for Alpine
+case "$DTYPE" in
+    alpine)
+        common_packages="nano git wget ncdu unzip"  # Remove unsupported packages
+        ;;
+    *)
+        common_packages="nano git wget btop ncdu qemu-guest-agent timeshift unzip"
+        ;;
+esac
+
 # Install common packages
-common_packages="nano git wget btop ncdu qemu-guest-agent timeshift unzip"
 for package in $common_packages; do
     install_package $package
 done
@@ -219,12 +228,22 @@ done
 # OS-specific packages including NetworkManager
 case "$DTYPE" in
     alpine)
-        install_package "networkmanager" "terminus-font" "openssh" "doas"
+        install_package "networkmanager" "font-terminus" "openssh" "doas"
         # Configure doas if not already configured
         if [ ! -f "/etc/doas.conf" ]; then
             echo "permit persist :wheel" | "$ESCALATION_TOOL" tee /etc/doas.conf
             "$ESCALATION_TOOL" chmod 640 /etc/doas.conf
         fi
+        # Enable and start services using OpenRC
+        for service in networkmanager sshd; do
+            if [ -f "/etc/init.d/$service" ]; then
+                "$ESCALATION_TOOL" rc-update add $service default
+                "$ESCALATION_TOOL" rc-service $service start
+                printf "%b\n" "${GREEN}$service enabled and started${RC}"
+            else
+                printf "%b\n" "${YELLOW}$service not found, skipping${RC}"
+            fi
+        done
         ;;
     arch)
         install_package "networkmanager" "terminus-font" "yazi" "openssh"
@@ -249,37 +268,45 @@ case "$DTYPE" in
     opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager" "terminus-bitmap-fonts" "openssh" ;;
 esac
 
-# Define services to enable and start
-services=("NetworkManager" "qemu-guest-agent")
+# Modify service management section for Alpine
+if [ "$DTYPE" = "alpine" ]; then
+    # Skip the systemctl section for Alpine
+    printf "%b\n" "${GREEN}Services processed using OpenRC${RC}"
+else
+    # Original systemctl code for other distributions
+    services=("NetworkManager" "qemu-guest-agent")
 
-# Determine SSH service name based on system
-if [ -e /usr/lib/systemd/system/sshd.service ]; then
-    services+=("sshd")
-elif [ -e /usr/lib/systemd/system/ssh.service ]; then
-    services+=("ssh")
-fi
-
-# Enable and start services
-for service in "${services[@]}"; do
-    # Check if the service exists
-    if systemctl list-unit-files | grep -q "$service"; then
-        # Enable the service
-        if "$ESCALATION_TOOL" systemctl enable "$service" &>/dev/null; then
-            printf "%b\n" "${GREEN}$service enabled${RC}"
-        else
-            printf "%b\n" "${YELLOW}Failed to enable $service${RC}"
-        fi
-
-        # Start the service
-        if "$ESCALATION_TOOL" systemctl start "$service" &>/dev/null; then
-            printf "%b\n" "${GREEN}$service started${RC}"
-        else
-            printf "%b\n" "${YELLOW}Failed to start $service. It will start on next boot.${RC}"
-        fi
-    else
-        printf "%b\n" "${YELLOW}$service not found, skipping${RC}"
+    # Determine SSH service name based on system
+    if [ -e /usr/lib/systemd/system/sshd.service ]; then
+        services+=("sshd")
+    elif [ -e /usr/lib/systemd/system/ssh.service ]; then
+        services+=("ssh")
     fi
-done
+
+    # Enable and start services
+    for service in "${services[@]}"; do
+        # Check if the service exists
+        if systemctl list-unit-files | grep -q "$service"; then
+            # Enable the service
+            if "$ESCALATION_TOOL" systemctl enable "$service" &>/dev/null; then
+                printf "%b\n" "${GREEN}$service enabled${RC}"
+            else
+                printf "%b\n" "${YELLOW}Failed to enable $service${RC}"
+            fi
+
+            # Start the service
+            if "$ESCALATION_TOOL" systemctl start "$service" &>/dev/null; then
+                printf "%b\n" "${GREEN}$service started${RC}"
+            else
+                printf "%b\n" "${YELLOW}Failed to start $service. It will start on next boot.${RC}"
+            fi
+        else
+            printf "%b\n" "${YELLOW}$service not found, skipping${RC}"
+        fi
+    done
+
+    printf "%b\n" "${GREEN}Services processed. Some may require a system reboot to start properly.${RC}"
+fi
 
 printf "%b\n" "${GREEN}Services processed. Some may require a system reboot to start properly.${RC}"
 
@@ -302,16 +329,12 @@ set_console_font() {
 case "$DTYPE" in
     alpine)
         if command -v setfont >/dev/null 2>&1; then
-            if ! set_console_font; then
-                printf "%b\n" "${YELLOW}Font setting failed. Check if terminus-font package is installed.${RC}"
-            fi
+            "$ESCALATION_TOOL" setfont /usr/share/consolefonts/ter-v18b.psf.gz || printf "%b\n" "${YELLOW}Failed to set font. Using system default.${RC}"
             # Add font setup to local.d to persist across reboots
             echo '#!/bin/sh
-setfont ter-v18b' | "$ESCALATION_TOOL" tee /etc/local.d/console-font.start
+setfont /usr/share/consolefonts/ter-v18b.psf.gz' | "$ESCALATION_TOOL" tee /etc/local.d/console-font.start
             "$ESCALATION_TOOL" chmod +x /etc/local.d/console-font.start
             "$ESCALATION_TOOL" rc-update add local default
-        else
-            printf "%b\n" "${YELLOW}setfont command not found. Console font setting may not be supported.${RC}"
         fi
         ;;
     arch|fedora|opensuse-tumbleweed|opensuse-leap)
