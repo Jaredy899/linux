@@ -43,17 +43,22 @@ checkAURHelper() {
 }
 
 checkEscalationTool() {
-    ## Check for escalation tools.
+    ## Check for escalation tools based on distribution
     if [ -z "$ESCALATION_TOOL_CHECKED" ]; then
-        ESCALATION_TOOLS='sudo doas'
-        for tool in ${ESCALATION_TOOLS}; do
-            if command_exists "${tool}"; then
-                ESCALATION_TOOL=${tool}
-                printf "%b\n" "${CYAN}Using ${tool} for privilege escalation${RC}"
+        # Prefer doas on Alpine, sudo on others
+        if [ "$PACKAGER" = "apk" ]; then
+            if command_exists doas; then
+                ESCALATION_TOOL="doas"
+                printf "%b\n" "${CYAN}Using doas for privilege escalation${RC}"
                 ESCALATION_TOOL_CHECKED=true
                 return 0
             fi
-        done
+        elif command_exists sudo; then
+            ESCALATION_TOOL="sudo"
+            printf "%b\n" "${CYAN}Using sudo for privilege escalation${RC}"
+            ESCALATION_TOOL_CHECKED=true
+            return 0
+        fi
 
         printf "%b\n" "${RED}Can't find a supported escalation tool${RC}"
         exit 1
@@ -65,7 +70,8 @@ checkCommandRequirements() {
     REQUIREMENTS=$1
     MISSING_REQS=""
     for req in ${REQUIREMENTS}; do
-        if [ "$req" = "sudo" ] && [ "$PACKAGER" = "apk" ] && command_exists doas; then
+        # Skip escalation tool check since it's handled by checkEscalationTool
+        if [ "$req" = "sudo" ]; then
             continue
         fi
         if ! command_exists "${req}"; then
@@ -86,13 +92,6 @@ checkPackageManager() {
         if command_exists "${pgm}"; then
             PACKAGER=${pgm}
             printf "%b\n" "${CYAN}Using ${pgm} as package manager${RC}"
-
-            if [ "$PACKAGER" = "apk" ]; then
-                if ! command_exists sudo; then
-                    printf "%b\n" "${YELLOW}Installing sudo for Alpine Linux...${RC}"
-                    su -c "apk update"
-                fi
-            fi
 
             if [ $PACKAGER = 'nix-env' ] && [ -z "$NIXOS_CONFIG" ]; then
                 NIXOS_CONFIG="/etc/nixos/configuration.nix"
