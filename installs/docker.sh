@@ -12,9 +12,17 @@ install_docker() {
         printf "%b\n" "${YELLOW}Installing Docker...${RC}"
         case "$PACKAGER" in
             apk)
-                noninteractive docker docker-compose
+                # Update package index and add community repository
+                "$ESCALATION_TOOL" apk update
+                "$ESCALATION_TOOL" apk add --no-cache docker docker-compose-plugin
+
+                # Enable and start Docker service
                 "$ESCALATION_TOOL" rc-update add docker boot
                 "$ESCALATION_TOOL" service docker start
+
+                # Wait for Docker to start
+                printf "%b\n" "${YELLOW}Waiting for Docker service to start...${RC}"
+                sleep 5
                 ;;
             pacman)
                 noninteractive docker docker-compose
@@ -43,18 +51,6 @@ install_docker() {
             if ! "$ESCALATION_TOOL" service docker status >/dev/null 2>&1; then
                 printf "%b\n" "${RED}Docker service failed to start.${RC}"
                 exit 1
-            fi
-        fi
-
-        # If Fedora, adjust SELinux settings
-        if [ "$DTYPE" = "fedora" ]; then
-            selinux_status=$(sestatus | grep 'SELinux status:' | awk '{print $3}')
-            if [ "$selinux_status" = "enabled" ]; then
-                printf "%b\n" "${YELLOW}Adjusting SELinux for Docker on Fedora...${RC}"
-                "$ESCALATION_TOOL" setenforce 0
-                "$ESCALATION_TOOL" sed -i --follow-symlinks 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
-            else
-                printf "%b\n" "${GREEN}SELinux is disabled. No adjustment needed.${RC}"
             fi
         fi
 
