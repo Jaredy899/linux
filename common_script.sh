@@ -84,6 +84,13 @@ checkPackageManager() {
             PACKAGER=${pgm}
             printf "%b\n" "${CYAN}Using ${pgm} as package manager${RC}"
 
+            if [ "$PACKAGER" = "apk" ]; then
+                if ! command_exists sudo; then
+                    printf "%b\n" "${YELLOW}Installing sudo for Alpine Linux...${RC}"
+                    su -c "apk add sudo"
+                fi
+            fi
+
             if [ $PACKAGER = 'nix-env' ] && [ -z "$NIXOS_CONFIG" ]; then
                 NIXOS_CONFIG="/etc/nixos/configuration.nix"
                 while [ ! -f "$NIXOS_CONFIG" ]; do
@@ -141,7 +148,7 @@ checkEnv() {
     if ! checkCommandRequirements 'curl groups sudo'; then
         all_checks_passed=false
     fi
-    checkPackageManager 'nala apt-get dnf pacman zypper nix-env'
+    checkPackageManager 'nala apt-get dnf pacman zypper nix-env apk'
     checkCurrentDirectoryWritable
     if ! checkSuperUser; then
         all_checks_passed=false
@@ -162,6 +169,9 @@ setupNonInteractive() {
     case "$PACKAGER" in
         pacman)
             NONINTERACTIVE="--noconfirm --needed"
+            ;;
+        apk)
+            NONINTERACTIVE="--no-interactive"
             ;;
         apt-get|nala|dnf|zypper)
             NONINTERACTIVE="-y"
@@ -185,6 +195,9 @@ noninteractive() {
         pacman)
             $ESCALATION_TOOL $PACKAGER -S --noconfirm --needed "$@"
             ;;
+        apk)
+            $ESCALATION_TOOL $PACKAGER add $NONINTERACTIVE "$@"
+            ;;
         *)
             $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
             ;;
@@ -196,6 +209,9 @@ getNonInteractiveFlags() {
     case "$PACKAGER" in
         pacman)
             echo "--noconfirm --needed"
+            ;;
+        apk)
+            echo "--no-interactive"
             ;;
         apt-get|nala|dnf|zypper)
             echo "-y"

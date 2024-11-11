@@ -11,6 +11,11 @@ install_docker() {
     if ! command_exists docker; then
         printf "%b\n" "${YELLOW}Installing Docker...${RC}"
         case "$PACKAGER" in
+            apk)
+                noninteractive docker docker-compose
+                "$ESCALATION_TOOL" rc-update add docker boot
+                "$ESCALATION_TOOL" service docker start
+                ;;
             pacman)
                 noninteractive docker docker-compose
                 ;;
@@ -22,19 +27,27 @@ install_docker() {
                 ;;
         esac
 
-        # Enable and start Docker service
-        "$ESCALATION_TOOL" systemctl enable docker
-        "$ESCALATION_TOOL" systemctl start docker
-        printf "%b\n" "${GREEN}Docker service enabled and started.${RC}"
+        if command -v systemctl >/dev/null 2>&1; then
+            # SystemD systems
+            "$ESCALATION_TOOL" systemctl enable docker
+            "$ESCALATION_TOOL" systemctl start docker
+            printf "%b\n" "${GREEN}Docker service enabled and started.${RC}"
 
-        # Check if Docker service is running
-        if ! systemctl is-active --quiet docker; then
-            printf "%b\n" "${RED}Docker service failed to start.${RC}"
-            exit 1
+            # Check if Docker service is running
+            if ! systemctl is-active --quiet docker; then
+                printf "%b\n" "${RED}Docker service failed to start.${RC}"
+                exit 1
+            fi
+        else
+            # OpenRC systems (Alpine)
+            if ! "$ESCALATION_TOOL" service docker status >/dev/null 2>&1; then
+                printf "%b\n" "${RED}Docker service failed to start.${RC}"
+                exit 1
+            fi
         fi
 
         # If Fedora, adjust SELinux settings
-        if [ "$DISTRO" = "fedora" ]; then
+        if [ "$DTYPE" = "fedora" ]; then
             selinux_status=$(sestatus | grep 'SELinux status:' | awk '{print $3}')
             if [ "$selinux_status" = "enabled" ]; then
                 printf "%b\n" "${YELLOW}Adjusting SELinux for Docker on Fedora...${RC}"

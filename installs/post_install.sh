@@ -218,7 +218,22 @@ done
 
 # OS-specific packages including NetworkManager
 case "$DTYPE" in
-    arch) install_package "networkmanager" "terminus-font" "yazi" "openssh" ;;
+    alpine)
+        install_package "networkmanager" "terminus-font" "openssh" "doas"
+        # Configure doas if not already configured
+        if [ ! -f "/etc/doas.conf" ]; then
+            echo "permit persist :wheel" | "$ESCALATION_TOOL" tee /etc/doas.conf
+            "$ESCALATION_TOOL" chmod 640 /etc/doas.conf
+        fi
+        ;;
+    arch)
+        install_package "networkmanager" "terminus-font" "yazi" "openssh"
+        # Configure doas if not already configured
+        if [ ! -f "/etc/doas.conf" ]; then
+            echo "permit persist :wheel" | "$ESCALATION_TOOL" tee /etc/doas.conf
+            "$ESCALATION_TOOL" chmod 640 /etc/doas.conf
+        fi
+        ;;
     debian)
         install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server"
         # Stop and disable networking service
@@ -285,6 +300,20 @@ set_console_font() {
 
 # Set permanent console font
 case "$DTYPE" in
+    alpine)
+        if command -v setfont >/dev/null 2>&1; then
+            if ! set_console_font; then
+                printf "%b\n" "${YELLOW}Font setting failed. Check if terminus-font package is installed.${RC}"
+            fi
+            # Add font setup to local.d to persist across reboots
+            echo '#!/bin/sh
+setfont ter-v18b' | "$ESCALATION_TOOL" tee /etc/local.d/console-font.start
+            "$ESCALATION_TOOL" chmod +x /etc/local.d/console-font.start
+            "$ESCALATION_TOOL" rc-update add local default
+        else
+            printf "%b\n" "${YELLOW}setfont command not found. Console font setting may not be supported.${RC}"
+        fi
+        ;;
     arch|fedora|opensuse-tumbleweed|opensuse-leap)
         if command -v setfont >/dev/null 2>&1; then
             if ! set_console_font; then

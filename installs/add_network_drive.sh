@@ -36,8 +36,13 @@ read -r mount_choice
 case "$mount_choice" in
     1)
         mount_type="cifs"
-        # Ensure cifs-utils is installed
-        install_package "cifs-utils"
+        # Install cifs-utils for Alpine
+        if [ "$PACKAGER" = "apk" ]; then
+            install_package "cifs-utils"
+            install_package "samba-common-tools"
+        else
+            install_package "cifs-utils"
+        fi
 
         # Prompt the user for the remote mount location
         printf "%b" "${CYAN}Enter the remote CIFS (Samba) mount location (e.g., //192.168.1.1/Files): ${RC}"
@@ -70,8 +75,15 @@ case "$mount_choice" in
         ;;
     2)
         mount_type="nfs"
-        # Ensure nfs-utils or nfs-common is installed
-        if [ "$PACKAGER" = "apt" ] || [ "$PACKAGER" = "nala" ]; then
+        # Install NFS utilities based on package manager
+        if [ "$PACKAGER" = "apk" ]; then
+            install_package "nfs-utils"
+            # Enable and start required services for NFS
+            "$ESCALATION_TOOL" rc-update add nfs
+            "$ESCALATION_TOOL" rc-update add nfsmount
+            "$ESCALATION_TOOL" service nfs start
+            "$ESCALATION_TOOL" service nfsmount start
+        elif [ "$PACKAGER" = "apt" ] || [ "$PACKAGER" = "nala" ]; then
             install_package "nfs-common"
         else
             install_package "nfs-utils"
@@ -124,9 +136,16 @@ else
     printf "%b\n" "${GREEN}The entry has been added to /etc/fstab${RC}"
 fi
 
-# Reload the systemd daemon to recognize the changes in /etc/fstab
-"$ESCALATION_TOOL" systemctl daemon-reload
-printf "%b\n" "${GREEN}Systemd daemon reloaded${RC}"
+# Reload system configuration based on init system
+if command -v systemctl >/dev/null 2>&1; then
+    # SystemD systems
+    "$ESCALATION_TOOL" systemctl daemon-reload
+    printf "%b\n" "${GREEN}Systemd daemon reloaded${RC}"
+else
+    # OpenRC systems (Alpine)
+    "$ESCALATION_TOOL" rc-service --all restart
+    printf "%b\n" "${GREEN}OpenRC services reloaded${RC}"
+fi
 
 # Attempt to mount the new filesystem
 if "$ESCALATION_TOOL" mount "$local_mount"; then
