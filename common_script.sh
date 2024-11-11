@@ -90,7 +90,7 @@ checkPackageManager() {
             if [ "$PACKAGER" = "apk" ]; then
                 if ! command_exists sudo; then
                     printf "%b\n" "${YELLOW}Installing sudo for Alpine Linux...${RC}"
-                    su -c "apk update && apk add sudo"
+                    su -c "apk update"
                 fi
             fi
 
