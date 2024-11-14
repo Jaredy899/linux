@@ -141,7 +141,7 @@ checkEnv() {
     if ! checkCommandRequirements 'curl groups sudo'; then
         all_checks_passed=false
     fi
-    checkPackageManager 'nala apt-get dnf pacman zypper nix-env'
+    checkPackageManager 'nala apt-get dnf pacman zypper apk nix-env'
     checkCurrentDirectoryWritable
     if ! checkSuperUser; then
         all_checks_passed=false
