@@ -166,6 +166,9 @@ setupNonInteractive() {
         apt-get|nala|dnf|zypper)
             NONINTERACTIVE="-y"
             ;;
+        apk)
+            NONINTERACTIVE="--no-cache"
+            ;;
         *)
             echo "Unsupported package manager: $PACKAGER"
             return 1
@@ -184,6 +187,9 @@ noninteractive() {
             ;;
         pacman)
             $ESCALATION_TOOL $PACKAGER -S --noconfirm --needed "$@"
+            ;;
+        apk)
+            $ESCALATION_TOOL $PACKAGER add $NONINTERACTIVE "$@"
             ;;
         *)
             $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
