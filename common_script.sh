@@ -136,25 +136,15 @@ checkDistro() {
 }
 
 checkEnv() {
-    local all_checks_passed=true
-
-    if ! checkCommandRequirements 'curl groups sudo'; then
-        all_checks_passed=false
-    fi
-    checkPackageManager 'nala apt-get dnf pacman zypper apk nix-env'
-    checkCurrentDirectoryWritable
-    if ! checkSuperUser; then
-        all_checks_passed=false
-    fi
-    checkDistro
+    checkArch
     checkEscalationTool
+    checkCommandRequirements "curl groups $ESCALATION_TOOL"
+    checkPackageManager 'nala apt-get dnf pacman zypper apk'
+    checkCurrentDirectoryWritable
+    checkSuperUser
+    checkDistro
     checkAURHelper
     setupNonInteractive
-
-    if [ "$all_checks_passed" = false ]; then
-        return 1
-    fi
-    return 0
 }
 
 # Function to set up the non-interactive installation flags
@@ -176,20 +166,20 @@ setupNonInteractive() {
     esac
 }
 
-# Function to perform non-interactive package installation
+# Unified package installation function
 noninteractive() {
     if [ -z "$NONINTERACTIVE" ]; then
         setupNonInteractive
     fi
     case "$PACKAGER" in
-        apt-get|apt)
-            $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
-            ;;
         pacman)
-            $ESCALATION_TOOL $PACKAGER -S --noconfirm --needed "$@"
+            $ESCALATION_TOOL pacman -S --noconfirm --needed "$@"
+            ;;
+        apt-get|apt)
+            $ESCALATION_TOOL apt-get install -y "$@"
             ;;
         apk)
-            $ESCALATION_TOOL $PACKAGER add $NONINTERACTIVE "$@"
+            $ESCALATION_TOOL apk add --no-cache "$@"
             ;;
         *)
             $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
@@ -210,4 +200,22 @@ getNonInteractiveFlags() {
             echo ""  # Default to empty string if package manager is unknown
             ;;
     esac
+}
+
+# Update checkFlatpak to use noninteractive function
+checkFlatpak() {
+    if ! command_exists flatpak; then
+        printf "%b\n" "${YELLOW}Installing Flatpak...${RC}"
+        noninteractive flatpak
+        printf "%b\n" "${YELLOW}Adding Flathub remote...${RC}"
+        "$ESCALATION_TOOL" flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+        printf "%b\n" "${YELLOW}Applications installed by Flatpak may not appear on your desktop until the user session is restarted...${RC}"
+    else
+        if ! flatpak remotes | grep -q "flathub"; then
+            printf "%b\n" "${YELLOW}Adding Flathub remote...${RC}"
+            "$ESCALATION_TOOL" flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+        else
+            printf "%b\n" "${CYAN}Flatpak is installed${RC}"
+        fi
+    fi
 }
