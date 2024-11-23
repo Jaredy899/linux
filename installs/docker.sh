@@ -145,7 +145,7 @@ EOF
             for i in $(seq 1 30); do
                 if "$ESCALATION_TOOL" docker inspect -f '{{.State.Status}}' portainer 2>/dev/null | grep -q "running"; then
                     printf "%b\n" "${GREEN}Portainer started successfully.${RC}"
-                    printf "%b\n" "${YELLOW}Portainer is available at https://$(hostname -I | awk '{print $1}'):9443${RC}"
+                    printf "%b\n" "${YELLOW}Portainer is available at https://$(ip route get 1 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'):9443${RC}"
                     return
                 fi
                 sleep 1
@@ -155,7 +155,7 @@ EOF
             "$ESCALATION_TOOL" docker logs portainer || printf "%b\n" "${RED}No logs available. Portainer may not have started correctly.${RC}"
         else
             printf "%b\n" "${GREEN}Portainer stack has been created in /opt/stacks/portainer/compose.yaml${RC}"
-            printf "%b\n" "${YELLOW}Please deploy it manually through the Dockge interface at http://$(hostname -I | awk '{print $1}'):5001${RC}"
+            printf "%b\n" "${YELLOW}Please deploy it manually through the Dockge interface at http://$(ip route get 1 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'):5001${RC}"
         fi
     else
         printf "%b\n" "${GREEN}Portainer is already installed.${RC}"
