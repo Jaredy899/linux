@@ -6,6 +6,19 @@
 # Run the environment check
 checkEnv || exit 1
 
+# Function to ask for user confirmation
+ask_yes_no() {
+    while true; do
+        printf "%b" "${CYAN}$1 (y/n) [n]: ${RC}"
+        read -r answer
+        case $answer in
+            [Yy]* ) return 0;;
+            [Nn]* | "" ) return 1;;
+            * ) printf "%b\n" "${YELLOW}Please answer yes or no.${RC}";;
+        esac
+    done
+}
+
 # Function to install Docker
 install_docker() {
     if ! command_exists docker; then
@@ -51,31 +64,99 @@ install_docker() {
     fi
 }
 
-# Function to install and start Portainer
-install_portainer() {
-    if ! "$ESCALATION_TOOL" docker ps -a --format '{{.Names}}' | grep -q "^portainer$"; then
-        printf "%b\n" "${YELLOW}Installing and starting Portainer...${RC}"
-        "$ESCALATION_TOOL" docker volume create portainer_data
-        "$ESCALATION_TOOL" docker run -d \
-            -p 8000:8000 \
-            -p 9000:9000 \
-            --name=portainer \
-            --restart=always \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v portainer_data:/data \
-            portainer/portainer-ce:latest
+# Function to install and start Dockge
+install_dockge() {
+    if ! "$ESCALATION_TOOL" docker ps -a --format '{{.Names}}' | grep -q "^dockge$"; then
+        printf "%b\n" "${YELLOW}Installing and starting Dockge...${RC}"
+        
+        # Create necessary directories
+        "$ESCALATION_TOOL" mkdir -p /opt/dockge
+        "$ESCALATION_TOOL" mkdir -p /opt/stacks
+        
+        # Create docker-compose.yml for Dockge
+        cat << EOF | "$ESCALATION_TOOL" tee /opt/dockge/compose.yaml > /dev/null
+---
+services:
+  dockge:
+    image: louislam/dockge:latest
+    container_name: dockge
+    restart: unless-stopped
+    ports:
+      - 5001:5001
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/app/data
+      - /opt/stacks:/opt/stacks
+    environment:
+      - DOCKGE_STACKS_DIR=/opt/stacks
+EOF
 
-        printf "%b\n" "${YELLOW}Waiting for Portainer to start...${RC}"
+        # Start Dockge
+        cd /opt/dockge && "$ESCALATION_TOOL" docker compose up -d
+
+        printf "%b\n" "${YELLOW}Waiting for Dockge to start...${RC}"
         for i in $(seq 1 30); do
-            if "$ESCALATION_TOOL" docker inspect -f '{{.State.Status}}' portainer 2>/dev/null | grep -q "running"; then
-                printf "%b\n" "${GREEN}Portainer started successfully.${RC}"
+            if "$ESCALATION_TOOL" docker inspect -f '{{.State.Status}}' dockge 2>/dev/null | grep -q "running"; then
+                printf "%b\n" "${GREEN}Dockge started successfully on port 5001.${RC}"
                 return
             fi
             sleep 1
         done
 
-        printf "%b\n" "${RED}Portainer did not start successfully. Checking logs...${RC}"
-        "$ESCALATION_TOOL" docker logs portainer || printf "%b\n" "${RED}No logs available. Portainer may not have started correctly.${RC}"
+        printf "%b\n" "${RED}Dockge did not start successfully. Checking logs...${RC}"
+        "$ESCALATION_TOOL" docker logs dockge || printf "%b\n" "${RED}No logs available. Dockge may not have started correctly.${RC}"
+    else
+        printf "%b\n" "${GREEN}Dockge is already installed.${RC}"
+    fi
+}
+
+# Function to install and start Portainer
+install_portainer() {
+    if ! "$ESCALATION_TOOL" docker ps -a --format '{{.Names}}' | grep -q "^portainer$"; then
+        printf "%b\n" "${YELLOW}Installing and starting Portainer...${RC}"
+        
+        # Create directory for Portainer stack
+        "$ESCALATION_TOOL" mkdir -p /opt/stacks/portainer
+        
+        # Create Portainer stack file
+        cat << EOF | "$ESCALATION_TOOL" tee /opt/stacks/portainer/compose.yaml > /dev/null
+---
+services:
+  portainer-ce:
+    ports:
+      - 8000:8000
+      - 9443:9443
+    container_name: portainer
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    image: portainer/portainer-ce:latest
+volumes:
+  portainer_data: {}
+networks: {}
+EOF
+
+        # Start Portainer if Dockge isn't installed
+        if ! "$ESCALATION_TOOL" docker ps -a --format '{{.Names}}' | grep -q "^dockge$"; then
+            cd /opt/stacks/portainer && "$ESCALATION_TOOL" docker compose up -d
+            
+            printf "%b\n" "${YELLOW}Waiting for Portainer to start...${RC}"
+            for i in $(seq 1 30); do
+                if "$ESCALATION_TOOL" docker inspect -f '{{.State.Status}}' portainer 2>/dev/null | grep -q "running"; then
+                    printf "%b\n" "${GREEN}Portainer started successfully.${RC}"
+                    printf "%b\n" "${YELLOW}Portainer is available at https://$(hostname -I | awk '{print $1}'):9443${RC}"
+                    return
+                fi
+                sleep 1
+            done
+            
+            printf "%b\n" "${RED}Portainer did not start successfully. Checking logs...${RC}"
+            "$ESCALATION_TOOL" docker logs portainer || printf "%b\n" "${RED}No logs available. Portainer may not have started correctly.${RC}"
+        else
+            printf "%b\n" "${GREEN}Portainer stack has been created in /opt/stacks/portainer/compose.yaml${RC}"
+            printf "%b\n" "${YELLOW}Please deploy it manually through the Dockge interface at http://$(hostname -I | awk '{print $1}'):5001${RC}"
+        fi
     else
         printf "%b\n" "${GREEN}Portainer is already installed.${RC}"
     fi
@@ -83,7 +164,16 @@ install_portainer() {
 
 # Main script
 install_docker
-install_portainer
+
+# Ask about Dockge installation
+if ask_yes_no "Would you like to install Dockge (Docker Compose Stack Manager)?"; then
+    install_dockge
+fi
+
+# Ask about Portainer installation
+if ask_yes_no "Would you like to install Portainer?"; then
+    install_portainer
+fi
 
 # Add current user to the Docker group using the escalation tool
 $ESCALATION_TOOL usermod -aG docker $USER
