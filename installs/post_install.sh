@@ -13,6 +13,12 @@ reboot_required=false
 
 # Function to install a package
 install_package() {
+    # Add EPEL repository for Rocky Linux
+    if [ "$DTYPE" = "rocky" ]; then
+        printf "%b\n" "${CYAN}Installing EPEL repository for Rocky Linux...${RC}"
+        "$ESCALATION_TOOL" dnf install -y epel-release || printf "%b\n" "${YELLOW}Failed to install EPEL repository. Continuing...${RC}"
+    fi
+
     for package_name in "$@"; do
         if ! command_exists "$package_name"; then
             printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
@@ -231,6 +237,7 @@ case "$DTYPE" in
         ;;
     ubuntu) install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server" ;;
     fedora) install_package "NetworkManager" "terminus-fonts-console" "openssh-server" ;;
+    rocky) install_package "NetworkManager" "terminus-fonts" "kbd" "openssh-server" ;;
     opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager" "terminus-bitmap-fonts" "openssh" ;;
 esac
 
@@ -285,7 +292,7 @@ set_console_font() {
 
 # Set permanent console font
 case "$DTYPE" in
-    arch|fedora|opensuse-tumbleweed|opensuse-leap)
+    arch|fedora|opensuse-tumbleweed|opensuse-leap|rocky)
         if command -v setfont >/dev/null 2>&1; then
             if ! set_console_font; then
                 printf "%b\n" "${YELLOW}Font setting failed. Check if terminus-font package is installed.${RC}"
