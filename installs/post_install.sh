@@ -13,12 +13,6 @@ reboot_required=false
 
 # Function to install a package
 install_package() {
-    # Add EPEL repository for Rocky Linux
-    if [ "$DTYPE" = "rocky" ]; then
-        printf "%b\n" "${CYAN}Installing EPEL repository for Rocky Linux...${RC}"
-        "$ESCALATION_TOOL" dnf install -y epel-release || printf "%b\n" "${YELLOW}Failed to install EPEL repository. Continuing...${RC}"
-    fi
-
     for package_name in "$@"; do
         if ! command_exists "$package_name"; then
             printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
@@ -237,7 +231,6 @@ case "$DTYPE" in
         ;;
     ubuntu) install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server" ;;
     fedora) install_package "NetworkManager" "terminus-fonts-console" "openssh-server" ;;
-    rocky) install_package "NetworkManager" "terminus-fonts" "kbd" "openssh-server" ;;
     opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager" "terminus-bitmap-fonts" "openssh" ;;
 esac
 
@@ -281,33 +274,21 @@ echo "-------------------------------------------------------------------------"
 
 # Function to set console font
 set_console_font() {
-    # Try different common Terminus font names
-    local font_names=("ter-v18b" "ter-118b" "terminus-bold-18" "terminus-18")
-    local font_set=false
-
-    for font in "${font_names[@]}"; do
-        if "$ESCALATION_TOOL" setfont "$font" >/dev/null 2>&1; then
-            echo "FONT=$font" | "$ESCALATION_TOOL" tee /etc/vconsole.conf > /dev/null
-            printf "%b\n" "${GREEN}Console font set to $font${RC}"
-            font_set=true
-            break
-        fi
-    done
-
-    if [ "$font_set" = false ]; then
-        printf "%b\n" "${YELLOW}Failed to set any Terminus font. Using system default.${RC}"
+    if "$ESCALATION_TOOL" setfont ter-v18b; then
+        echo "FONT=ter-v18b" | "$ESCALATION_TOOL" tee /etc/vconsole.conf > /dev/null
+        printf "%b\n" "${GREEN}Console font set to ter-v18b${RC}"
+    else
+        printf "%b\n" "${YELLOW}Failed to set font ter-v18b. Using system default.${RC}"
         return 1
     fi
 }
 
 # Set permanent console font
 case "$DTYPE" in
-    arch|fedora|opensuse-tumbleweed|opensuse-leap|rocky)
+    arch|fedora|opensuse-tumbleweed|opensuse-leap)
         if command -v setfont >/dev/null 2>&1; then
-            # Ensure font directory exists and has proper permissions
-            "$ESCALATION_TOOL" mkdir -p /usr/share/consolefonts
             if ! set_console_font; then
-                printf "%b\n" "${YELLOW}Font setting failed. Falling back to default font.${RC}"
+                printf "%b\n" "${YELLOW}Font setting failed. Check if terminus-font package is installed.${RC}"
             fi
         else
             printf "%b\n" "${YELLOW}setfont command not found. Console font setting may not be supported.${RC}"
