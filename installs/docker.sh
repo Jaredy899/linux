@@ -32,7 +32,7 @@ install_docker() {
                 noninteractive docker docker-compose docker-compose-switch
                 ;;
             dnf)
-                if [ "$DISTRO" = "rocky" ] || [ "$DISTRO" = "almalinux" ]; then
+                if [ "$DTYPE" = "rocky" ] || [ "$DTYPE" = "almalinux" ]; then
                     "$ESCALATION_TOOL" dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
                     "$ESCALATION_TOOL" dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
                     noninteractive docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
@@ -57,7 +57,7 @@ install_docker() {
         fi
 
         # If Fedora, adjust SELinux settings
-        if [ "$DISTRO" = "fedora" ]; then
+        if [ "$DTYPE" = "fedora" ]; then
             selinux_status=$(sestatus | grep 'SELinux status:' | awk '{print $3}')
             if [ "$selinux_status" = "enabled" ]; then
                 printf "%b\n" "${YELLOW}Adjusting SELinux for Docker on Fedora...${RC}"
