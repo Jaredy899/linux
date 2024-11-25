@@ -281,11 +281,21 @@ echo "-------------------------------------------------------------------------"
 
 # Function to set console font
 set_console_font() {
-    if "$ESCALATION_TOOL" setfont ter-v18b; then
-        echo "FONT=ter-v18b" | "$ESCALATION_TOOL" tee /etc/vconsole.conf > /dev/null
-        printf "%b\n" "${GREEN}Console font set to ter-v18b${RC}"
-    else
-        printf "%b\n" "${YELLOW}Failed to set font ter-v18b. Using system default.${RC}"
+    # Try different common Terminus font names
+    local font_names=("ter-v18b" "ter-118b" "terminus-bold-18" "terminus-18")
+    local font_set=false
+
+    for font in "${font_names[@]}"; do
+        if "$ESCALATION_TOOL" setfont "$font" >/dev/null 2>&1; then
+            echo "FONT=$font" | "$ESCALATION_TOOL" tee /etc/vconsole.conf > /dev/null
+            printf "%b\n" "${GREEN}Console font set to $font${RC}"
+            font_set=true
+            break
+        fi
+    done
+
+    if [ "$font_set" = false ]; then
+        printf "%b\n" "${YELLOW}Failed to set any Terminus font. Using system default.${RC}"
         return 1
     fi
 }
@@ -294,8 +304,10 @@ set_console_font() {
 case "$DTYPE" in
     arch|fedora|opensuse-tumbleweed|opensuse-leap|rocky)
         if command -v setfont >/dev/null 2>&1; then
+            # Ensure font directory exists and has proper permissions
+            "$ESCALATION_TOOL" mkdir -p /usr/share/consolefonts
             if ! set_console_font; then
-                printf "%b\n" "${YELLOW}Font setting failed. Check if terminus-font package is installed.${RC}"
+                printf "%b\n" "${YELLOW}Font setting failed. Falling back to default font.${RC}"
             fi
         else
             printf "%b\n" "${YELLOW}setfont command not found. Console font setting may not be supported.${RC}"
