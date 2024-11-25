@@ -210,6 +210,11 @@ echo "-------------------------------------------------------------------------"
 echo "                Installing Applications and Network Manager              "
 echo "-------------------------------------------------------------------------"
 
+# Install EPEL for Rocky and AlmaLinux
+if [ "$DTYPE" = "rocky" ] || [ "$DTYPE" = "almalinux" ]; then
+    "$ESCALATION_TOOL" dnf install -y epel-release
+fi
+
 # Install common packages
 common_packages="nano git wget btop ncdu qemu-guest-agent timeshift unzip"
 for package in $common_packages; do
