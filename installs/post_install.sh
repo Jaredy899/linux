@@ -216,14 +216,14 @@ if [ "$DTYPE" = "rocky" ] || [ "$DTYPE" = "almalinux" ]; then
 fi
 
 # Install common packages
-common_packages="nano git wget btop ncdu qemu-guest-agent timeshift unzip"
+common_packages="nano git wget btop ncdu qemu-guest-agent unzip"
 for package in $common_packages; do
     install_package $package
 done
 
 # OS-specific packages including NetworkManager
 case "$DTYPE" in
-    arch) install_package "networkmanager" "terminus-font" "yazi" "openssh" ;;
+    arch) install_package "networkmanager" "terminus-font" "yazi" " timeshift" "openssh" ;;
     debian)
         install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server"
         # Stop and disable networking service
