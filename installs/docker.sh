@@ -5,6 +5,7 @@
 
 # Run the environment check
 checkEnv || exit 1
+checkDistro
 
 # Function to ask for user confirmation
 ask_yes_no() {
