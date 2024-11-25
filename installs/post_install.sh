@@ -230,7 +230,7 @@ case "$DTYPE" in
         printf "%b\n" "${GREEN}Networking configuration updated for Debian${RC}"
         ;;
     ubuntu) install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server" ;;
-    fedora) install_package "NetworkManager" "terminus-fonts-console" "openssh-server" ;;
+    fedora|rocky|almalinux) install_package "NetworkManager" "terminus-fonts-console" "openssh-server" ;;
     opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager" "terminus-bitmap-fonts" "openssh" ;;
 esac
 
