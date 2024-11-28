@@ -25,7 +25,7 @@ install_cockpit() {
             fi
 
             printf "%b\n" "${GREEN}Cockpit installation complete.${RC}"
-            printf "%b\n" "${CYAN}You can access Cockpit via https://<your-server-ip>:9090${RC}"
+            printf "%b\n" "${CYAN}You can access Cockpit via https://$(ip route get 1 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'):9090${RC}"
         else
             printf "%b\n" "${RED}Failed to install Cockpit. Please install it manually.${RC}"
             exit 1
