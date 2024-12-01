@@ -223,7 +223,7 @@ done
 
 # OS-specific packages including NetworkManager
 case "$DTYPE" in
-    arch) install_package "networkmanager" "terminus-font" "yazi" " timeshift" "openssh" ;;
+    arch) install_package "networkmanager" "terminus-font" "yazi" "openssh" ;;
     debian)
         install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server"
         # Stop and disable networking service
