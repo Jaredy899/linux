@@ -46,11 +46,11 @@ run_script() {
 
     if [ -f "$local_path/$script_name" ]; then
         echo "Running $script_name from local directory..."
-        bash "$local_path/$script_name"
+        sh "$local_path/$script_name"
     else
         echo "Running $script_name from GitHub..."
-        curl -fsSL "$url/$script_name" -o "/tmp/$script_name"
-        bash "/tmp/$script_name"
+        download_file "$url/$script_name" > "/tmp/$script_name"
+        sh "/tmp/$script_name"
         rm "/tmp/$script_name"
     fi
 }
