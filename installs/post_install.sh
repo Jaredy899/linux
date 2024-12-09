@@ -5,6 +5,7 @@ SKIP_AUR_CHECK=true
 
 # Source the common script directly from GitHub
 . <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)
+. <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)
 
 # Run the environment check
 checkEnv || exit 1
@@ -35,6 +36,18 @@ if [ -n "$detected_timezone" ]; then
     printf "%b\n" "${GREEN}Timezone set to $detected_timezone${RC}"
 else
     printf "%b\n" "${YELLOW}Failed to detect timezone. Please set it manually if needed.${RC}"
+fi
+
+# Enable Alpine community repository if needed
+if [ "$DTYPE" = "alpine" ]; then
+    if ! grep -q "^@community" /etc/apk/repositories; then
+        printf "%b\n" "${CYAN}Enabling Alpine community repository...${RC}"
+        echo "@community https://dl-cdn.alpinelinux.org/alpine/$(cat /etc/alpine-release | cut -d'.' -f1,2)/community" | "$ESCALATION_TOOL" tee -a /etc/apk/repositories > /dev/null
+        "$ESCALATION_TOOL" apk update
+        printf "%b\n" "${GREEN}Alpine community repository enabled${RC}"
+    else
+        printf "%b\n" "${GREEN}Alpine community repository already enabled${RC}"
+    fi
 fi
 
 # Function to install and configure Nala
@@ -237,37 +250,30 @@ case "$DTYPE" in
     ubuntu) install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server" ;;
     fedora|rocky|almalinux) install_package "NetworkManager-tui" "terminus-fonts-console" "openssh-server" ;;
     opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager" "terminus-bitmap-fonts" "openssh" ;;
+    alpine) install_package "networkmanager" "terminus-font" "openssh" ;;
 esac
 
 # Define services to enable and start
 services=("NetworkManager" "qemu-guest-agent")
 
 # Determine SSH service name based on system
-if [ -e /usr/lib/systemd/system/sshd.service ]; then
+if [ -e /usr/lib/systemd/system/sshd.service ] || [ -e /etc/init.d/sshd ]; then
     services+=("sshd")
-elif [ -e /usr/lib/systemd/system/ssh.service ]; then
+elif [ -e /usr/lib/systemd/system/ssh.service ] || [ -e /etc/init.d/ssh ]; then
     services+=("ssh")
 fi
 
 # Enable and start services
 for service in "${services[@]}"; do
-    # Check if the service exists
-    if systemctl list-unit-files | grep -q "$service"; then
-        # Enable the service
-        if "$ESCALATION_TOOL" systemctl enable "$service" &>/dev/null; then
-            printf "%b\n" "${GREEN}$service enabled${RC}"
-        else
-            printf "%b\n" "${YELLOW}Failed to enable $service${RC}"
-        fi
-
-        # Start the service
-        if "$ESCALATION_TOOL" systemctl start "$service" &>/dev/null; then
-            printf "%b\n" "${GREEN}$service started${RC}"
-        else
-            printf "%b\n" "${YELLOW}Failed to start $service. It will start on next boot.${RC}"
-        fi
+    if isServiceActive "$service"; then
+        printf "%b\n" "${GREEN}$service is already running${RC}"
     else
-        printf "%b\n" "${YELLOW}$service not found, skipping${RC}"
+        printf "%b\n" "${CYAN}Enabling and starting $service...${RC}"
+        if startAndEnableService "$service"; then
+            printf "%b\n" "${GREEN}$service enabled and started${RC}"
+        else
+            printf "%b\n" "${YELLOW}Failed to enable/start $service. It may start on next boot.${RC}"
+        fi
     fi
 done
 
@@ -290,7 +296,7 @@ set_console_font() {
 
 # Set permanent console font
 case "$DTYPE" in
-    arch|fedora|rocky|almalinux|opensuse-tumbleweed|opensuse-leap)
+    arch|fedora|rocky|almalinux|opensuse-tumbleweed|opensuse-leap|alpine)
         if command -v setfont >/dev/null 2>&1; then
             if ! set_console_font; then
                 printf "%b\n" "${YELLOW}Font setting failed. Check if terminus-font package is installed.${RC}"
