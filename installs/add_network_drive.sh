@@ -2,6 +2,7 @@
 
 # Source the common script directly from GitHub
 . <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)
+. <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)
 
 # Run the environment check
 checkEnv || exit 1
@@ -124,9 +125,16 @@ else
     printf "%b\n" "${GREEN}The entry has been added to /etc/fstab${RC}"
 fi
 
-# Reload the systemd daemon to recognize the changes in /etc/fstab
-"$ESCALATION_TOOL" systemctl daemon-reload
-printf "%b\n" "${GREEN}Systemd daemon reloaded${RC}"
+# Replace the systemctl section with this:
+if [ "$INIT_MANAGER" = "systemctl" ]; then
+    "$ESCALATION_TOOL" systemctl daemon-reload
+    printf "%b\n" "${GREEN}Systemd daemon reloaded${RC}"
+elif [ "$INIT_MANAGER" = "rc-service" ]; then
+    "$ESCALATION_TOOL" rc-service --ifexists --quiet remount-ro restart
+    printf "%b\n" "${GREEN}OpenRC mounts reloaded${RC}"
+else
+    printf "%b\n" "${YELLOW}No supported init system found, continuing without reload${RC}"
+fi
 
 # Attempt to mount the new filesystem
 if "$ESCALATION_TOOL" mount "$local_mount"; then
