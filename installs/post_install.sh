@@ -41,10 +41,13 @@ fi
 # Enable Alpine repositories
 if [ "$DTYPE" = "alpine" ]; then
     printf "%b\n" "${CYAN}Enabling community repository...${RC}"
+    # Extract version from main repository
+    ALPINE_VERSION=$(grep "mirror.ette.biz/alpine/v[0-9].[0-9]*/main" /etc/apk/repositories | sed 's|.*/alpine/\(v[0-9][.][0-9][0-9]*\)/main|\1|')
     if grep -q "mirror.ette.biz/alpine/v[0-9].[0-9]*/community" /etc/apk/repositories; then
-        "$ESCALATION_TOOL" sed -i 's/#http:\/\/mirror\.ette\.biz\/alpine\/v[0-9]\.[0-9][0-9]*/http:\/\/mirror.ette.biz\/alpine\/v[0-9].[0-9][0-9]*/' /etc/apk/repositories
+        # Repository exists, just uncomment it
+        "$ESCALATION_TOOL" sed -i 's/^#//' /etc/apk/repositories
     else
-        ALPINE_VERSION=$(grep "mirror.ette.biz/alpine/v[0-9].[0-9]*/main" /etc/apk/repositories | sed 's/.*alpine\/\(v[0-9].[0-9]*\)\/main/\1/')
+        # Repository doesn't exist, add it using the exact version number
         echo "http://mirror.ette.biz/alpine/$ALPINE_VERSION/community" | "$ESCALATION_TOOL" tee -a /etc/apk/repositories > /dev/null
     fi
     "$ESCALATION_TOOL" apk update
