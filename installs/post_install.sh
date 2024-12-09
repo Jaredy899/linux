@@ -258,7 +258,11 @@ case "$DTYPE" in
 esac
 
 # Instead of using an array, let's use a simple space-separated string
-services="NetworkManager qemu-guest-agent"
+if [ -f /etc/alpine-release ]; then
+    services="networkmanager qemu-guest-agent"
+else
+    services="NetworkManager qemu-guest-agent"
+fi
 
 # Add SSH service based on system
 if [ -e /usr/lib/systemd/system/sshd.service ] || [ -e /etc/init.d/sshd ]; then
