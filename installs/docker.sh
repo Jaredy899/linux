@@ -13,7 +13,7 @@ ask_yes_no() {
     while true; do
         printf "%b" "${CYAN}$1 (y/n) [n]: ${RC}"
         if [ "$DTYPE" = "alpine" ]; then
-            read answer
+            answer=$(head -n1)
         else
             read -r answer
         fi
