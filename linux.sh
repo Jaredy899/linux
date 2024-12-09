@@ -49,9 +49,7 @@ run_script() {
         sh "$local_path/$script_name"
     else
         echo "Running $script_name from GitHub..."
-        download_file "$url/$script_name" > "/tmp/$script_name"
-        sh "/tmp/$script_name"
-        rm "/tmp/$script_name"
+        curl -fsSL "$url/$script_name" | sh
     fi
 }
 
