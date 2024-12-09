@@ -33,14 +33,14 @@ install_docker() {
                 noninteractive docker docker-compose docker-compose-switch
                 ;;
             apk)
-                # Add community repository for Docker
-                "$ESCALATION_TOOL" apk add --no-cache --update-cache
-                "$ESCALATION_TOOL" apk add --repository http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
-                noninteractive docker docker-compose
+                "$ESCALATION_TOOL" apk add --no-cache --update-cache \
+                    --repository http://dl-cdn.alpinelinux.org/alpine/latest-stable/community \
+                    docker docker-compose
                 ;;
             dnf)
                 if [ "$DTYPE" = "rocky" ] || [ "$DTYPE" = "almalinux" ]; then
-                    "$ESCALATION_TOOL" dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
+                    "$ESCALATION_TOOL" dnf remove -y docker docker-client docker-client-latest \
+                        docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
                     "$ESCALATION_TOOL" dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
                     noninteractive docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
                 else
@@ -52,42 +52,21 @@ install_docker() {
                 ;;
         esac
 
-        # Enable and start Docker service based on init system
-        case "$INIT_MANAGER" in
-            systemctl)
-                startAndEnableService docker
-                printf "%b\n" "${GREEN}Docker service enabled and started.${RC}"
+        # Enable and start Docker service
+        startAndEnableService docker
+        
+        # Check if Docker service is running
+        if ! isServiceActive docker; then
+            printf "%b\n" "${RED}Docker service failed to start.${RC}"
+            exit 1
+        fi
+        printf "%b\n" "${GREEN}Docker service enabled and started.${RC}"
 
-                # Check if Docker service is running
-                if ! isServiceActive docker; then
-                    printf "%b\n" "${RED}Docker service failed to start.${RC}"
-                    exit 1
-                fi
-                ;;
-            rc-service)
-                # Alpine specific service setup
-                "$ESCALATION_TOOL" rc-update add docker boot
-                startService docker
-                printf "%b\n" "${GREEN}Docker service enabled and started.${RC}"
-
-                # Check if Docker service is running
-                if ! isServiceActive docker; then
-                    printf "%b\n" "${RED}Docker service failed to start.${RC}"
-                    exit 1
-                fi
-                ;;
-        esac
-
-        # If Fedora, adjust SELinux settings
-        if [ "$DTYPE" = "fedora" ]; then
-            selinux_status=$(sestatus | grep 'SELinux status:' | awk '{print $3}')
-            if [ "$selinux_status" = "enabled" ]; then
-                printf "%b\n" "${YELLOW}Adjusting SELinux for Docker on Fedora...${RC}"
-                "$ESCALATION_TOOL" setenforce 0
-                "$ESCALATION_TOOL" sed -i --follow-symlinks 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
-            else
-                printf "%b\n" "${GREEN}SELinux is disabled. No adjustment needed.${RC}"
-            fi
+        # Handle Fedora SELinux
+        if [ "$DTYPE" = "fedora" ] && sestatus 2>/dev/null | grep -q 'SELinux status:\s*enabled'; then
+            printf "%b\n" "${YELLOW}Adjusting SELinux for Docker on Fedora...${RC}"
+            "$ESCALATION_TOOL" setenforce 0
+            "$ESCALATION_TOOL" sed -i --follow-symlinks 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
         fi
 
         printf "%b\n" "${GREEN}Docker installation and setup completed.${RC}"
@@ -96,18 +75,48 @@ install_docker() {
     fi
 }
 
+# Function to create and start a Docker compose stack
+create_compose_stack() {
+    local stack_name="$1"
+    local stack_dir="$2"
+    local compose_content="$3"
+    
+    if ! "$ESCALATION_TOOL" docker ps -a --format '{{.Names}}' | grep -q "^${stack_name}$"; then
+        printf "%b\n" "${YELLOW}Installing and starting ${stack_name}...${RC}"
+        
+        # Create directory for stack
+        "$ESCALATION_TOOL" mkdir -p "$stack_dir"
+        
+        # Create compose file
+        printf "%s" "$compose_content" | "$ESCALATION_TOOL" tee "${stack_dir}/compose.yaml" > /dev/null
+
+        # Start stack if Dockge isn't installed, otherwise just create the file
+        if ! "$ESCALATION_TOOL" docker ps -a --format '{{.Names}}' | grep -q "^dockge$"; then
+            cd "$stack_dir" && "$ESCALATION_TOOL" docker compose up -d
+            
+            printf "%b\n" "${YELLOW}Waiting for ${stack_name} to start...${RC}"
+            for _ in $(seq 1 30); do
+                if "$ESCALATION_TOOL" docker inspect -f '{{.State.Status}}' "$stack_name" 2>/dev/null | grep -q "running"; then
+                    printf "%b\n" "${GREEN}${stack_name} started successfully.${RC}"
+                    return 0
+                fi
+                sleep 1
+            done
+            
+            printf "%b\n" "${RED}${stack_name} did not start successfully. Checking logs...${RC}"
+            "$ESCALATION_TOOL" docker logs "$stack_name" || printf "%b\n" "${RED}No logs available. ${stack_name} may not have started correctly.${RC}"
+        else
+            printf "%b\n" "${GREEN}${stack_name} stack has been created in ${stack_dir}/compose.yaml${RC}"
+            printf "%b\n" "${YELLOW}Please deploy it manually through the Dockge interface at http://$(ip route get 1 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'):5001${RC}"
+        fi
+    else
+        printf "%b\n" "${GREEN}${stack_name} is already installed.${RC}"
+    fi
+}
+
 # Function to install and start Dockge
 install_dockge() {
-    if ! "$ESCALATION_TOOL" docker ps -a --format '{{.Names}}' | grep -q "^dockge$"; then
-        printf "%b\n" "${YELLOW}Installing and starting Dockge...${RC}"
-        
-        # Create necessary directories
-        "$ESCALATION_TOOL" mkdir -p /opt/dockge
-        "$ESCALATION_TOOL" mkdir -p /opt/stacks
-        
-        # Create docker-compose.yml for Dockge
-        cat << EOF | "$ESCALATION_TOOL" tee /opt/dockge/compose.yaml > /dev/null
----
+    local dockge_compose="---
 services:
   dockge:
     image: louislam/dockge:latest
@@ -120,39 +129,14 @@ services:
       - ./data:/app/data
       - /opt/stacks:/opt/stacks
     environment:
-      - DOCKGE_STACKS_DIR=/opt/stacks
-EOF
+      - DOCKGE_STACKS_DIR=/opt/stacks"
 
-        # Start Dockge
-        cd /opt/dockge && "$ESCALATION_TOOL" docker compose up -d
-
-        printf "%b\n" "${YELLOW}Waiting for Dockge to start...${RC}"
-        for i in $(seq 1 30); do
-            if "$ESCALATION_TOOL" docker inspect -f '{{.State.Status}}' dockge 2>/dev/null | grep -q "running"; then
-                printf "%b\n" "${GREEN}Dockge started successfully on port 5001.${RC}"
-                return
-            fi
-            sleep 1
-        done
-
-        printf "%b\n" "${RED}Dockge did not start successfully. Checking logs...${RC}"
-        "$ESCALATION_TOOL" docker logs dockge || printf "%b\n" "${RED}No logs available. Dockge may not have started correctly.${RC}"
-    else
-        printf "%b\n" "${GREEN}Dockge is already installed.${RC}"
-    fi
+    create_compose_stack "dockge" "/opt/dockge" "$dockge_compose"
 }
 
 # Function to install and start Portainer
 install_portainer() {
-    if ! "$ESCALATION_TOOL" docker ps -a --format '{{.Names}}' | grep -q "^portainer$"; then
-        printf "%b\n" "${YELLOW}Installing and starting Portainer...${RC}"
-        
-        # Create directory for Portainer stack
-        "$ESCALATION_TOOL" mkdir -p /opt/stacks/portainer
-        
-        # Create Portainer stack file
-        cat << EOF | "$ESCALATION_TOOL" tee /opt/stacks/portainer/compose.yaml > /dev/null
----
+    local portainer_compose="---
 services:
   portainer-ce:
     ports:
@@ -166,32 +150,9 @@ services:
     image: portainer/portainer-ce:latest
 volumes:
   portainer_data: {}
-networks: {}
-EOF
+networks: {}"
 
-        # Start Portainer if Dockge isn't installed
-        if ! "$ESCALATION_TOOL" docker ps -a --format '{{.Names}}' | grep -q "^dockge$"; then
-            cd /opt/stacks/portainer && "$ESCALATION_TOOL" docker compose up -d
-            
-            printf "%b\n" "${YELLOW}Waiting for Portainer to start...${RC}"
-            for i in $(seq 1 30); do
-                if "$ESCALATION_TOOL" docker inspect -f '{{.State.Status}}' portainer 2>/dev/null | grep -q "running"; then
-                    printf "%b\n" "${GREEN}Portainer started successfully.${RC}"
-                    printf "%b\n" "${YELLOW}Portainer is available at https://$(ip route get 1 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'):9443${RC}"
-                    return
-                fi
-                sleep 1
-            done
-            
-            printf "%b\n" "${RED}Portainer did not start successfully. Checking logs...${RC}"
-            "$ESCALATION_TOOL" docker logs portainer || printf "%b\n" "${RED}No logs available. Portainer may not have started correctly.${RC}"
-        else
-            printf "%b\n" "${GREEN}Portainer stack has been created in /opt/stacks/portainer/compose.yaml${RC}"
-            printf "%b\n" "${YELLOW}Please deploy it manually through the Dockge interface at http://$(ip route get 1 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'):5001${RC}"
-        fi
-    else
-        printf "%b\n" "${GREEN}Portainer is already installed.${RC}"
-    fi
+    create_compose_stack "portainer" "/opt/stacks/portainer" "$portainer_compose"
 }
 
 # Main script
