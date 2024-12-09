@@ -253,18 +253,18 @@ case "$DTYPE" in
     alpine) install_package "networkmanager" "terminus-font" "openssh" ;;
 esac
 
-# Define services to enable and start
-services=("NetworkManager" "qemu-guest-agent")
+# Instead of using an array, let's use a simple space-separated string
+services="NetworkManager qemu-guest-agent"
 
-# Determine SSH service name based on system
+# Add SSH service based on system
 if [ -e /usr/lib/systemd/system/sshd.service ] || [ -e /etc/init.d/sshd ]; then
-    services+=("sshd")
+    services="$services sshd"
 elif [ -e /usr/lib/systemd/system/ssh.service ] || [ -e /etc/init.d/ssh ]; then
-    services+=("ssh")
+    services="$services ssh"
 fi
 
 # Enable and start services
-for service in "${services[@]}"; do
+for service in $services; do
     if isServiceActive "$service"; then
         printf "%b\n" "${GREEN}$service is already running${RC}"
     else
