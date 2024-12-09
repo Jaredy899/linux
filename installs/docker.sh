@@ -12,8 +12,12 @@ checkDistro
 ask_yes_no() {
     while true; do
         printf "%b" "${CYAN}$1 (y/n) [n]: ${RC}"
-        read -r answer
-        case $answer in
+        if [ "$DTYPE" = "alpine" ]; then
+            read answer
+        else
+            read -r answer
+        fi
+        case "$answer" in
             [Yy]* ) return 0;;
             [Nn]* | "" ) return 1;;
             * ) printf "%b\n" "${YELLOW}Please answer yes or no.${RC}";;
