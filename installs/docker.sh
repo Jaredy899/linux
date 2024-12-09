@@ -11,12 +11,12 @@ checkDistro
 # Function to ask for user confirmation
 ask_yes_no() {
     while true; do
-        printf "%s" "${CYAN}$1 (y/n) [n]: ${RC}"
-        read answer
-        case "$answer" in
-            [Yy]*) return 0;;
-            [Nn]*|"") return 1;;
-            *) printf "%s\n" "${YELLOW}Please answer yes or no.${RC}";;
+        printf "%b" "${CYAN}$1 (y/n) [n]: ${RC}"
+        read -r answer
+        case $answer in
+            [Yy]* ) return 0;;
+            [Nn]* | "" ) return 1;;
+            * ) printf "%b\n" "${YELLOW}Please answer yes or no.${RC}";;
         esac
     done
 }
