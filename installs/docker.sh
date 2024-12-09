@@ -1,7 +1,8 @@
 #!/bin/sh -e
 
-# Source the common script directly from GitHub
+# Source the common scripts directly from GitHub
 . <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)
+. <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)
 
 # Run the environment check
 checkEnv || exit 1
@@ -31,6 +32,12 @@ install_docker() {
             zypper)
                 noninteractive docker docker-compose docker-compose-switch
                 ;;
+            apk)
+                # Add community repository for Docker
+                "$ESCALATION_TOOL" apk add --no-cache --update-cache
+                "$ESCALATION_TOOL" apk add --repository http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
+                noninteractive docker docker-compose
+                ;;
             dnf)
                 if [ "$DTYPE" = "rocky" ] || [ "$DTYPE" = "almalinux" ]; then
                     "$ESCALATION_TOOL" dnf remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
@@ -45,16 +52,31 @@ install_docker() {
                 ;;
         esac
 
-        # Enable and start Docker service
-        "$ESCALATION_TOOL" systemctl enable docker
-        "$ESCALATION_TOOL" systemctl start docker
-        printf "%b\n" "${GREEN}Docker service enabled and started.${RC}"
+        # Enable and start Docker service based on init system
+        case "$INIT_MANAGER" in
+            systemctl)
+                startAndEnableService docker
+                printf "%b\n" "${GREEN}Docker service enabled and started.${RC}"
 
-        # Check if Docker service is running
-        if ! systemctl is-active --quiet docker; then
-            printf "%b\n" "${RED}Docker service failed to start.${RC}"
-            exit 1
-        fi
+                # Check if Docker service is running
+                if ! isServiceActive docker; then
+                    printf "%b\n" "${RED}Docker service failed to start.${RC}"
+                    exit 1
+                fi
+                ;;
+            rc-service)
+                # Alpine specific service setup
+                "$ESCALATION_TOOL" rc-update add docker boot
+                startService docker
+                printf "%b\n" "${GREEN}Docker service enabled and started.${RC}"
+
+                # Check if Docker service is running
+                if ! isServiceActive docker; then
+                    printf "%b\n" "${RED}Docker service failed to start.${RC}"
+                    exit 1
+                fi
+                ;;
+        esac
 
         # If Fedora, adjust SELinux settings
         if [ "$DTYPE" = "fedora" ]; then
