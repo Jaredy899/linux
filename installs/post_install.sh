@@ -41,7 +41,14 @@ fi
 # Enable Alpine repositories
 if [ "$DTYPE" = "alpine" ]; then
     printf "%b\n" "${CYAN}Enabling community repository...${RC}"
-    "$ESCALATION_TOOL" sed -i 's/#http:\/\/mirror\.ette\.biz\/alpine\/v3\.20\/community/http:\/\/mirror.ette.biz\/alpine\/v3.20\/community/' /etc/apk/repositories
+    if grep -q "mirror.ette.biz/alpine/v[0-9].[0-9]*/community" /etc/apk/repositories; then
+        # Repository exists, just uncomment it if needed
+        "$ESCALATION_TOOL" sed -i 's/#http:\/\/mirror\.ette\.biz\/alpine\/v[0-9]\.[0-9][0-9]*/http:\/\/mirror.ette.biz\/alpine\/v[0-9].[0-9][0-9]*/' /etc/apk/repositories
+    else
+        # Repository doesn't exist, add it based on the main repository pattern
+        ALPINE_VERSION=$(grep "mirror.ette.biz/alpine/v[0-9].[0-9]*/main" /etc/apk/repositories | sed 's/.*alpine\/\(v[0-9].[0-9]*\)\/main/\1/')
+        echo "http://mirror.ette.biz/alpine/$ALPINE_VERSION/community" | "$ESCALATION_TOOL" tee -a /etc/apk/repositories > /dev/null
+    fi
     "$ESCALATION_TOOL" apk update
     printf "%b\n" "${GREEN}Alpine repositories updated${RC}"
 fi
