@@ -38,16 +38,12 @@ else
     printf "%b\n" "${YELLOW}Failed to detect timezone. Please set it manually if needed.${RC}"
 fi
 
-# Enable Alpine community repository if needed
+# Enable Alpine repositories
 if [ "$DTYPE" = "alpine" ]; then
-    if ! grep -q "^@community" /etc/apk/repositories; then
-        printf "%b\n" "${CYAN}Enabling Alpine community repository...${RC}"
-        echo "@community https://dl-cdn.alpinelinux.org/alpine/$(cat /etc/alpine-release | cut -d'.' -f1,2)/community" | "$ESCALATION_TOOL" tee -a /etc/apk/repositories > /dev/null
-        "$ESCALATION_TOOL" apk update
-        printf "%b\n" "${GREEN}Alpine community repository enabled${RC}"
-    else
-        printf "%b\n" "${GREEN}Alpine community repository already enabled${RC}"
-    fi
+    printf "%b\n" "${CYAN}Enabling community repository...${RC}"
+    "$ESCALATION_TOOL" sed -i 's/#http:\/\/mirror\.ette\.biz\/alpine\/v3\.20\/community/http:\/\/mirror.ette.biz\/alpine\/v3.20\/community/' /etc/apk/repositories
+    "$ESCALATION_TOOL" apk update
+    printf "%b\n" "${GREEN}Alpine repositories updated${RC}"
 fi
 
 # Function to install and configure Nala
