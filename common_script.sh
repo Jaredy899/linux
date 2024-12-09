@@ -206,6 +206,9 @@ getNonInteractiveFlags() {
         apt-get|nala|dnf|zypper)
             echo "-y"
             ;;
+        apk)
+            echo "--no-cache"
+            ;;
         *)
             echo ""  # Default to empty string if package manager is unknown
             ;;
