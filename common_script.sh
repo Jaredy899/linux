@@ -93,18 +93,15 @@ checkPackageManager() {
         if command_exists "${pgm}"; then
             PACKAGER=${pgm}
             printf "%b\n" "${CYAN}Using ${pgm} as package manager${RC}"
-
-            if [ $PACKAGER = 'nix-env' ] && [ -z "$NIXOS_CONFIG" ]; then
-                NIXOS_CONFIG="/etc/nixos/configuration.nix"
-                while [ ! -f "$NIXOS_CONFIG" ]; do
-                    printf "%b\n" "${RED}configuration.nix not found.${RC}"
-                    printf "%b" "${YELLOW}Enter the path manually: ${RC}"
-                    read -r NIXOS_CONFIG
-                done
-            fi
             break
         fi
     done
+
+    ## Enable apk community packages
+    if [ "$PACKAGER" = "apk" ] && grep -qE '^#.*community' /etc/apk/repositories; then
+        "$ESCALATION_TOOL" sed -i '/community/s/^#//' /etc/apk/repositories
+        "$ESCALATION_TOOL" "$PACKAGER" update
+    fi
 
     if [ -z "$PACKAGER" ]; then
         printf "%b\n" "${RED}Can't find a supported package manager${RC}"
