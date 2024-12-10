@@ -1,8 +1,8 @@
 #!/bin/sh -e
 
 # Source the common script directly from GitHub
-eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
-eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)"
+. <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)
+. <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)
 # Run the environment check
 checkEnv || exit 1
 
@@ -79,7 +79,7 @@ printf "%b\n" "${CYAN}Do you want to import SSH keys from GitHub or enter your o
 printf "%b\n" "${CYAN}1) Import from GitHub${RC}"
 printf "%b\n" "${CYAN}2) Enter your own public key${RC}"
 printf "%b" "${CYAN}Choose an option [1/2]: ${RC}"
-read choice
+read -r choice
 
 case "$choice" in
     1)
