@@ -79,7 +79,7 @@ printf "%b\n" "${CYAN}Do you want to import SSH keys from GitHub or enter your o
 printf "%b\n" "${CYAN}1) Import from GitHub${RC}"
 printf "%b\n" "${CYAN}2) Enter your own public key${RC}"
 printf "%b" "${CYAN}Choose an option [1/2]: ${RC}"
-read -r choice
+read choice
 
 case "$choice" in
     1)
