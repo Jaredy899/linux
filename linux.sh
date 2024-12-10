@@ -46,7 +46,7 @@ run_script() {
 
     if [ -f "$local_path/$script_name" ]; then
         echo "Running $script_name from local directory..."
-        sh "$local_path/$script_name"
+        bash "$local_path/$script_name"
     else
         echo "Running $script_name from GitHub..."
         curl -fsSL "$url/$script_name" | bash
