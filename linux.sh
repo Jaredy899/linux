@@ -49,7 +49,7 @@ run_script() {
         sh "$local_path/$script_name"
     else
         echo "Running $script_name from GitHub..."
-        curl -fsSL "$url/$script_name" | sh
+        curl -fsSL "$url/$script_name" | bash
     fi
 }
 
