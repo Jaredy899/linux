@@ -1,8 +1,8 @@
 #!/bin/sh -e
 
 # Source the common scripts directly from GitHub
-. <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)
-. <(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)"
 
 # Run the environment check
 checkEnv || exit 1
@@ -12,8 +12,8 @@ checkDistro
 ask_yes_no() {
     while true; do
         printf "%b" "${CYAN}$1 (y/n) [n]: ${RC}"
-        read -r answer
-        case $answer in
+        read answer
+        case "$answer" in
             [Yy]* ) return 0;;
             [Nn]* | "" ) return 1;;
             * ) printf "%b\n" "${YELLOW}Please answer yes or no.${RC}";;

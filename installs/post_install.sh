@@ -109,7 +109,7 @@ case "$DTYPE" in
     ubuntu) install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server" ;;
     fedora|rocky|almalinux) install_package "NetworkManager-tui" "terminus-fonts-console" "openssh-server" ;;
     opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager" "terminus-bitmap-fonts" "openssh" ;;
-    alpine) install_package "networkmanager" "terminus-font" "openssh" "bash" ;;
+    alpine) install_package "networkmanager" "terminus-font" "openssh" "shadow" ;;
 esac
 
 # Instead of using an array, let's use a simple space-separated string
