@@ -91,7 +91,7 @@ while true; do
     printf "4) Install a network drive\n"
     printf "5) Install Cockpit\n"
     printf "6) Install Tailscale\n"
-    printf "7) Install Docker and Portainer\n"
+    printf "7) Install Docker\n"
     printf "8) Install Desktop Environment\n"
     printf "9) Replace configs\n"
     printf "0) Exit\n\n"
