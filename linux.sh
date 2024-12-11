@@ -4,13 +4,20 @@ set -e  # Exit immediately if a command exits with a non-zero status
 IFS='
 	'
 
+# Define color variables
+RC='\033[0m'
+RED='\033[31m'
+YELLOW='\033[33m'
+CYAN='\033[36m'
+GREEN='\033[32m'
+
 # Set the GITPATH variable to the directory where the script is located
 if [ -f "$0" ]; then
     GITPATH=$(cd "$(dirname "$0")" && pwd)
 else
     GITPATH="$HOME"
 fi
-printf "GITPATH is set to: %s\n" "$GITPATH"
+printf "${CYAN}GITPATH is set to: %s${RC}\n" "$GITPATH"
 
 # GitHub URL base for the necessary configuration files
 GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/"
@@ -34,7 +41,7 @@ detect_distro() {
 # Detect the Linux distribution
 distro=$(detect_distro)
 if [ "$distro" = "unknown" ]; then
-    printf "Unable to detect Linux distribution. Exiting.\n"
+    printf "${RED}Unable to detect Linux distribution. Exiting.${RC}\n"
     exit 1
 fi
 
@@ -45,10 +52,10 @@ run_script() {
     url="$3"
 
     if [ -f "$local_path/$script_name" ]; then
-        printf "Running %s from local directory...\n" "$script_name"
+        printf "${YELLOW}Running %s from local directory...${RC}\n" "$script_name"
         sh "$local_path/$script_name"
     else
-        printf "Running %s from GitHub...\n" "$script_name"
+        printf "${YELLOW}Running %s from GitHub...${RC}\n" "$script_name"
         curl -fsSL "$url/$script_name" -o "/tmp/$script_name"
         sh "/tmp/$script_name"
         rm "/tmp/$script_name"
@@ -57,7 +64,7 @@ run_script() {
 
 # Check if running in an Arch Linux ISO environment
 if [ -d /run/archiso/bootmnt ]; then
-    printf "Arch Linux ISO environment detected.\n"
+    printf "${YELLOW}Arch Linux ISO environment detected.${RC}\n"
     printf "Do you want to run the Arch install script? (y/n): "
     read run_install
     if [ "$run_install" = "y" ] || [ "$run_install" = "Y" ]; then
@@ -67,17 +74,17 @@ fi
 
 # Ensure git is installed
 if ! command_exists git; then
-    printf "Git is not installed. Installing git...\n"
+    printf "${RED}Git is not installed. Installing git...${RC}\n"
     run_script "install_git.sh" "$GITPATH/installs" "$INSTALLS_URL"
 else
-    printf "Git is already installed.\n"
+    printf "${GREEN}Git is already installed.${RC}\n"
 fi
 
 # Menu loop
 while true; do
-    printf "#############################\n"
-    printf "##    Select an option:    ##\n"
-    printf "#############################\n"
+    printf "${CYAN}#############################${RC}\n"
+    printf "${CYAN}##    Select an option:    ##${RC}\n"
+    printf "${CYAN}#############################${RC}\n"
     printf "1) Run Post Install Script\n"
     printf "2) Run Chris Titus Tech Script\n"
     printf "3) Add SSH Key\n"
@@ -94,40 +101,40 @@ while true; do
 
     case $choice in
         1) 
-            printf "Running Post Install Script...\n"
+            printf "${YELLOW}Running Post Install Script...${RC}\n"
             run_script "post_install.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         2) 
-            printf "Running Chris Titus Tech's script...\n"
+            printf "${YELLOW}Running Chris Titus Tech's script...${RC}\n"
             curl -fsSL christitus.com/linuxdev | sh
             ;;
         3) run_script "add_ssh_key.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         4) run_script "add_network_drive.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         5) 
-            printf "Installing Cockpit...\n"
+            printf "${YELLOW}Installing Cockpit...${RC}\n"
             run_script "cockpit.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         6) 
-            printf "Installing Tailscale...\n"
+            printf "${YELLOW}Installing Tailscale...${RC}\n"
             curl -fsSL https://tailscale.com/install.sh | sh
-            printf "Tailscale installed. Please run 'sudo tailscale up' to activate.\n"
+            printf "${GREEN}Tailscale installed. Please run 'sudo tailscale up' to activate.${RC}\n"
             ;;
         7) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         8)
-            printf "Installing Desktop Environment...\n"
+            printf "${YELLOW}Installing Desktop Environment...${RC}\n"
             run_script "de-installer.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         9)
-            printf "Replacing configs...\n"
+            printf "${YELLOW}Replacing configs...${RC}\n"
             run_script "replace_configs.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
-        0) printf "Exiting script.\n"; break ;;
-        *) printf "Invalid option. Please enter a number between 0 and 9.\n" ;;
+        0) printf "${GREEN}Exiting script.${RC}\n"; break ;;
+        *) printf "${RED}Invalid option. Please enter a number between 0 and 9.${RC}\n" ;;
     esac
 done
 
-printf "#############################\n"
-printf "##                         ##\n"
-printf "## Setup script completed. ##\n"
-printf "##                         ##\n"
-printf "#############################\n"
+printf "${GREEN}#############################${RC}\n"
+printf "${GREEN}##                         ##${RC}\n"
+printf "${GREEN}## Setup script completed. ##${RC}\n"
+printf "${GREEN}##                         ##${RC}\n"
+printf "${GREEN}#############################${RC}\n"
