@@ -1,11 +1,11 @@
 # Jared's Linux Installs
 
-This script installs git, and starts Chris Titus Tech's Linux Utility, then fixes the SFTP in his bashrc command, installs Cockpit, add a network drive, install qemu-guest-agent, Tailscale, Docker, and Portainer. 
+Custom installs including standard utilities, Chris Titus Tech's Linutil, adding SSH key, adding network drive, Cockpit, Tailscale, adding Docker, adding a Desktop Environment, and replacing some configs. 
 
 ## 💡 Usage
 
 To get started, open your terminal and run the following command:
-```bash
-bash <(curl -fsSL jaredcervantes.com/linux)
+```sh
+sh <(curl -fsSL jaredcervantes.com/linux)
 ```
 
