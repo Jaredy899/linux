@@ -82,7 +82,7 @@ if ! checkEnv; then
 fi
 
 printf "%b\n" "${CYAN}Detected Distribution: $DTYPE${RC}"
-echo -e "\nAvailable Desktop Environments:"
+printf "\nAvailable Desktop Environments:\n"
 echo "1. Cinnamon"
 echo "2. KDE Plasma"
 echo "3. DWM"
