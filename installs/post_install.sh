@@ -109,7 +109,7 @@ case "$DTYPE" in
     ubuntu) install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server" ;;
     fedora|rocky|almalinux) install_package "NetworkManager-tui" "terminus-fonts-console" "openssh-server" ;;
     opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager" "terminus-bitmap-fonts" "openssh" ;;
-    alpine) install_package "networkmanager" "terminus-font" "openssh" "shadow" ;;
+    alpine) install_package "networkmanager" "terminus-font" "openssh" "shadow" "font-terminus" ;;
 esac
 
 # Instead of using an array, let's use a simple space-separated string
@@ -148,12 +148,23 @@ echo "-------------------------------------------------------------------------"
 
 # Function to set console font
 set_console_font() {
-    if "$ESCALATION_TOOL" setfont ter-v18b; then
-        echo "FONT=ter-v18b" | "$ESCALATION_TOOL" tee /etc/vconsole.conf > /dev/null
-        printf "%b\n" "${GREEN}Console font set to ter-v18b${RC}"
+    if [ "$DTYPE" = "alpine" ]; then
+        if "$ESCALATION_TOOL" setfont /usr/share/consolefonts/ter-v18b.psf.gz; then
+            echo 'consolefont="ter-v18b.psf.gz"' | "$ESCALATION_TOOL" tee /etc/conf.d/consolefont > /dev/null
+            "$ESCALATION_TOOL" rc-update add consolefont boot
+            printf "%b\n" "${GREEN}Console font set to ter-v18b for Alpine Linux.${RC}"
+        else
+            printf "%b\n" "${YELLOW}Failed to set font ter-v18b. Using system default.${RC}"
+            return 1
+        fi
     else
-        printf "%b\n" "${YELLOW}Failed to set font ter-v18b. Using system default.${RC}"
-        return 1
+        if "$ESCALATION_TOOL" setfont ter-v18b; then
+            echo "FONT=ter-v18b" | "$ESCALATION_TOOL" tee /etc/vconsole.conf > /dev/null
+            printf "%b\n" "${GREEN}Console font set to ter-v18b${RC}"
+        else
+            printf "%b\n" "${YELLOW}Failed to set font ter-v18b. Using system default.${RC}"
+            return 1
+        fi
     fi
 }
 
