@@ -10,6 +10,8 @@ RED='\033[31m'
 YELLOW='\033[33m'
 CYAN='\033[36m'
 GREEN='\033[32m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
 # Set the GITPATH variable to the directory where the script is located
 if [ -f "$0" ]; then
@@ -85,16 +87,16 @@ while true; do
     printf "${CYAN}#############################${RC}\n"
     printf "${CYAN}##    Select an option:    ##${RC}\n"
     printf "${CYAN}#############################${RC}\n"
-    printf "1) Run Post Install Script\n"
-    printf "2) Run Chris Titus Tech Script\n"
-    printf "3) Add SSH Key\n"
-    printf "4) Install a network drive\n"
-    printf "5) Install Cockpit\n"
-    printf "6) Install Tailscale\n"
-    printf "7) Install Docker\n"
-    printf "8) Install Desktop Environment\n"
-    printf "9) Replace configs\n"
-    printf "0) Exit\n\n"
+    printf "${BLUE}1) Run Post Install Script${NC}\n"
+    printf "${BLUE}2) Run Chris Titus Tech Script${NC}\n"
+    printf "${BLUE}3) Add SSH Key${NC}\n"
+    printf "${BLUE}4) Install a network drive${NC}\n"
+    printf "${BLUE}5) Install Cockpit${NC}\n"
+    printf "${BLUE}6) Install Tailscale${NC}\n"
+    printf "${BLUE}7) Install Docker${NC}\n"
+    printf "${BLUE}8) Install Desktop Environment${NC}\n"
+    printf "${BLUE}9) Replace configs${NC}\n"
+    printf "${RED}0) Exit${NC}\n\n"
 
     printf "Enter your choice (0-9): "
     read choice
