@@ -117,7 +117,7 @@ while true; do
         6) 
             printf "${YELLOW}Installing Tailscale...${RC}\n"
             curl -fsSL https://tailscale.com/install.sh | sh
-            printf "${GREEN}Tailscale installed. Please run 'sudo tailscale up' to activate.${RC}\n"
+            printf "${GREEN}Tailscale installed. Please run '$(command -v doas >/dev/null 2>&1 && echo "doas" || echo "sudo") tailscale up' to activate.${RC}\n"
             ;;
         7) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         8)
