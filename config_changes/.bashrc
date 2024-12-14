@@ -103,7 +103,7 @@ export LESS_TERMCAP_us=$'\E[01;32m'
 alias ff='fastfetch -c all'
 alias jc='sh <(curl -fsSL jaredcervantes.com/linux)'
 alias nfzf='nano $(fzf -m --preview="bat --color=always {}")'
-alias update='sh <(curl https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/installs/updater.sh)'
+alias update='curl https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/installs/updater.sh | sh'
 
 # Alias's for SSH
 # alias SERVERNAME='ssh YOURWEBSITE.com -l USERNAME -p PORTNUMBERHERE'
