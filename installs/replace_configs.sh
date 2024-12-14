@@ -15,11 +15,18 @@ DWM_TITUS_DIR="$HOME/dwm-titus"
 replace_configs() {
     printf "%b\n" "${YELLOW}Downloading and replacing configurations...${RC}"
 
-    # Create directories and download files for mybash
+    # Create directories
     mkdir -p "$MYBASH_DIR"
     mkdir -p "$HOME/.config/fastfetch"
     mkdir -p "$HOME/.config"
-    curl -sSfL -o "$MYBASH_DIR/.bashrc" "$BASE_URL/.bashrc"
+
+    if [ -f /etc/alpine-release ]; then
+        "$ESCALATION_TOOL" curl -sSfL -o "/etc/profile" "$BASE_URL/profile"
+    else
+        curl -sSfL -o "$MYBASH_DIR/.bashrc" "$BASE_URL/.bashrc"
+    fi
+
+    # Download other configuration files
     curl -sSfL -o "$HOME/.config/fastfetch/config.jsonc" "$BASE_URL/config.jsonc"
     curl -sSfL -o "$HOME/.config/starship.toml" "$BASE_URL/starship.toml"
 
@@ -55,7 +62,7 @@ compile_install_slstatus() {
 
 # Main script
 replace_configs
-compile_install_dwm_titus
-compile_install_slstatus
+#compile_install_dwm_titus
+#compile_install_slstatus
 
 printf "%b\n" "${GREEN}Configuration replacement and compilation completed successfully.${RC}"
