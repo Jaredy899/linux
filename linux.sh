@@ -95,11 +95,12 @@ while true; do
     printf "${LBLUE}5)${NC} Install Cockpit\n"
     printf "${LBLUE}6)${NC} Install Tailscale\n"
     printf "${LBLUE}7)${NC} Install Docker\n"
-    printf "${LBLUE}8)${NC} Install Desktop Environment\n"
+    printf "${LBLUE}8)${NC} Update System\n"
     printf "${LBLUE}9)${NC} Replace configs\n"
+    printf "${LBLUE}10)${NC} Install Desktop Environment\n"
     printf "${RED}0) Exit${NC}\n\n"
 
-    printf "Enter your choice (0-9): "
+    printf "Enter your choice (0-10): "
     read choice
 
     case $choice in
@@ -124,15 +125,19 @@ while true; do
             ;;
         7) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
         8)
-            printf "${YELLOW}Installing Desktop Environment...${RC}\n"
-            run_script "de-installer.sh" "$GITPATH/installs" "$INSTALLS_URL"
+            printf "${YELLOW}Running System Update...${RC}\n"
+            run_script "updater.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         9)
             printf "${YELLOW}Replacing configs...${RC}\n"
             run_script "replace_configs.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
+        10)
+            printf "${YELLOW}Installing Desktop Environment...${RC}\n"
+            run_script "de-installer.sh" "$GITPATH/installs" "$INSTALLS_URL"
+            ;;
         0) printf "${GREEN}Exiting script.${RC}\n"; break ;;
-        *) printf "${RED}Invalid option. Please enter a number between 0 and 9.${RC}\n" ;;
+        *) printf "${RED}Invalid option. Please enter a number between 0 and 10.${RC}\n" ;;
     esac
 done
 
