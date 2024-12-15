@@ -10,11 +10,7 @@ checkEnv || exit 1
 install_cockpit() {
     if ! command_exists cockpit; then
         printf "%b\n" "${YELLOW}Installing Cockpit...${RC}"
-        if [ "$PACKAGER" = "apk" ]; then
-            noninteractive cockpit cockpit-ws
-        else
-            noninteractive cockpit
-        fi
+        noninteractive cockpit
         startAndEnableService "cockpit.socket"
         printf "%b\n" "${GREEN}Cockpit service has been started.${RC}"
         if command_exists ufw; then
