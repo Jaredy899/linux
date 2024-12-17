@@ -12,10 +12,10 @@ fi
 printf "${CYAN}GITPATH is set to: %s${RC}\n" "$GITPATH"
 
 # Source the common script from the same directory as this script
-eval "$(curl -s http://10.24.24.6:3030/Jaredy89/linux2/raw/branch/main/common_script.sh)"
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)"
 
 # GitHub URL base for the necessary configuration files
-GITHUB_BASE_URL="http://10.24.24.6:3030/Jaredy89/linux2/raw/branch/main/"
+GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/"
 INSTALLS_URL="${GITHUB_BASE_URL}/installs"
 
 # Function to detect the Linux distribution
