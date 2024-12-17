@@ -1,7 +1,7 @@
-#!/bin/sh -e
+#!/bin/sh
 
 # Source the common script directly from GitHub
-eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
+eval "$(curl -s http://10.24.24.6:3030/Jaredy89/linux2/raw/branch/main/common_script.sh)"
 eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)"
 # Run the environment check
 checkEnv || exit 1
@@ -75,23 +75,27 @@ add_manual_key() {
 # Main script
 ensure_ssh_setup
 
-printf "%b\n" "${CYAN}Do you want to import SSH keys from GitHub or enter your own?${RC}"
-printf "%b\n" "${CYAN}1) Import from GitHub${RC}"
-printf "%b\n" "${CYAN}2) Enter your own public key${RC}"
-printf "%b" "${CYAN}Choose an option [1/2]: ${RC}"
-read -r choice
+# Function to display SSH key menu
+show_ssh_menu() {
+    show_menu_item 1 "${NC}" "Import from GitHub"
+    show_menu_item 2 "${NC}" "Enter your own public key"
+}
 
-case "$choice" in
-    1)
-        import_ssh_keys
-        ;;
-    2)
-        add_manual_key
-        ;;
-    *)
-        printf "%b\n" "${RED}Invalid option. Exiting.${RC}"
-        exit 1
-        ;;
-esac
+while true; do
+    handle_menu_selection 2 "Select SSH key option:" show_ssh_menu
+    choice=$?
+    
+    case $choice in
+        1)
+            import_ssh_keys
+            break
+            ;;
+        2)
+            add_manual_key
+            break
+            ;;
+    esac
+done
 
 printf "%b\n" "${GREEN}Done.${RC}"
+
