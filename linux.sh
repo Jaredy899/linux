@@ -1,18 +1,7 @@
 #!/bin/sh
 
-set -e  # Exit immediately if a command exits with a non-zero status
 IFS='
 	'
-
-# Define color variables
-RC='\033[0m'
-RED='\033[0;31m'
-YELLOW='\033[33m'
-CYAN='\033[36m'
-GREEN='\033[32m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-LBLUE='\033[1;34m'
 
 # Set the GITPATH variable to the directory where the script is located
 if [ -f "$0" ]; then
@@ -22,14 +11,12 @@ else
 fi
 printf "${CYAN}GITPATH is set to: %s${RC}\n" "$GITPATH"
 
-# GitHub URL base for the necessary configuration files
-GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/"
-INSTALLS_URL="${GITHUB_BASE_URL}/installs"
+# Source the common script from the same directory as this script
+eval "$(curl -s http://10.24.24.6:3030/Jaredy89/linux2/raw/branch/main/common_script.sh)"
 
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
+# GitHub URL base for the necessary configuration files
+GITHUB_BASE_URL="http://10.24.24.6:3030/Jaredy89/linux2/raw/branch/main/"
+INSTALLS_URL="${GITHUB_BASE_URL}/installs"
 
 # Function to detect the Linux distribution
 detect_distro() {
@@ -83,66 +70,63 @@ else
     printf "${GREEN}Git is already installed.${RC}\n"
 fi
 
-# Menu loop
+# Function to display main menu items
+show_main_menu() {
+    show_menu_item 1  "${NC}" "Run Post Install Script"
+    show_menu_item 2  "${NC}" "Run Chris Titus Tech Script"
+    show_menu_item 3  "${NC}" "Add SSH Key"
+    show_menu_item 4  "${NC}" "Install a network drive"
+    show_menu_item 5  "${NC}" "Install Cockpit"
+    show_menu_item 6  "${NC}" "Install Tailscale"
+    show_menu_item 7  "${NC}" "Install Docker"
+    show_menu_item 8  "${NC}" "Update System"
+    show_menu_item 9  "${NC}" "Replace configs"
+    show_menu_item 10 "${NC}" "Install Desktop Environment"
+    show_menu_item 11 "${NC}" "Exit"
+}
+
 while true; do
-    printf "${CYAN}#############################${RC}\n"
-    printf "${CYAN}##    Select an option:    ##${RC}\n"
-    printf "${CYAN}#############################${RC}\n"
-    printf "${LBLUE}1)${NC} Run Post Install Script\n"
-    printf "${LBLUE}2)${NC} Run Chris Titus Tech Script\n"
-    printf "${LBLUE}3)${NC} Add SSH Key\n"
-    printf "${LBLUE}4)${NC} Install a network drive\n"
-    printf "${LBLUE}5)${NC} Install Cockpit\n"
-    printf "${LBLUE}6)${NC} Install Tailscale\n"
-    printf "${LBLUE}7)${NC} Install Docker\n"
-    printf "${LBLUE}8)${NC} Update System\n"
-    printf "${LBLUE}9)${NC} Replace configs\n"
-    printf "${LBLUE}10)${NC} Install Desktop Environment\n"
-    printf "${RED}0) Exit${NC}\n\n"
-
-    printf "Enter your choice (0-10): "
-    read choice
-
+    handle_menu_selection 11 "Select an option:" show_main_menu
+    choice=$?
+    
     case $choice in
-        1) 
-            printf "${YELLOW}Running Post Install Script...${RC}\n"
+        1)
             run_script "post_install.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
-        2) 
-            printf "${YELLOW}Running Chris Titus Tech's script...${RC}\n"
+        2)
             curl -fsSL christitus.com/linuxdev | sh
             ;;
-        3) run_script "add_ssh_key.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
-        4) run_script "add_network_drive.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
-        5) 
-            printf "${YELLOW}Installing Cockpit...${RC}\n"
+        3)
+            run_script "add_ssh_key.sh" "$GITPATH/installs" "$INSTALLS_URL"
+            ;;
+        4)
+            run_script "add_network_drive.sh" "$GITPATH/installs" "$INSTALLS_URL"
+            ;;
+        5)
             run_script "cockpit.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
-        6) 
-            printf "${YELLOW}Installing Tailscale...${RC}\n"
+        6)
             curl -fsSL https://tailscale.com/install.sh | sh
-            printf "${GREEN}Tailscale installed. Please run '$(command -v doas >/dev/null 2>&1 && echo "doas" || echo "sudo") tailscale up' to activate.${RC}\n"
+            printf "${GREEN}Tailscale installed. Run '$(command -v doas >/dev/null 2>&1 && echo "doas" || echo "sudo") tailscale up' to activate.${RC}\n"
             ;;
-        7) run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL" ;;
+        7)
+            run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL"
+            ;;
         8)
-            printf "${YELLOW}Running System Update...${RC}\n"
             run_script "updater.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         9)
-            printf "${YELLOW}Replacing configs...${RC}\n"
             run_script "replace_configs.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         10)
-            printf "${YELLOW}Installing Desktop Environment...${RC}\n"
             run_script "de-installer.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
-        0) printf "${GREEN}Exiting script.${RC}\n"; break ;;
-        *) printf "${RED}Invalid option. Please enter a number between 0 and 10.${RC}\n" ;;
+        11)
+            printf "${GREEN}Exiting script.${RC}\n"
+            exit 0
+            ;;
     esac
+    
+    printf "\nPress Enter to continue..."
+    read -r
 done
-
-printf "${GREEN}#############################${RC}\n"
-printf "${GREEN}##                         ##${RC}\n"
-printf "${GREEN}## Setup script completed. ##${RC}\n"
-printf "${GREEN}##                         ##${RC}\n"
-printf "${GREEN}#############################${RC}\n"
