@@ -1,11 +1,24 @@
-#!/bin/sh -e
+#!/bin/sh
 
 # Source the common script directly from GitHub
-eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)"
 eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)"
-
 # Run the environment check
 checkEnv || exit 1
+
+# Function to read keyboard input
+read_key() {
+    dd bs=1 count=1 2>/dev/null | od -An -tx1
+}
+
+# Function to show menu item
+show_item() {
+    if [ "$selected" -eq "$1" ]; then
+        printf "  ${GREEN}→ %s${RC}\n" "$3"
+    else
+        printf "    %s\n" "$3"
+    fi
+}
 
 # Function to install a package
 install_package() {
@@ -27,70 +40,72 @@ install_package() {
     fi
 }
 
-# Ask if the user wants to mount a CIFS (Samba) or NFS drive
-printf "%b\n" "${CYAN}Choose the type of network drive to mount:${RC}"
-printf "%b\n" "${CYAN}1. CIFS (Samba)${RC}"
-printf "%b\n" "${CYAN}2. NFS${RC}"
-printf "%b" "${CYAN}Enter your choice (1 or 2): ${RC}"
-read -r mount_choice
+# Function to display mount type menu
+show_mount_menu() {
+    show_menu_item 1 "${NC}" "CIFS (Samba)"
+    show_menu_item 2 "${NC}" "NFS"
+}
 
-case "$mount_choice" in
-    1)
-        mount_type="cifs"
-        # Ensure cifs-utils is installed
-        install_package "cifs-utils"
+while true; do
+    handle_menu_selection 2 "Select mount type:" show_mount_menu
+    mount_choice=$?
 
-        # Prompt the user for the remote mount location
-        printf "%b" "${CYAN}Enter the remote CIFS (Samba) mount location (e.g., //192.168.1.1/Files): ${RC}"
-        read -r remote_mount
+    case $mount_choice in
+        1)
+            mount_type="cifs"
+            # Ensure cifs-utils is installed
+            install_package "cifs-utils"
 
-        # Prompt the user for the username
-        printf "%b" "${CYAN}Enter the username for the remote CIFS (Samba) mount: ${RC}"
-        read -r username
+            # Prompt the user for the remote mount location
+            printf "%b" "${CYAN}Enter the remote CIFS (Samba) mount location (e.g., //192.168.1.1/Files): ${RC}"
+            read -r remote_mount
 
-        # Prompt the user for the password (input will be hidden)
-        printf "%b" "${CYAN}Enter the password for the remote CIFS (Samba) mount: ${RC}"
-        stty -echo
-        read -r password
-        stty echo
-        printf "\n"
+            # Prompt the user for the username
+            printf "%b" "${CYAN}Enter the username for the remote CIFS (Samba) mount: ${RC}"
+            read -r username
 
-        # Create a credentials file in a secure location
-        credentials_file="/etc/cifs-credentials-$username"
+            # Prompt the user for the password (input will be hidden)
+            printf "%b" "${CYAN}Enter the password for the remote CIFS (Samba) mount: ${RC}"
+            stty -echo
+            read -r password
+            stty echo
+            printf "\n"
 
-        # Write the credentials to the file
-        printf "username=%s\n" "$username" | "$ESCALATION_TOOL" tee "$credentials_file" > /dev/null
-        printf "password=%s\n" "$password" | "$ESCALATION_TOOL" tee -a "$credentials_file" > /dev/null
+            # Create a credentials file in a secure location
+            credentials_file="/etc/cifs-credentials-$username"
 
-        # Set permissions to restrict access to the credentials file
-        "$ESCALATION_TOOL" chmod 600 "$credentials_file"
+            # Write the credentials to the file
+            printf "username=%s\n" "$username" | "$ESCALATION_TOOL" tee "$credentials_file" > /dev/null
+            printf "password=%s\n" "$password" | "$ESCALATION_TOOL" tee -a "$credentials_file" > /dev/null
 
-        # Construct the new entry using the credentials file
-        mount_options="credentials=$credentials_file"
-        fs_type="cifs"
-        ;;
-    2)
-        mount_type="nfs"
-        # Ensure nfs-utils or nfs-common is installed
-        if [ "$PACKAGER" = "apt" ] || [ "$PACKAGER" = "nala" ]; then
-            install_package "nfs-common"
-        else
-            install_package "nfs-utils"
-        fi
+            # Set permissions to restrict access to the credentials file
+            "$ESCALATION_TOOL" chmod 600 "$credentials_file"
 
-        # Prompt the user for the remote mount location
-        printf "%b" "${CYAN}Enter the remote NFS mount location (e.g., 192.168.1.1:/path/to/share): ${RC}"
-        read -r remote_mount
+            # Construct the new entry using the credentials file
+            mount_options="credentials=$credentials_file"
+            fs_type="cifs"
+            break
+            ;;
+        2)
+            mount_type="nfs"
+            # Ensure nfs-utils or nfs-common is installed
+            if [ "$PACKAGER" = "apt" ] || [ "$PACKAGER" = "nala" ]; then
+                install_package "nfs-common"
+            else
+                install_package "nfs-utils"
+            fi
 
-        # NFS doesn't require a credentials file, so set mount options accordingly
-        mount_options="defaults"
-        fs_type="nfs"
-        ;;
-    *)
-        printf "%b\n" "${RED}Invalid option. Please choose 1 for CIFS or 2 for NFS.${RC}"
-        exit 1
-        ;;
-esac
+            # Prompt the user for the remote mount location
+            printf "%b" "${CYAN}Enter the remote NFS mount location (e.g., 192.168.1.1:/path/to/share): ${RC}"
+            read -r remote_mount
+
+            # NFS doesn't require a credentials file, so set mount options accordingly
+            mount_options="defaults"
+            fs_type="nfs"
+            break
+            ;;
+    esac
+done
 
 # Ask if the user wants to use the default mount directory
 printf "%b" "${CYAN}Do you want to use the default local mount directory (/srv/remotemount)? (y/n): ${RC}"
