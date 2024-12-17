@@ -149,13 +149,13 @@ echo "-------------------------------------------------------------------------"
 # Function to set console font
 set_console_font() {
     if [ "$DTYPE" = "alpine" ]; then
-        "$ESCALATION_TOOL" mkdir -p /etc/conf.d
-        printf "%b\n" "# Console font to load at boot\nFONT=\"ter-v18b\"\nFONT_MAP=\"\"\nUNICODE_MAP=\"\"" | "$ESCALATION_TOOL" tee /etc/conf.d/consolefont > /dev/null
-        "$ESCALATION_TOOL" rc-update add consolefont boot
-        if "$ESCALATION_TOOL" setup-consolefont; then
+        if "$ESCALATION_TOOL" setfont /usr/share/consolefonts/ter-v18b.psf.gz; then
+            echo 'consolefont="ter-v18b.psf.gz"' | "$ESCALATION_TOOL" tee /etc/conf.d/consolefont > /dev/null
+            "$ESCALATION_TOOL" rc-update add consolefont boot
             printf "%b\n" "${GREEN}Console font set to ter-v18b for Alpine Linux.${RC}"
         else
-            printf "%b\n" "${YELLOW}Failed to set font immediately. It will be applied on next boot.${RC}"
+            printf "%b\n" "${YELLOW}Failed to set font ter-v18b. Using system default.${RC}"
+            return 1
         fi
     else
         if "$ESCALATION_TOOL" setfont ter-v18b; then
