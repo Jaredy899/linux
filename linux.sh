@@ -127,6 +127,6 @@ while true; do
             ;;
     esac
     
-    printf "\nPress Enter to continue..."
-    read -r
+    printf "\nPress any key to continue..."
+    read -n 1 -s -r
 done
