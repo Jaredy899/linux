@@ -5,8 +5,7 @@ SKIP_AUR_CHECK=true
 
 # Source the common script directly from GitHub
 eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
-eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)"
-
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_service_script.sh)"
 # Run the environment check
 checkEnv || exit 1
 
