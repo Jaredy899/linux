@@ -26,6 +26,9 @@ startService() {
         runit)
             "$ESCALATION_TOOL" sv start "$1"
             ;;
+        sysvinit)
+            "$ESCALATION_TOOL" service "$1" start
+            ;;
     esac
 }
 
@@ -39,6 +42,9 @@ stopService() {
             ;;
         runit)
             "$ESCALATION_TOOL" sv stop "$1"
+            ;;
+        sysvinit)
+            "$ESCALATION_TOOL" service "$1" stop
             ;;
     esac
 }
@@ -54,6 +60,9 @@ enableService() {
         runit)
             ln -s /etc/sv/"$1" /var/service/
             ;;
+        sysvinit)
+            update-rc.d "$1" defaults
+            ;;
     esac
 }
 
@@ -67,6 +76,9 @@ disableService() {
             ;;
         runit)
             rm /var/service/"$1"
+            ;;
+        sysvinit)
+            update-rc.d -f "$1" remove
             ;;
     esac
 }
@@ -84,6 +96,10 @@ startAndEnableService() {
             enableService "$1"
             startService "$1"
             ;;
+        sysvinit)
+            enableService "$1"
+            startService "$1"
+            ;;
     esac
 }
 
@@ -98,7 +114,10 @@ isServiceActive() {
         runit)
             "$ESCALATION_TOOL" sv status "$1" | grep -q '^run:'
             ;;
+        sysvinit)
+            "$ESCALATION_TOOL" service "$1" status | grep -q 'running'
+            ;;
     esac
 }
 
-checkInitManager 'systemctl rc-service runit'
+checkInitManager 'systemctl rc-service runit sysvinit'
