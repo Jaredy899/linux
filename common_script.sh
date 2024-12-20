@@ -7,6 +7,7 @@ RED='\033[31m'
 YELLOW='\033[33m'
 CYAN='\033[36m'
 GREEN='\033[32m'
+MAGENTA='\033[35m'
 
 command_exists() {
     command -v "$1" >/dev/null 2>&1
@@ -228,4 +229,85 @@ checkFlatpak() {
             printf "%b\n" "${CYAN}Flatpak is installed${RC}"
         fi
     fi
+}
+
+# Function to read keyboard input
+read_key() {
+    dd bs=1 count=1 2>/dev/null | od -An -tx1
+}
+
+# Function to show menu item
+show_menu_item() {
+    if [ "$selected" -eq "$1" ]; then
+        printf "  ${GREEN}→ %s${RC}\n" "$3"
+    else
+        printf "    %s\n" "$3"
+    fi
+}
+
+# Function to handle menu selection
+handle_menu_selection() {
+    selected=1
+    total_options=$1
+    saved_stty=$(stty -g)
+
+    cleanup() {
+        stty "$saved_stty"
+        printf "\n${GREEN}Script terminated.${RC}\n"
+        exit 0
+    }
+
+    trap cleanup INT
+
+    while true; do
+        # Clear screen and show header
+        printf "\033[2J\033[H"
+        printf "${CYAN}%s${RC}\n\n" "$2"
+
+        # Call the function that displays menu items
+        $3
+
+        printf "\n${MAGENTA}Use arrow keys to navigate, Enter to select, q to quit${RC}\n"
+
+        # Read keyboard input
+        stty raw -echo
+        char=$(read_key)
+        case "$char" in
+            " 71"|" 51") # 'q' or 'Q'
+                stty "$saved_stty"
+                cleanup
+                ;;
+            " 1b") # ESC or arrow keys
+                char2=$(read_key)
+                if [ "$char2" = " 5b" ]; then
+                    char3=$(read_key)
+                    case "$char3" in
+                        " 41") # Up arrow
+                            if [ $selected -eq 1 ]; then
+                                selected=$total_options  # Wrap to bottom
+                            else
+                                selected=$((selected - 1))
+                            fi
+                            ;;
+                        " 42") # Down arrow
+                            if [ $selected -eq $total_options ]; then
+                                selected=1  # Wrap to top
+                            else
+                                selected=$((selected + 1))
+                            fi
+                            ;;
+                    esac
+                fi
+                ;;
+            " 03") # Ctrl+C
+                stty "$saved_stty"
+                cleanup
+                ;;
+            " 0a"|" 0d") # Enter
+                stty "$saved_stty"
+                return $selected
+                ;;
+        esac
+        stty "$saved_stty"
+    done
 }

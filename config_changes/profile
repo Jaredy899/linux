@@ -23,5 +23,7 @@ for script in /etc/profile.d/*.sh ; do
 done
 unset script
 alias sudo="doas"
+alias reboot="doas reboot"
+alias shutdown="doas poweroff"
 alias update='curl https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/installs/updater.sh | sh'
 fastfetch
