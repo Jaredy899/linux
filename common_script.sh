@@ -147,7 +147,7 @@ checkEnv() {
     checkArch
     checkEscalationTool
     checkCommandRequirements "curl groups $ESCALATION_TOOL"
-    checkPackageManager 'nala apt-get dnf pacman zypper apk'
+    checkPackageManager 'eopkg nala apt-get dnf pacman zypper apk'
     checkCurrentDirectoryWritable
     checkSuperUser
     checkDistro
@@ -166,6 +166,9 @@ setupNonInteractive() {
             ;;
         apk)
             NONINTERACTIVE="--no-cache"
+            ;;
+        eopkg)
+            NONINTERACTIVE="-y"
             ;;
         *)
             echo "Unsupported package manager: $PACKAGER"
@@ -189,6 +192,9 @@ noninteractive() {
         apk)
             $ESCALATION_TOOL apk add --no-cache "$@"
             ;;
+        eopkg)
+            $ESCALATION_TOOL eopkg install -y "$@"
+            ;;
         *)
             $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
             ;;
@@ -206,6 +212,9 @@ getNonInteractiveFlags() {
             ;;
         apk)
             echo "--no-cache"
+            ;;
+        eopkg)
+            echo "-y"
             ;;
         *)
             echo ""  # Default to empty string if package manager is unknown
