@@ -12,7 +12,7 @@ fi
 printf "${CYAN}GITPATH is set to: %s${RC}\n" "$GITPATH"
 
 # Source the common script from the same directory as this script
-eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)"
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
 
 # GitHub URL base for the necessary configuration files
 GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/"
