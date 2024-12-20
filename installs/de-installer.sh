@@ -2,7 +2,7 @@
 
 # Source the common script
 eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
-eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)"
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_service_script.sh)"
 
 # Common DWM installation function
 install_dwm() {
