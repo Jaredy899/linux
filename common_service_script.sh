@@ -1,18 +1,20 @@
 #!/bin/sh -e
 
+command_exists() {
+    [ -x "/sbin/$1" ] || [ -x "/usr/sbin/$1" ] || [ -x "/bin/$1" ] || [ -x "/usr/bin/$1" ] || command -v "$1" >/dev/null 2>&1
+}
+
 checkInitManager() {
     for manager in $1; do
         if command_exists "$manager"; then
             INIT_MANAGER="$manager"
             printf "%b\n" "${CYAN}Using ${manager} to interact with init system${RC}"
-            break
+            return 0
         fi
     done
 
-    if [ -z "$INIT_MANAGER" ]; then
-        printf "%b\n" "${RED}Can't find a supported init system${RC}"
-        exit 1
-    fi
+    printf "%b\n" "${RED}Can't find a supported init system${RC}"
+    exit 1
 }
 
 startService() {
