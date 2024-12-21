@@ -93,17 +93,36 @@ for package in $common_packages; do
 done
 
 # OS-specific packages including NetworkManager
-case "$DTYPE" in
-    arch) install_package "terminus-font" "yazi" "openssh" ;;
-    debian)
+case "$ID_LIKE" in
+    "arch") 
+        install_package "terminus-font" "yazi" "openssh"
+        ;;
+    "debian")
         install_package "console-setup" "xfonts-terminus" "openssh-server"
         ;;
-    ubuntu) install_package "console-setup" "xfonts-terminus" "openssh-server" ;;
-    fedora|rocky|almalinux) install_package "terminus-fonts-console" "openssh-server" ;;
-    opensuse-tumbleweed|opensuse-leap) install_package "terminus-bitmap-fonts" "openssh" ;;
-    alpine) install_package "openssh" "shadow" "font-terminus" "--no-cache grep" ;;
-    solus) install_package "font-terminus-console" "openssh-server" ;;
-    void) install_package "terminus-font" "openssh" "qemu-ga";;
+    "fedora"|"rhel")
+        install_package "terminus-fonts-console" "openssh-server"
+        ;;
+    "suse opensuse")
+        install_package "terminus-bitmap-fonts" "openssh"
+        ;;
+    "alpine")
+        install_package "openssh" "shadow" "font-terminus" "--no-cache grep"
+        ;;
+    *)
+        case "$DTYPE" in
+            solus)
+                install_package "font-terminus-console" "openssh-server"
+                ;;
+            void)
+                install_package "terminus-font" "openssh" "qemu-ga"
+                ;;
+            *)
+                printf "%b\n" "${YELLOW}Unknown distribution type. Installing basic packages only.${RC}"
+                install_package "openssh"
+                ;;
+        esac
+        ;;
 esac
 
 # Set base services
