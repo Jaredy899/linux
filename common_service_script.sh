@@ -17,6 +17,9 @@ checkInitManager() {
 
 startService() {
     case "$INIT_MANAGER" in
+        init|service)
+            "$ESCALATION_TOOL" service "$1" start
+            ;;
         systemctl)
             "$ESCALATION_TOOL" "$INIT_MANAGER" start "$1"
             ;;
@@ -26,14 +29,14 @@ startService() {
         runit)
             "$ESCALATION_TOOL" sv start "$1"
             ;;
-        service)
-            "$ESCALATION_TOOL" service "$1" start
-            ;;
     esac
 }
 
 stopService() {
     case "$INIT_MANAGER" in
+        init|service)
+            "$ESCALATION_TOOL" service "$1" stop
+            ;;
         systemctl)
             "$ESCALATION_TOOL" "$INIT_MANAGER" stop "$1"
             ;;
@@ -42,9 +45,6 @@ stopService() {
             ;;
         runit)
             "$ESCALATION_TOOL" sv stop "$1"
-            ;;
-        service)
-            "$ESCALATION_TOOL" service "$1" stop
             ;;
     esac
 }
@@ -107,6 +107,9 @@ startAndEnableService() {
 
 isServiceActive() {
     case "$INIT_MANAGER" in
+        init|service)
+            "$ESCALATION_TOOL" service "$1" status | grep -q 'running'
+            ;;
         systemctl)
             "$ESCALATION_TOOL" "$INIT_MANAGER" is-active --quiet "$1"
             ;;
@@ -116,10 +119,7 @@ isServiceActive() {
         runit)
             "$ESCALATION_TOOL" sv status "$1" >/dev/null 2>&1
             ;;
-        service)
-            "$ESCALATION_TOOL" service "$1" status | grep -q 'running'
-            ;;
     esac
 }
 
-checkInitManager 'systemctl rc-service runit service'
+checkInitManager 'systemctl rc-service runit service init'
