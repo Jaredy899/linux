@@ -97,7 +97,7 @@ case "${ID_LIKE:-$ID}" in
     "arch") 
         install_package "terminus-font" "yazi" "openssh"
         ;;
-    "debian")
+    "debian"|"ubuntu")
         install_package "console-setup" "xfonts-terminus" "openssh-server"
         ;;
     "fedora"|"rhel")
