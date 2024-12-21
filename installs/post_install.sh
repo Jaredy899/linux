@@ -110,11 +110,13 @@ case "$DTYPE" in
     opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager" "terminus-bitmap-fonts" "openssh" ;;
     alpine) install_package "networkmanager" "openssh" "shadow" "font-terminus" "--no-cache grep" ;;
     solus) install_package "network-manager" "font-terminus-console" "openssh-server" ;;
-    void) install_package "NetworkManager" "terminus-font" "openssh" ;;
+    void) install_package "NetworkManager" "terminus-font" "openssh" "qemu-ga";;
 esac
 
 # Instead of using an array, let's use a simple space-separated string
-if [ -f /etc/alpine-release ]; then
+if [ "$DTYPE" = "void" ]; then
+    services="NetworkManager qemu-ga"
+elif [ -f /etc/alpine-release ]; then
     services="networkmanager qemu-guest-agent"
 else
     services="NetworkManager qemu-guest-agent"
