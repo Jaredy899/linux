@@ -58,7 +58,9 @@ enableService() {
             "$ESCALATION_TOOL" rc-update add "$1"
             ;;
         runit)
-            ln -s /etc/sv/"$1" /var/service/
+            "$ESCALATION_TOOL" mkdir -p "/run/runit/supervise.$1"
+            "$ESCALATION_TOOL" ln -sf "/etc/sv/$1" "/var/service/"
+            sleep 2
             ;;
         sysvinit)
             update-rc.d "$1" defaults
@@ -75,7 +77,7 @@ disableService() {
             "$ESCALATION_TOOL" rc-update del "$1"
             ;;
         runit)
-            rm /var/service/"$1"
+            "$ESCALATION_TOOL" rm -f "/var/service/$1"
             ;;
         sysvinit)
             update-rc.d -f "$1" remove
@@ -112,7 +114,7 @@ isServiceActive() {
             "$ESCALATION_TOOL" "$INIT_MANAGER" "$1" status --quiet
             ;;
         runit)
-            "$ESCALATION_TOOL" sv status "$1" | grep -q '^run:'
+            "$ESCALATION_TOOL" sv status "$1" >/dev/null 2>&1
             ;;
         sysvinit)
             "$ESCALATION_TOOL" service "$1" status | grep -q 'running'
