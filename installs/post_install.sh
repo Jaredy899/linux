@@ -110,6 +110,7 @@ case "$DTYPE" in
     opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager" "terminus-bitmap-fonts" "openssh" ;;
     alpine) install_package "networkmanager" "openssh" "shadow" "font-terminus" "--no-cache grep" ;;
     solus) install_package "network-manager" "font-terminus-console" "openssh-server" ;;
+    void) install_package "NetworkManager" "terminus-font" "openssh" ;;
 esac
 
 # Instead of using an array, let's use a simple space-separated string
@@ -170,7 +171,7 @@ set_console_font() {
 
 # Set permanent console font
 case "$DTYPE" in
-    arch|fedora|rocky|almalinux|opensuse-tumbleweed|opensuse-leap|alpine)
+    arch|fedora|rocky|almalinux|opensuse-tumbleweed|opensuse-leap|alpine|void)
         if command -v setfont >/dev/null 2>&1; then
             if ! set_console_font; then
                 printf "%b\n" "${YELLOW}Font setting failed. Check if terminus-font package is installed.${RC}"

@@ -25,6 +25,9 @@ updateSystem() {
         eopkg)
             "$ESCALATION_TOOL" "$PACKAGER" upgrade -y
             ;;
+        xbps-install)
+            "$ESCALATION_TOOL" xbps-install -Su
+            ;;
         *)
             printf "%b\n" "${RED}Unsupported package manager: ${PACKAGER}${RC}"
             exit 1

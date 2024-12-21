@@ -40,6 +40,9 @@ install_docker() {
             eopkg)
                 noninteractive docker docker-compose
                 ;;
+            xbps-install)
+                noninteractive docker docker-compose
+                ;;
             dnf)
                 if [ "$DTYPE" = "rocky" ] || [ "$DTYPE" = "almalinux" ]; then
                     "$ESCALATION_TOOL" dnf remove -y docker docker-client docker-client-latest \

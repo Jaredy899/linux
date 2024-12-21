@@ -147,7 +147,7 @@ checkEnv() {
     checkArch
     checkEscalationTool
     checkCommandRequirements "curl groups $ESCALATION_TOOL"
-    checkPackageManager 'eopkg nala apt-get dnf pacman zypper apk'
+    checkPackageManager 'eopkg nala apt-get dnf pacman zypper apk xbps-install'
     checkCurrentDirectoryWritable
     checkSuperUser
     checkDistro
@@ -168,6 +168,9 @@ setupNonInteractive() {
             NONINTERACTIVE="--no-cache"
             ;;
         eopkg)
+            NONINTERACTIVE="-y"
+            ;;
+        xbps-install)
             NONINTERACTIVE="-y"
             ;;
         *)
@@ -195,6 +198,9 @@ noninteractive() {
         eopkg)
             $ESCALATION_TOOL eopkg install -y "$@"
             ;;
+        xbps-install)
+            $ESCALATION_TOOL xbps-install -y "$@"
+            ;;
         *)
             $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
             ;;
@@ -214,6 +220,9 @@ getNonInteractiveFlags() {
             echo "--no-cache"
             ;;
         eopkg)
+            echo "-y"
+            ;;
+        xbps-install)
             echo "-y"
             ;;
         *)
