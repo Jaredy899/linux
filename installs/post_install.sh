@@ -92,42 +92,38 @@ for package in $common_packages; do
     install_package $package
 done
 
-# OS-specific packages including NetworkManager
-case "$DTYPE" in
-    "arch"|"arch linux") 
+# OS-specific packages
+case "$PACKAGER" in
+    pacman)
         install_package "terminus-font" "yazi" "openssh"
         ;;
-    "debian"|"ubuntu"|"zorin")
+    apt-get|nala)
         install_package "console-setup" "xfonts-terminus" "openssh-server"
         ;;
-    "fedora"|"rhel"|"almalinux"|"rocky")
+    dnf)
         install_package "terminus-fonts-console" "openssh-server"
         ;;
-    "suse opensuse")
+    zypper)
         install_package "terminus-bitmap-fonts" "openssh"
         ;;
-    "alpine")
+    apk)
         install_package "openssh" "shadow" "font-terminus" "--no-cache grep"
         ;;
+    eopkg)
+        install_package "font-terminus-console" "openssh-server"
+        ;;
+    xbps-install)
+        install_package "terminus-font" "openssh" "qemu-ga"
+        ;;
     *)
-        case "$DTYPE" in
-            solus)
-                install_package "font-terminus-console" "openssh-server"
-                ;;
-            void)
-                install_package "terminus-font" "openssh" "qemu-ga"
-                ;;
-            *)
-                printf "%b\n" "${YELLOW}Unknown distribution type. Installing basic packages only.${RC}"
-                install_package "openssh"
-                ;;
-        esac
+        printf "%b\n" "${YELLOW}Unknown package manager. Installing basic packages only.${RC}"
+        install_package "openssh"
         ;;
 esac
 
 # Set base services
 services="qemu-guest-agent"
-[ "$DTYPE" = "void" ] && services="qemu-ga"
+[ "$PACKAGER" = "xbps-install" ] && services="qemu-ga"
 
 # Add SSH service based on system
 if [ -e /usr/lib/systemd/system/sshd.service ] || [ -e /etc/init.d/sshd ]; then
