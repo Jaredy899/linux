@@ -15,8 +15,6 @@ checkInitManager() {
     fi
 }
 
-checkInitManager 'systemctl rc-service runit service'
-
 startService() {
     case "$INIT_MANAGER" in
         systemctl)
@@ -123,3 +121,5 @@ isServiceActive() {
             ;;
     esac
 }
+
+checkInitManager 'systemctl rc-service runit service'
