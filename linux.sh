@@ -56,18 +56,22 @@ run_script() {
 if [ -d /run/archiso/bootmnt ]; then
     printf "${YELLOW}Arch Linux ISO environment detected.${RC}\n"
     printf "Do you want to run the Arch install script? (y/n): "
-    read run_install
+    read -r run_install
     if [ "$run_install" = "y" ] || [ "$run_install" = "Y" ]; then
         if [ -f "$GITPATH/installs/arch_install2.sh" ]; then
             printf "${YELLOW}Running arch_install2.sh from local directory...${RC}\n"
-            exec sh "$GITPATH/installs/arch_install2.sh"
+            exec "$GITPATH/installs/arch_install2.sh"
         else
             printf "${YELLOW}Running arch_install2.sh from GitHub...${RC}\n"
-            curl -fsSL "$INSTALLS_URL/arch_install2.sh" -o "/tmp/arch_install2.sh"
-            exec sh "/tmp/arch_install2.sh"
+            curl -fsSL "$INSTALLS_URL/arch_install2.sh" | exec sh
         fi
+        # This line won't be reached due to exec
+        exit 0
     fi
 fi
+
+# Only source common_script.sh (which contains the menu system) after the arch install check
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)"
 
 # Ensure git is installed
 if ! command_exists git; then
