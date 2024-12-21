@@ -40,7 +40,7 @@ fi
 # Function to install and configure Nala
 install_nala() {
     printf "%b\n" "${CYAN}Checking if Nala should be installed...${RC}"
-    if [ "$ID" = "debian" ] || [ "$ID" = "ubuntu" ] || [ "$ID_LIKE" = "debian" ] || echo "$ID_LIKE" | grep -q "debian"; then
+    if [ "$PACKAGER" = "apt-get" ]; then
         printf "%b\n" "${CYAN}Installing Nala...${RC}"
         if "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive apt-get update && noninteractive nala; then
             yes | "$ESCALATION_TOOL" nala fetch --auto --fetches 3 || printf "%b\n" "${YELLOW}Nala fetch failed, continuing...${RC}"
@@ -53,6 +53,8 @@ nala "\$@"
 EOF
             "$ESCALATION_TOOL" chmod +x /usr/local/bin/apt
             printf "%b\n" "${GREEN}Nala has been installed and set as an alternative to apt.${RC}"
+            # Update PACKAGER to nala after successful installation
+            PACKAGER="nala"
         else
             printf "%b\n" "${YELLOW}Nala installation failed. Continuing with apt...${RC}"
         fi
