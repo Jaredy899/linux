@@ -106,14 +106,9 @@ case "$DTYPE" in
     void) install_package "terminus-font" "openssh" "qemu-ga";;
 esac
 
-# Instead of using an array, let's use a simple space-separated string
-if [ "$DTYPE" = "void" ]; then
-    services="qemu-ga"
-elif [ -f /etc/alpine-release ]; then
-    services="qemu-guest-agent"
-else
-    services="qemu-guest-agent"
-fi
+# Set base services
+services="qemu-guest-agent"
+[ "$DTYPE" = "void" ] && services="qemu-ga"
 
 # Add SSH service based on system
 if [ -e /usr/lib/systemd/system/sshd.service ] || [ -e /etc/init.d/sshd ]; then
@@ -124,15 +119,13 @@ fi
 
 # Enable and start services
 for service in $services; do
-    if isServiceActive "$service"; then
-        printf "%b\n" "${GREEN}$service is already running${RC}"
-    else
+    if ! isServiceActive "$service"; then
         printf "%b\n" "${CYAN}Enabling and starting $service...${RC}"
-        if startAndEnableService "$service"; then
-            printf "%b\n" "${GREEN}$service enabled and started${RC}"
-        else
+        startAndEnableService "$service" && \
+            printf "%b\n" "${GREEN}$service enabled and started${RC}" || \
             printf "%b\n" "${YELLOW}Failed to enable/start $service. It may start on next boot.${RC}"
-        fi
+    else
+        printf "%b\n" "${GREEN}$service is already running${RC}"
     fi
 done
 
