@@ -64,10 +64,6 @@ EOF
 # Debug output to check the detected distribution type
 printf "%b\n" "${CYAN}Current distribution type detected as: $DTYPE${RC}"
 
-# Debug output before Nala installation
-printf "%b\n" "${CYAN}Debug: ID=$ID${RC}"
-printf "%b\n" "${CYAN}Debug: ID_LIKE=${ID_LIKE}${RC}"
-
 # Explicitly call the install_nala function
 printf "%b\n" "${CYAN}Attempting to install Nala...${RC}"
 install_nala
