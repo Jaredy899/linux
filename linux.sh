@@ -59,6 +59,7 @@ if [ -d /run/archiso/bootmnt ]; then
     read run_install
     if [ "$run_install" = "y" ] || [ "$run_install" = "Y" ]; then
         run_script "arch_install2.sh" "$GITPATH/installs" "$INSTALLS_URL"
+        exit 0
     fi
 fi
 
