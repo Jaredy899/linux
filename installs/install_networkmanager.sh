@@ -55,7 +55,15 @@ install_networkmanager() {
 
     # Enable and start NetworkManager service
     printf "%b\n" "${CYAN}Enabling and starting NetworkManager service...${RC}"
-    startAndEnableService NetworkManager
+    case "$PACKAGER" in
+        apk)
+            # Alpine Linux uses lowercase service name
+            startAndEnableService networkmanager
+            ;;
+        *)
+            startAndEnableService NetworkManager
+            ;;
+    esac
 
     # Start immediately for antiX
     if [ "$DTYPE" = "antix" ] || grep -qi "antix" /etc/os-release 2>/dev/null; then
@@ -64,11 +72,20 @@ install_networkmanager() {
     fi
 
     # Verify if service is running
-    if isServiceActive NetworkManager; then
-        printf "%b\n" "${GREEN}NetworkManager has been successfully installed and started!${RC}"
+    if [ "$PACKAGER" = "apk" ]; then
+        if isServiceActive networkmanager; then
+            printf "%b\n" "${GREEN}NetworkManager has been successfully installed and started!${RC}"
+        else
+            printf "%b\n" "${RED}Failed to start NetworkManager service${RC}"
+            exit 1
+        fi
     else
-        printf "%b\n" "${RED}Failed to start NetworkManager service${RC}"
-        exit 1
+        if isServiceActive NetworkManager; then
+            printf "%b\n" "${GREEN}NetworkManager has been successfully installed and started!${RC}"
+        else
+            printf "%b\n" "${RED}Failed to start NetworkManager service${RC}"
+            exit 1
+        fi
     fi
 }
 
