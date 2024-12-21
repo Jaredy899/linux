@@ -132,5 +132,8 @@ while true; do
     esac
     
     printf "\nPress any key to continue..."
-    read -n 1 -s -r
+    stty -echo
+    dd bs=1 count=1 2>/dev/null
+    stty echo
+    clear
 done
