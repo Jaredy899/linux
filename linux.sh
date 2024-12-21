@@ -61,9 +61,14 @@ if [ -d /run/archiso/bootmnt ]; then
     printf "Do you want to run the Arch install script? (y/n): "
     read run_install
     if [ "$run_install" = "y" ] || [ "$run_install" = "Y" ]; then
-        run_script "arch_install2.sh" "$GITPATH/installs" "$INSTALLS_URL"
-        printf "${GREEN}Installation script completed. Exiting...${RC}\n"
-        exit 0
+        if [ -f "$GITPATH/installs/arch_install2.sh" ]; then
+            printf "${YELLOW}Running arch_install2.sh from local directory...${RC}\n"
+            exec sh "$GITPATH/installs/arch_install2.sh"
+        else
+            printf "${YELLOW}Running arch_install2.sh from GitHub...${RC}\n"
+            curl -fsSL "$INSTALLS_URL/arch_install2.sh" -o "/tmp/arch_install2.sh"
+            exec sh "/tmp/arch_install2.sh"
+        fi
     fi
 fi
 
