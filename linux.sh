@@ -44,14 +44,11 @@ run_script() {
     if [ -f "$local_path/$script_name" ]; then
         printf "${YELLOW}Running %s from local directory...${RC}\n" "$script_name"
         sh "$local_path/$script_name"
-        return $?
     else
         printf "${YELLOW}Running %s from GitHub...${RC}\n" "$script_name"
         curl -fsSL "$url/$script_name" -o "/tmp/$script_name"
         sh "/tmp/$script_name"
-        ret=$?
         rm "/tmp/$script_name"
-        return $ret
     fi
 }
 
