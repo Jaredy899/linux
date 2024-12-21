@@ -94,32 +94,25 @@ done
 
 # OS-specific packages including NetworkManager
 case "$DTYPE" in
-    arch) install_package "networkmanager" "terminus-font" "yazi" "openssh" ;;
+    arch) install_package "terminus-font" "yazi" "openssh" ;;
     debian)
-        install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server"
-        # Stop and disable networking service
-        "$ESCALATION_TOOL" systemctl stop networking
-        "$ESCALATION_TOOL" systemctl disable networking
-        # Modify /etc/network/interfaces
-        "$ESCALATION_TOOL" cp /etc/network/interfaces /etc/network/interfaces.backup
-        echo -e "# This file describes the network interfaces available on your system\n# and how to activate them. For more information, see interfaces(5).\n\nauto lo\niface lo inet loopback" | "$ESCALATION_TOOL" tee /etc/network/interfaces > /dev/null
-        printf "%b\n" "${GREEN}Networking configuration updated for Debian${RC}"
+        install_package "console-setup" "xfonts-terminus" "openssh-server"
         ;;
-    ubuntu) install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server" ;;
-    fedora|rocky|almalinux) install_package "NetworkManager-tui" "terminus-fonts-console" "openssh-server" ;;
-    opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager" "terminus-bitmap-fonts" "openssh" ;;
-    alpine) install_package "networkmanager" "openssh" "shadow" "font-terminus" "--no-cache grep" ;;
-    solus) install_package "network-manager" "font-terminus-console" "openssh-server" ;;
-    void) install_package "NetworkManager" "terminus-font" "openssh" "qemu-ga";;
+    ubuntu) install_package "console-setup" "xfonts-terminus" "openssh-server" ;;
+    fedora|rocky|almalinux) install_package "terminus-fonts-console" "openssh-server" ;;
+    opensuse-tumbleweed|opensuse-leap) install_package "terminus-bitmap-fonts" "openssh" ;;
+    alpine) install_package "openssh" "shadow" "font-terminus" "--no-cache grep" ;;
+    solus) install_package "font-terminus-console" "openssh-server" ;;
+    void) install_package "terminus-font" "openssh" "qemu-ga";;
 esac
 
 # Instead of using an array, let's use a simple space-separated string
 if [ "$DTYPE" = "void" ]; then
-    services="NetworkManager qemu-ga"
+    services="qemu-ga"
 elif [ -f /etc/alpine-release ]; then
-    services="networkmanager qemu-guest-agent"
+    services="qemu-guest-agent"
 else
-    services="NetworkManager qemu-guest-agent"
+    services="qemu-guest-agent"
 fi
 
 # Add SSH service based on system
