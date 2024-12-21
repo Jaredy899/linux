@@ -93,8 +93,8 @@ for package in $common_packages; do
 done
 
 # OS-specific packages including NetworkManager
-case "$(grep -E '^ID_LIKE=|^ID=' /etc/os-release | head -n1 | cut -d'=' -f2 | tr -d '"')" in
-    "arch") 
+case "$(grep -E '^ID_LIKE=|^ID=' /etc/os-release | head -n1 | cut -d'=' -f2 | tr -d '"' | cut -d' ' -f1)" in
+    "arch"|"arch linux") 
         install_package "terminus-font" "yazi" "openssh"
         ;;
     "debian"|"ubuntu")
