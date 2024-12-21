@@ -1,7 +1,7 @@
 #!/bin/sh -e
 
 # Source the common script
-eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)"
 eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_service_script.sh)"
 updateSystem() {
     printf "%b\n" "${YELLOW}Updating system packages.${RC}"
@@ -21,6 +21,9 @@ updateSystem() {
             ;;
         apk)
             "$ESCALATION_TOOL" "$PACKAGER" upgrade
+            ;;
+        eopkg)
+            "$ESCALATION_TOOL" "$PACKAGER" upgrade -y
             ;;
         *)
             printf "%b\n" "${RED}Unsupported package manager: ${PACKAGER}${RC}"
