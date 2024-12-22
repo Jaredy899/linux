@@ -1,4 +1,5 @@
 #!/bin/bash
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)"
 
 set -e
 
@@ -32,19 +33,23 @@ cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
 clear_with_banner
 
 function select_disk {
+    # Show disk selection menu
+    show_disk_menu() {
+        local i=1
+        for disk in "${DISKS[@]}"; do
+            show_menu_item $i "$selected" "$disk"
+            i=$((i + 1))
+        done
+    }
+
     echo "Available disks:"
     mapfile -t DISKS < <(lsblk -d -n -p -o NAME,SIZE,MODEL | grep -E '(/dev/sd|/dev/nvme)')
-    for i in "${!DISKS[@]}"; do
-        echo "$((i+1)). ${DISKS[$i]}"
-    done
-    echo "Enter the number of the disk you want to use:"
-    read DISK_NUMBER
-    if ! [[ "$DISK_NUMBER" =~ ^[0-9]+$ ]] || [ "$DISK_NUMBER" -lt 1 ] || [ "$DISK_NUMBER" -gt "${#DISKS[@]}" ]; then
-        echo "Invalid selection. Please try again."
-        select_disk
-    else
-        DISK=$(echo "${DISKS[$DISK_NUMBER-1]}" | awk '{print $1}')
-    fi
+    
+    # Handle menu selection
+    handle_menu_selection "${#DISKS[@]}" "Select disk to use:" show_disk_menu
+    DISK_NUMBER=$?
+    
+    DISK=$(echo "${DISKS[$DISK_NUMBER-1]}" | awk '{print $1}')
     export DISK
 }
 
