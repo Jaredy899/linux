@@ -8,25 +8,13 @@ install_networkmanager() {
     printf "%b\n" "${CYAN}Installing NetworkManager...${RC}"
     
     case "$PACKAGER" in
-        pacman)
+        pacman|apk|eopkg)
             noninteractive networkmanager
             ;;
         apt-get|nala)
             noninteractive network-manager
             ;;
-        dnf)
-            noninteractive NetworkManager
-            ;;
-        zypper)
-            noninteractive NetworkManager
-            ;;
-        apk)
-            noninteractive networkmanager
-            ;;
-        eopkg)
-            noninteractive networkmanager
-            ;;
-        xbps-install)
+        dnf|zypper|xbps-install)
             noninteractive NetworkManager
             ;;
         *)
