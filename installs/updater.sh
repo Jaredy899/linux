@@ -1,8 +1,8 @@
 #!/bin/sh -e
 
 # Source the common script
-eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)"
-eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_service_script.sh)"
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)"
 updateSystem() {
     printf "%b\n" "${YELLOW}Updating system packages.${RC}"
     case "$PACKAGER" in
