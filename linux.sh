@@ -12,7 +12,7 @@ fi
 printf "${CYAN}GITPATH is set to: %s${RC}\n" "$GITPATH"
 
 # GitHub URL base for the necessary configuration files
-GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/"
+GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/"
 INSTALLS_URL="${GITHUB_BASE_URL}/installs"
 
 # Function to detect the Linux distribution
@@ -60,7 +60,7 @@ if [ -d /run/archiso/bootmnt ]; then
 fi
 
 # Only source common_script.sh (which contains the menu system) after the arch install check
-eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)"
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
 
 # Ensure git is installed
 if ! command_exists git; then
@@ -108,7 +108,6 @@ while true; do
             ;;
         6)
             curl -fsSL https://tailscale.com/install.sh | sh
-            printf "${GREEN}Tailscale installed. Run '$(command -v doas >/dev/null 2>&1 && echo "doas" || echo "sudo") tailscale up' to activate.${RC}\n"
             ;;
         7)
             run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL"
