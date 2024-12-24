@@ -6,7 +6,6 @@ SKIP_AUR_CHECK=true
 # Source the common script directly from GitHub
 eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
 eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)"
-
 # Run the environment check
 checkEnv || exit 1
 
@@ -41,10 +40,10 @@ fi
 # Function to install and configure Nala
 install_nala() {
     printf "%b\n" "${CYAN}Checking if Nala should be installed...${RC}"
-    if [ "$DTYPE" = "debian" ] || [ "$DTYPE" = "ubuntu" ]; then
+    if [ "$PACKAGER" = "apt-get" ]; then
         printf "%b\n" "${CYAN}Installing Nala...${RC}"
         if "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive apt-get update && noninteractive nala; then
-            yes | "$ESCALATION_TOOL" nala fetch --auto --fetches 3 || printf "%b\n" "${YELLOW}Nala fetch failed, continuing...${RC}"
+            yes | "$ESCALATION_TOOL" nala fetch --auto --fetches 1 || printf "%b\n" "${YELLOW}Nala fetch failed, continuing...${RC}"
             printf "%b\n" "${CYAN}Configuring nala as an alternative to apt...${RC}"
             echo "alias apt='nala'" | "$ESCALATION_TOOL" tee -a /etc/bash.bashrc > /dev/null
             "$ESCALATION_TOOL" tee /usr/local/bin/apt << EOF > /dev/null
@@ -54,6 +53,8 @@ nala "\$@"
 EOF
             "$ESCALATION_TOOL" chmod +x /usr/local/bin/apt
             printf "%b\n" "${GREEN}Nala has been installed and set as an alternative to apt.${RC}"
+            # Update PACKAGER to nala after successful installation
+            PACKAGER="nala"
         else
             printf "%b\n" "${YELLOW}Nala installation failed. Continuing with apt...${RC}"
         fi
@@ -93,31 +94,38 @@ for package in $common_packages; do
     install_package $package
 done
 
-# OS-specific packages including NetworkManager
-case "$DTYPE" in
-    arch) install_package "networkmanager" "terminus-font" "yazi" "openssh" ;;
-    debian)
-        install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server"
-        # Stop and disable networking service
-        "$ESCALATION_TOOL" systemctl stop networking
-        "$ESCALATION_TOOL" systemctl disable networking
-        # Modify /etc/network/interfaces
-        "$ESCALATION_TOOL" cp /etc/network/interfaces /etc/network/interfaces.backup
-        echo -e "# This file describes the network interfaces available on your system\n# and how to activate them. For more information, see interfaces(5).\n\nauto lo\niface lo inet loopback" | "$ESCALATION_TOOL" tee /etc/network/interfaces > /dev/null
-        printf "%b\n" "${GREEN}Networking configuration updated for Debian${RC}"
+# OS-specific packages
+case "$PACKAGER" in
+    pacman)
+        install_package "terminus-font" "yazi" "openssh"
         ;;
-    ubuntu) install_package "network-manager" "console-setup" "xfonts-terminus" "openssh-server" ;;
-    fedora|rocky|almalinux) install_package "NetworkManager-tui" "terminus-fonts-console" "openssh-server" ;;
-    opensuse-tumbleweed|opensuse-leap) install_package "NetworkManager" "terminus-bitmap-fonts" "openssh" ;;
-    alpine) install_package "networkmanager" "openssh" "shadow" "font-terminus" "--no-cache grep" ;;
+    apt-get|nala)
+        install_package "console-setup" "xfonts-terminus" "openssh-server"
+        ;;
+    dnf)
+        install_package "terminus-fonts-console" "openssh-server"
+        ;;
+    zypper)
+        install_package "terminus-bitmap-fonts" "openssh"
+        ;;
+    apk)
+        install_package "openssh" "shadow" "font-terminus" "--no-cache grep"
+        ;;
+    eopkg)
+        install_package "font-terminus-console" "openssh-server"
+        ;;
+    xbps-install)
+        install_package "terminus-font" "openssh" "qemu-ga"
+        ;;
+    *)
+        printf "%b\n" "${YELLOW}Unknown package manager. Installing basic packages only.${RC}"
+        install_package "openssh"
+        ;;
 esac
 
-# Instead of using an array, let's use a simple space-separated string
-if [ -f /etc/alpine-release ]; then
-    services="networkmanager qemu-guest-agent"
-else
-    services="NetworkManager qemu-guest-agent"
-fi
+# Set base services
+services="qemu-guest-agent"
+[ "$PACKAGER" = "xbps-install" ] && services="qemu-ga"
 
 # Add SSH service based on system
 if [ -e /usr/lib/systemd/system/sshd.service ] || [ -e /etc/init.d/sshd ]; then
@@ -128,15 +136,13 @@ fi
 
 # Enable and start services
 for service in $services; do
-    if isServiceActive "$service"; then
-        printf "%b\n" "${GREEN}$service is already running${RC}"
-    else
+    if ! isServiceActive "$service"; then
         printf "%b\n" "${CYAN}Enabling and starting $service...${RC}"
-        if startAndEnableService "$service"; then
-            printf "%b\n" "${GREEN}$service enabled and started${RC}"
-        else
+        startAndEnableService "$service" && \
+            printf "%b\n" "${GREEN}$service enabled and started${RC}" || \
             printf "%b\n" "${YELLOW}Failed to enable/start $service. It may start on next boot.${RC}"
-        fi
+    else
+        printf "%b\n" "${GREEN}$service is already running${RC}"
     fi
 done
 
@@ -170,7 +176,7 @@ set_console_font() {
 
 # Set permanent console font
 case "$DTYPE" in
-    arch|fedora|rocky|almalinux|opensuse-tumbleweed|opensuse-leap|alpine)
+    arch|fedora|rocky|almalinux|opensuse-tumbleweed|opensuse-leap|alpine|void)
         if command -v setfont >/dev/null 2>&1; then
             if ! set_console_font; then
                 printf "%b\n" "${YELLOW}Font setting failed. Check if terminus-font package is installed.${RC}"

@@ -1,8 +1,8 @@
 #!/bin/sh -e
 
 # Source the common scripts directly from GitHub
-eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
-eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)"
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)"
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_service_script.sh)"
 
 # Run the environment check
 checkEnv || exit 1
@@ -36,6 +36,12 @@ install_docker() {
                 "$ESCALATION_TOOL" apk add --no-cache --update-cache \
                     --repository http://dl-cdn.alpinelinux.org/alpine/latest-stable/community \
                     docker docker-compose
+                ;;
+            eopkg)
+                noninteractive docker docker-compose
+                ;;
+            xbps-install)
+                noninteractive docker docker-compose
                 ;;
             dnf)
                 if [ "$DTYPE" = "rocky" ] || [ "$DTYPE" = "almalinux" ]; then

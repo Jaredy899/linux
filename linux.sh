@@ -11,9 +11,6 @@ else
 fi
 printf "${CYAN}GITPATH is set to: %s${RC}\n" "$GITPATH"
 
-# Source the common script from the same directory as this script
-eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
-
 # GitHub URL base for the necessary configuration files
 GITHUB_BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/"
 INSTALLS_URL="${GITHUB_BASE_URL}/installs"
@@ -62,6 +59,9 @@ if [ -d /run/archiso/bootmnt ]; then
     fi
 fi
 
+# Only source common_script.sh (which contains the menu system) after the arch install check
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/dev/common_script.sh)"
+
 # Ensure git is installed
 if ! command_exists git; then
     printf "${RED}Git is not installed. Installing git...${RC}\n"
@@ -82,11 +82,12 @@ show_main_menu() {
     show_menu_item 8  "${NC}" "Update System"
     show_menu_item 9  "${NC}" "Replace configs"
     show_menu_item 10 "${NC}" "Install Desktop Environment"
-    show_menu_item 11 "${NC}" "Exit"
+    show_menu_item 11 "${NC}" "Install NetworkManager"
+    show_menu_item 12 "${NC}" "Exit"
 }
 
 while true; do
-    handle_menu_selection 11 "Select an option:" show_main_menu
+    handle_menu_selection 12 "Select an option:" show_main_menu
     choice=$?
     
     case $choice in
@@ -122,11 +123,17 @@ while true; do
             run_script "de-installer.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         11)
+            run_script "install_networkmanager.sh" "$GITPATH/installs" "$INSTALLS_URL"
+            ;;
+        12)
             printf "${GREEN}Exiting script.${RC}\n"
             exit 0
             ;;
     esac
     
     printf "\nPress any key to continue..."
-    read -n 1 -s -r
+    stty -echo
+    dd bs=1 count=1 2>/dev/null
+    stty echo
+    clear
 done
