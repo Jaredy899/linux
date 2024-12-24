@@ -94,7 +94,7 @@ while true; do
             run_script "post_install.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         2)
-            curl -fsSL christitus.com/linuxdev | sh
+            curl -fsSL https://raw.githubusercontent.com/Jaredy899/linutil/refs/heads/main/start.sh | sh
             ;;
         3)
             run_script "add_ssh_key.sh" "$GITPATH/installs" "$INSTALLS_URL"
