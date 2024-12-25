@@ -251,7 +251,8 @@ checkFlatpak() {
 
 # Function to read keyboard input
 read_key() {
-    dd bs=1 count=1 2>/dev/null | od -An -tx1
+    # Read a single character
+    dd bs=1 count=1 2>/dev/null
 }
 
 # Function to show menu item
@@ -290,42 +291,37 @@ handle_menu_selection() {
         # Read keyboard input
         stty raw -echo
         char=$(read_key)
-        case "$char" in
-            " 71"|" 51") # 'q' or 'Q'
-                stty "$saved_stty"
-                cleanup
-                ;;
-            " 1b") # ESC or arrow keys
-                char2=$(read_key)
-                if [ "$char2" = " 5b" ]; then
-                    char3=$(read_key)
-                    case "$char3" in
-                        " 41") # Up arrow
-                            if [ $selected -eq 1 ]; then
-                                selected=$total_options  # Wrap to bottom
-                            else
-                                selected=$((selected - 1))
-                            fi
-                            ;;
-                        " 42") # Down arrow
-                            if [ $selected -eq $total_options ]; then
-                                selected=1  # Wrap to top
-                            else
-                                selected=$((selected + 1))
-                            fi
-                            ;;
-                    esac
-                fi
-                ;;
-            " 03") # Ctrl+C
-                stty "$saved_stty"
-                cleanup
-                ;;
-            " 0a"|" 0d") # Enter
-                stty "$saved_stty"
-                return $selected
-                ;;
-        esac
+        if [ "$char" = "q" ] || [ "$char" = "Q" ]; then
+            stty "$saved_stty"
+            cleanup
+        elif [ "$char" = $'\x1b' ]; then  # ESC or arrow keys
+            char2=$(read_key)
+            if [ "$char2" = " 5b" ]; then
+                char3=$(read_key)
+                case "$char3" in
+                    " 41") # Up arrow
+                        if [ $selected -eq 1 ]; then
+                            selected=$total_options  # Wrap to bottom
+                        else
+                            selected=$((selected - 1))
+                        fi
+                        ;;
+                    " 42") # Down arrow
+                        if [ $selected -eq $total_options ]; then
+                            selected=1  # Wrap to top
+                        else
+                            selected=$((selected + 1))
+                        fi
+                        ;;
+                esac
+            fi
+        elif [ "$char" = $'\x03' ]; then  # Ctrl+C
+            stty "$saved_stty"
+            cleanup
+        elif [ "$char" = $'\x0a' ] || [ "$char" = $'\x0d' ]; then  # Enter
+            stty "$saved_stty"
+            return $selected
+        fi
         stty "$saved_stty"
     done
 }
