@@ -134,5 +134,6 @@ while true; do
     stty -echo
     dd bs=1 count=1 2>/dev/null
     stty echo
+    echo
     clear
 done
