@@ -131,9 +131,10 @@ while true; do
     esac
     
     printf "\nPress any key to continue..."
-    stty -echo
-    dd bs=1 count=1 2>/dev/null
-    stty echo
-    echo
+    saved_tty_settings=$(stty -g)   # Save current terminal settings
+    stty raw -echo                  # Change terminal settings
+    dd bs=1 count=1 2>/dev/null     # Read one character
+    stty "$saved_tty_settings"      # Restore terminal settings
+    printf "\n"
     clear
 done
