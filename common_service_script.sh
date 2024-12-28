@@ -60,6 +60,7 @@ enableService() {
             "$ESCALATION_TOOL" rc-update add "$1"
             ;;
         runit)
+            "$ESCALATION_TOOL" mkdir -p "/var/service"
             "$ESCALATION_TOOL" mkdir -p "/run/runit/supervise.$1"
             "$ESCALATION_TOOL" ln -sf "/etc/sv/$1" "/var/service/"
             sleep 2
