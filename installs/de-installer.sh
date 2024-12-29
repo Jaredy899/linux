@@ -70,6 +70,30 @@ install_opensuse_de() {
     $ESCALATION_TOOL systemctl set-default graphical.target
 }
 
+# Function to install COSMIC on supported distributions
+install_cosmic() {
+    case $DTYPE in
+        "arch")
+            # Instructions for Arch Linux
+            noninteractive cosmic
+            ;;
+        "fedora")
+            # Instructions for Fedora
+            noninteractive @"cosmic-desktop-environment"
+            ;;
+        "opensuse"|"opensuse-tumbleweed"|"opensuse-leap")
+            # Instructions for openSUSE
+            $ESCALATION_TOOL zypper --non-interactive addrepo https://download.opensuse.org/repositories/X11:/COSMIC:/Factory/openSUSE_Factory/ X11:COSMIC:Factory
+            $ESCALATION_TOOL zypper --non-interactive refresh
+            $ESCALATION_TOOL zypper --non-interactive install -t pattern patterns-cosmic-cosmic
+            ;;
+        *)
+            printf "%b\n" "${RED}COSMIC is not supported on this distribution: $DTYPE${RC}"
+            exit 1
+            ;;
+    esac
+}
+
 # Main script
 clear
 printf "%b\n" "${BLUE}Desktop Environment Installer${RC}"
@@ -86,10 +110,11 @@ printf "\nAvailable Desktop Environments:\n"
 echo "1. Cinnamon"
 echo "2. KDE Plasma"
 echo "3. DWM"
-printf "%b" "${YELLOW}Select your desired desktop environment (1-3): ${RC}"
+echo "4. COSMIC"
+printf "%b" "${YELLOW}Select your desired desktop environment (1-4): ${RC}"
 read -r choice
 
-if [ "$choice" -ge 1 ] && [ "$choice" -le 3 ]; then
+if [ "$choice" -ge 1 ] && [ "$choice" -le 4 ]; then
     # Update system first
     case $PACKAGER in
         pacman) $ESCALATION_TOOL $PACKAGER -Syu $(getNonInteractiveFlags) ;;
@@ -140,6 +165,6 @@ if [ "$choice" -ge 1 ] && [ "$choice" -le 3 ]; then
 
     printf "%b\n" "${GREEN}Installation complete! Please reboot your system.${RC}"
 else
-    printf "%b\n" "${RED}Invalid choice. Please select a number between 1 and 3.${RC}"
+    printf "%b\n" "${RED}Invalid choice. Please select a number between 1 and 4.${RC}"
     exit 1
 fi 
