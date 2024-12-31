@@ -89,6 +89,7 @@ install_opensuse_de() {
             ;;
         2) 
             # Install KDE Plasma
+            noninteractive -t pattern kde kde_plasma
             $ESCALATION_TOOL sed -i 's/^DISPLAYMANAGER=.*/DISPLAYMANAGER="sddm"/' /etc/sysconfig/displaymanager
             ;;
         3) 
