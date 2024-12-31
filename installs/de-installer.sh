@@ -21,12 +21,10 @@ install_arch_de() {
         1) 
             # Install Cinnamon
             noninteractive cinnamon dolphin konsole lightdm xed xreader feh
-            $ESCALATION_TOOL systemctl enable lightdm
             ;;
         2) 
             # Install KDE Plasma
             noninteractive plasma-meta sddm dolphin konsole feh
-            $ESCALATION_TOOL systemctl enable sddm
             ;;
         3) 
             # Install DWM
@@ -35,7 +33,6 @@ install_arch_de() {
         4) 
             # Install COSMIC
             noninteractive cosmic
-            $ESCALATION_TOOL systemctl enable gdm
             ;;
     esac
 }
@@ -46,13 +43,11 @@ install_fedora_de() {
         1) 
             # Install Cinnamon
             noninteractive @"cinnamon-desktop" lightdm feh
-            $ESCALATION_TOOL systemctl enable lightdm
             ;;
         2) 
             # Install KDE Plasma
             $ESCALATION_TOOL $PACKAGER remove -y sddm-wayland-generic
             noninteractive @"kde-desktop-environment" sddm feh
-            $ESCALATION_TOOL systemctl enable sddm
             ;;
         3) 
             # Install DWM
@@ -61,7 +56,6 @@ install_fedora_de() {
         4) 
             # Install COSMIC
             noninteractive @"cosmic-desktop-environment"
-            $ESCALATION_TOOL systemctl enable gdm
             ;;
     esac
 }
@@ -72,13 +66,11 @@ install_debian_de() {
         1) 
             # Install Cinnamon
             noninteractive cinnamon-core lightdm feh
-            $ESCALATION_TOOL systemctl enable lightdm 
             ;;
         2) 
             # Install KDE Plasma
             echo "sddm shared/default-display-manager select sddm" | $ESCALATION_TOOL debconf-set-selections
             noninteractive kde-plasma-desktop plasma-desktop plasma-workspace sddm plasma-nm plasma-pa dolphin konsole kwin-x11 systemsettings plasma-workspace-wayland feh
-            $ESCALATION_TOOL systemctl enable sddm
             ;;
         3) 
             # Install DWM
@@ -94,12 +86,10 @@ install_opensuse_de() {
             # Install Cinnamon
             noninteractive -t pattern cinnamon
             noninteractive lightdm
-            $ESCALATION_TOOL systemctl enable lightdm
             ;;
         2) 
             # Install KDE Plasma
             $ESCALATION_TOOL sed -i 's/^DISPLAYMANAGER=.*/DISPLAYMANAGER="sddm"/' /etc/sysconfig/displaymanager
-            $ESCALATION_TOOL systemctl enable sddm
             ;;
         3) 
             # Install DWM
@@ -109,10 +99,8 @@ install_opensuse_de() {
         4) 
             # Install COSMIC
             $ESCALATION_TOOL zypper --non-interactive addrepo https://download.opensuse.org/repositories/X11:/COSMIC:/Factory/openSUSE_Factory/ X11:COSMIC:Factory
-        4)  $ESCALATION_TOOL zypper --non-interactive addrepo https://download.opensuse.org/repositories/X11:/COSMIC:/Factory/openSUSE_Factory/ X11:COSMIC:Factory
             $ESCALATION_TOOL zypper --non-interactive refresh
             $ESCALATION_TOOL zypper --non-interactive install -t pattern patterns-cosmic-cosmic
-            $ESCALATION_TOOL systemctl enable gdm
             $ESCALATION_TOOL sed -i 's/^DISPLAYMANAGER=.*/DISPLAYMANAGER="gdm"/' /etc/sysconfig/displaymanager
             ;;
     esac
