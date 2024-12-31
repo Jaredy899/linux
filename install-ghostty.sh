@@ -113,7 +113,7 @@ install_from_source() {
     printf "%b\n" "${GREEN}Ghostty has been built and installed successfully!${RC}"
 }
 
-check_binary_availability() {
+function check_binary_availability() {
     case "$PACKAGER" in
         "pacman")
             if $AUR_HELPER -Ss "^ghostty$" >/dev/null 2>&1; then
@@ -131,6 +131,8 @@ check_binary_availability() {
             fi
             ;;
         "dnf")
+            # Enable the COPR repository before checking for the package
+            "$ESCALATION_TOOL" dnf copr enable -y pgdev/ghostty
             if dnf list ghostty >/dev/null 2>&1; then
                 return 0
             fi
