@@ -101,7 +101,7 @@ install_opensuse_de() {
             # Auto-accept repository key
             echo "a" | $ESCALATION_TOOL zypper --non-interactive addrepo https://download.opensuse.org/repositories/X11:/COSMIC:/Factory/openSUSE_Factory/ X11:COSMIC:Factory
             echo "a" | $ESCALATION_TOOL zypper --non-interactive refresh
-            $ESCALATION_TOOL zypper --non-interactive install -t pattern patterns-cosmic-cosmic
+            $ESCALATION_TOOL zypper --non-interactive install patterns-cosmic-cosmic
             $ESCALATION_TOOL sed -i 's/^DISPLAYMANAGER=.*/DISPLAYMANAGER="gdm"/' /etc/sysconfig/displaymanager
             ;;
     esac
