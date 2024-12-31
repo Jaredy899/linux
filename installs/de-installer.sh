@@ -145,10 +145,10 @@ update_system() {
 
 # Function to display menu items
 show_de_menu() {
-    show_menu_item 1 "1. Cinnamon"
-    show_menu_item 2 "2. KDE Plasma"
-    show_menu_item 3 "3. DWM"
-    show_menu_item 4 "4. COSMIC"
+    show_menu_item 1 "${NC}" "Cinnamon"
+    show_menu_item 2 "${NC}" "KDE Plasma"
+    show_menu_item 3 "${NC}" "DWM"
+    show_menu_item 4 "${NC}" "Cosmic"
 }
 
 # Main script
