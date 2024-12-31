@@ -131,7 +131,6 @@ function check_binary_availability() {
             fi
             ;;
         "dnf")
-            # Enable the COPR repository before checking for the package
             "$ESCALATION_TOOL" dnf copr enable -y pgdev/ghostty
             if dnf list ghostty >/dev/null 2>&1; then
                 return 0
