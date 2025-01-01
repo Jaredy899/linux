@@ -93,6 +93,9 @@ install_from_source() {
         "zypper")
             noninteractive gtk4-tools libadwaita-devel pkgconf-pkg-config
             ;;
+        "eopkg")
+            noninteractive libgtk-4-devel libadwaita-devel perl-extutils-pkgconfig
+            ;;
         *)
             printf "%b\n" "${RED}Unsupported package manager for source installation${RC}"
             exit 1
