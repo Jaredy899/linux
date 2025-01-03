@@ -109,7 +109,7 @@ case "$PACKAGER" in
         install_package "terminus-bitmap-fonts" "openssh"
         ;;
     apk)
-        install_package "openssh" "shadow" "font-terminus" "--no-cache grep"
+        install_package "openssh" "shadow" "font-terminus"
         ;;
     eopkg)
         install_package "font-terminus-console" "openssh-server"
