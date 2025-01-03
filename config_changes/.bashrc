@@ -186,12 +186,12 @@ alias las='ls -A'                 # Hidden Files
 alias lls='ls -l'                 # List
 
 # alias chmod commands
-alias mx='chmod a+x'
-alias 000='chmod -R 000'
-alias 644='chmod -R 644'
-alias 666='chmod -R 666'
-alias 755='chmod -R 755'
-alias 777='chmod -R 777'
+alias mx='sudo chmod a+x'
+alias 000='sudo chmod -R 000'
+alias 644='sudo chmod -R 644'
+alias 666='sudo chmod -R 666'
+alias 755='sudo chmod -R 755'
+alias 777='sudo chmod -R 777'
 
 # Search command line history
 alias h="history | grep "
