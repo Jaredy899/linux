@@ -26,7 +26,7 @@ install_docker() {
     if ! command_exists docker; then
         printf "%b\n" "${YELLOW}Installing Docker...${RC}"
         case "$PACKAGER" in
-            pacman)
+            pacman|eopkg|xbps-install)
                 noninteractive docker docker-compose
                 ;;
             zypper)
@@ -36,12 +36,6 @@ install_docker() {
                 "$ESCALATION_TOOL" apk add --no-cache --update-cache \
                     --repository http://dl-cdn.alpinelinux.org/alpine/latest-stable/community \
                     docker docker-compose
-                ;;
-            eopkg)
-                noninteractive docker docker-compose
-                ;;
-            xbps-install)
-                noninteractive docker docker-compose
                 ;;
             dnf)
                 if [ "$DTYPE" = "rocky" ] || [ "$DTYPE" = "almalinux" ]; then
