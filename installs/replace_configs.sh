@@ -6,7 +6,7 @@ eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/mai
 # Run the environment check
 checkEnv || exit 1
 
-BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/dev/config_changes"
+BASE_URL="https://raw.githubusercontent.com/Jaredy899/linux/main/config_changes"
 MYBASH_DIR="$HOME/.local/share/mybash"
 # DWM_TITUS_DIR="$HOME/dwm-titus"
 
