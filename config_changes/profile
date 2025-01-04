@@ -25,5 +25,24 @@ unset script
 alias sudo="doas"
 alias reboot="doas reboot"
 alias shutdown="doas poweroff"
+alias nfzf='nano $(fzf -m --preview="bat --color=always {}")'
+alias ls='ls -aFh --color=always' # add colors and file type extensions
+
+# alias chmod commands
+alias mx='sudo chmod a+x'
+alias 000='sudo chmod -R 000'
+alias 644='sudo chmod -R 644'
+alias 666='sudo chmod -R 666'
+alias 755='sudo chmod -R 755'
+alias 777='sudo chmod -R 777'
+
+alias home='cd ~'
+alias cd..='cd ..'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+
 alias update='curl https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/installs/updater.sh | sh'
 fastfetch
+eval "$(zoxide init posix --hook prompt)"
