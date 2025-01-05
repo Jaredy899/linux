@@ -55,7 +55,7 @@ install_fedora_de() {
             ;;
         4) 
             # Install COSMIC
-            noninteractive @"cosmic-desktop-environment"
+            noninteractive gdm @"cosmic-desktop-environment"
             ;;
     esac
 }
