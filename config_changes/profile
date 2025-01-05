@@ -28,6 +28,15 @@ alias shutdown="doas poweroff"
 alias nfzf='nano $(fzf -m --preview="bat --color=always {}")'
 alias ls='ls -aFh --color=always' # add colors and file type extensions
 
+# Define a function to change directory and list contents
+cd() {
+    if [ -n "$1" ]; then
+        command cd "$1" && ls
+    else
+        command cd ~ && ls
+    fi
+}
+
 # alias chmod commands
 alias mx='sudo chmod a+x'
 alias 000='sudo chmod -R 000'
