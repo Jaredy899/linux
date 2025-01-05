@@ -32,7 +32,7 @@ install_arch_de() {
             ;;
         4) 
             # Install COSMIC
-            noninteractive cosmic
+            noninteractive gdm cosmic
             ;;
     esac
 }
