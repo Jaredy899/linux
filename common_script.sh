@@ -10,7 +10,38 @@ GREEN='\033[32m'
 MAGENTA='\033[35m'
 
 command_exists() {
-    command -v "$1" >/dev/null 2>&1
+for cmd in "$@"; do
+    export PATH="$HOME/.local/share/flatpak/exports/bin:/var/lib/flatpak/exports/bin:$PATH"
+    command -v "$cmd" >/dev/null 2>&1 || return 1
+done
+return 0
+}
+
+checkFlatpak() {
+    if ! command_exists flatpak; then
+        printf "%b\n" "${YELLOW}Installing Flatpak...${RC}"
+        case "$PACKAGER" in
+            pacman)
+                "$ESCALATION_TOOL" "$PACKAGER" -S --needed --noconfirm flatpak
+                ;;
+            apk)
+                "$ESCALATION_TOOL" "$PACKAGER" add flatpak
+                ;;
+            *)
+                "$ESCALATION_TOOL" "$PACKAGER" install -y flatpak
+                ;;
+        esac
+        printf "%b\n" "${YELLOW}Adding Flathub remote...${RC}"
+        "$ESCALATION_TOOL" flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+        printf "%b\n" "${YELLOW}Applications installed by Flatpak may not appear on your desktop until the user session is restarted...${RC}"
+    else
+        if ! flatpak remotes | grep -q "flathub"; then
+            printf "%b\n" "${YELLOW}Adding Flathub remote...${RC}"
+            "$ESCALATION_TOOL" flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+        else
+            printf "%b\n" "${CYAN}Flatpak is installed${RC}"
+        fi
+    fi
 }
 
 checkArch() {
@@ -57,6 +88,13 @@ checkAURHelper() {
 checkEscalationTool() {
     ## Check for escalation tools.
     if [ -z "$ESCALATION_TOOL_CHECKED" ]; then
+        if [ "$(id -u)" = "0" ]; then
+            ESCALATION_TOOL="eval"
+            ESCALATION_TOOL_CHECKED=true
+            printf "%b\n" "${CYAN}Running as root, no escalation needed${RC}"
+            return 0
+        fi
+
         ESCALATION_TOOLS='sudo doas'
         for tool in ${ESCALATION_TOOLS}; do
             if command_exists "${tool}"; then
@@ -118,12 +156,15 @@ checkSuperUser() {
         if groups | grep -q "${sug}"; then
             SUGROUP=${sug}
             printf "%b\n" "${CYAN}Super user group ${SUGROUP}${RC}"
-            return 0
+            break
         fi
     done
 
-    printf "%b\n" "${YELLOW}You are not a member of a known superuser group.${RC}"
-    return 1
+    ## Check if member of the sudo group.
+    if ! groups | grep -q "${SUGROUP}"; then
+        printf "%b\n" "${RED}You need to be a member of the sudo group to run me!${RC}"
+        exit 1
+    fi
 }
 
 checkCurrentDirectoryWritable() {
@@ -230,24 +271,6 @@ getNonInteractiveFlags() {
             echo ""  # Default to empty string if package manager is unknown
             ;;
     esac
-}
-
-# Update checkFlatpak to use noninteractive function
-checkFlatpak() {
-    if ! command_exists flatpak; then
-        printf "%b\n" "${YELLOW}Installing Flatpak...${RC}"
-        noninteractive flatpak
-        printf "%b\n" "${YELLOW}Adding Flathub remote...${RC}"
-        "$ESCALATION_TOOL" flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-        printf "%b\n" "${YELLOW}Applications installed by Flatpak may not appear on your desktop until the user session is restarted...${RC}"
-    else
-        if ! flatpak remotes | grep -q "flathub"; then
-            printf "%b\n" "${YELLOW}Adding Flathub remote...${RC}"
-            "$ESCALATION_TOOL" flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-        else
-            printf "%b\n" "${CYAN}Flatpak is installed${RC}"
-        fi
-    fi
 }
 
 # Function to read keyboard input
