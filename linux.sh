@@ -63,12 +63,12 @@ fi
 eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
 
 # Ensure git is installed
-if ! command_exists git; then
-    printf "${RED}Git is not installed. Installing git...${RC}\n"
-    run_script "install_git.sh" "$GITPATH/installs" "$INSTALLS_URL"
-else
-    printf "${GREEN}Git is already installed.${RC}\n"
-fi
+# if ! command_exists git; then
+#     printf "${RED}Git is not installed. Installing git...${RC}\n"
+#     run_script "install_git.sh" "$GITPATH/installs" "$INSTALLS_URL"
+# else
+#     printf "${GREEN}Git is already installed.${RC}\n"
+# fi
 
 # Function to display main menu items
 show_main_menu() {
