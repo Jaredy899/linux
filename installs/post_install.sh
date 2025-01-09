@@ -83,8 +83,8 @@ echo "-------------------------------------------------------------------------"
 echo "                Installing Applications and Network Manager              "
 echo "-------------------------------------------------------------------------"
 
-# Install EPEL for Rocky and AlmaLinux
-if [ "$DTYPE" = "rocky" ] || [ "$DTYPE" = "almalinux" ]; then
+# Install EPEL for Rocky, AlmaLinux, and Oracle Linux
+if [ "$DTYPE" = "rocky" ] || [ "$DTYPE" = "almalinux" ] || [ "$DTYPE" = "ol" ]; then
     "$ESCALATION_TOOL" dnf install -y epel-release
 fi
 
