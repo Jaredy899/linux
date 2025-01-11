@@ -9,7 +9,14 @@ checkEnv
 
 # Define variables
 GHOSTTY_VERSION="latest"
-INSTALL_DIR="/usr/local/bin"
+# Set installation directory based on distribution
+if [ "$PACKAGER" = "eopkg" ]; then
+    INSTALL_DIR="/usr/bin"
+    LIB_DIR="/usr/lib"
+else
+    INSTALL_DIR="/usr/local/bin"
+    LIB_DIR="/usr/local/lib"
+fi
 ZIG_VERSION="0.13.0"
 
 install_zig() {
@@ -37,10 +44,10 @@ install_zig() {
             fi
         fi
 
-        # Install Zig
-        "$ESCALATION_TOOL" mkdir -p /usr/local/lib
-        "$ESCALATION_TOOL" mv ${ZIG_DIR} /usr/local/lib/
-        "$ESCALATION_TOOL" ln -sf "/usr/local/lib/${ZIG_DIR}/zig" /usr/local/bin/zig
+        # Install Zig with distribution-specific paths
+        "$ESCALATION_TOOL" mkdir -p "$LIB_DIR"
+        "$ESCALATION_TOOL" mv ${ZIG_DIR} "$LIB_DIR/"
+        "$ESCALATION_TOOL" ln -sf "$LIB_DIR/${ZIG_DIR}/zig" "$INSTALL_DIR/zig"
         rm ${ZIG_DIR}.tar.xz
 
         if ! command -v zig &> /dev/null; then
