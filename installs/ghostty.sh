@@ -94,13 +94,13 @@ install_dependencies() {
             ;;
         "nala"|"apt")
             $ESCALATION_TOOL apt update
-            $ESCALATION_TOOL apt install -y libgtk-4-dev libadwaita-1-dev git
+            $ESCALATION_TOOL apt install -y build-essential libgtk-4-dev libadwaita-1-dev git
             if grep -q "testing\|unstable" /etc/debian_version; then
                 $ESCALATION_TOOL apt install -y gcc-multilib
             fi
             ;;
         "dnf")
-            $ESCALATION_TOOL dnf install -y gtk4-devel zig libadwaita-devel
+            $ESCALATION_TOOL dnf install -y @development-tools gtk4-devel zig libadwaita-devel
             ;;
         "rpm-ostree")
             rpm-ostree install gtk4-devel zig libadwaita-devel
@@ -109,7 +109,7 @@ install_dependencies() {
             $ESCALATION_TOOL emerge -av libadwaita gtk
             ;;
         "zypper")
-            $ESCALATION_TOOL zypper install -y gtk4-tools libadwaita-devel pkgconf-pkg-config zig
+            $ESCALATION_TOOL zypper install -y patterns-devel-base-devel_basis gtk4-tools libadwaita-devel pkgconf-pkg-config zig
             ;;
         "eopkg")
             $ESCALATION_TOOL eopkg install -c system.devel -y libgtk-4-devel libadwaita-devel perl-extutils-pkgconfig
