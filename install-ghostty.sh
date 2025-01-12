@@ -101,7 +101,7 @@ install_from_source() {
             noninteractive gtk4-tools libadwaita-devel pkgconf-pkg-config
             ;;
         "eopkg")
-            noninteractive libgtk-4-devel libadwaita-devel perl-extutils-pkgconfig
+            noninteractive -c system.devel libgtk-4-devel libadwaita-devel perl-extutils-pkgconfig
             ;;
         *)
             printf "%b\n" "${RED}Unsupported package manager for source installation${RC}"
