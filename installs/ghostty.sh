@@ -9,13 +9,6 @@ checkEnv
 # Define variables
 GHOSTTY_VERSION="latest"
 ZIG_VERSION="0.13.0"
-ARCH=$(uname -m)
-ESCALATION_TOOL="sudo"  # or use another tool if needed
-CYAN='\033[0;36m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-RED='\033[0;31m'
-RC='\033[0m' # Reset color
 
 # Set installation directory based on distribution
 if [ "$PACKAGER" = "eopkg" ]; then
