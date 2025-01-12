@@ -36,8 +36,8 @@ install_zig() {
         curl -LO ${ZIG_URL}
         tar -xf ${ZIG_DIR}.tar.xz
 
-        # Apply patch for aarch64
-        if [ "$ARCH" == "aarch64" ]; then
+        # Apply patch for aarch64 on Raspberry Pi
+        if [ "$ARCH" == "aarch64" ] && grep -q "Raspberry Pi" /proc/cpuinfo; then
             MEM_ZIG_PATH="${ZIG_DIR}/lib/std/mem.zig"
             if [ -f "$MEM_ZIG_PATH" ]; then
                 sed -i 's/4 \* 1024/16 \* 1024/' "$MEM_ZIG_PATH"
