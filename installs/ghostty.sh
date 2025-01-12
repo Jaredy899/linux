@@ -139,7 +139,7 @@ build_ghostty_from_source() {
     cd ghostty
 
     # Build Ghostty
-    zig build -p "$HOME/.local" -Doptimize=ReleaseFast
+    $ESCALATION_TOOL zig build -p /usr -Doptimize=ReleaseFast
 
     printf "%b\n" "${GREEN}Ghostty has been built and installed successfully!${RC}"
 }
