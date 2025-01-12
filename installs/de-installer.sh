@@ -34,6 +34,10 @@ install_arch_de() {
             # Install COSMIC
             noninteractive gdm cosmic
             ;;
+        5) 
+            # Install XFCE
+            noninteractive xfce4 xfce4-goodies lightdm feh
+            ;;
     esac
 }
 
@@ -57,6 +61,10 @@ install_fedora_de() {
             # Install COSMIC
             noninteractive gdm @"cosmic-desktop-environment"
             ;;
+        5) 
+            # Install XFCE
+            noninteractive @"xfce-desktop-environment" lightdm feh
+            ;;
     esac
 }
 
@@ -75,6 +83,14 @@ install_debian_de() {
         3) 
             # Install DWM
             install_dwm 
+            ;;
+        4)
+            # Install COSMIC
+            noninteractive gdm cosmic
+            ;;
+        5) 
+            # Install XFCE
+            noninteractive xfce4 xfce4-goodies lightdm feh
             ;;
     esac
 }
@@ -104,6 +120,11 @@ install_opensuse_de() {
             echo "a" | $ESCALATION_TOOL zypper --non-interactive refresh
             $ESCALATION_TOOL zypper --non-interactive install patterns-cosmic-cosmic
             $ESCALATION_TOOL sed -i 's/^DISPLAYMANAGER=.*/DISPLAYMANAGER="gdm"/' /etc/sysconfig/displaymanager
+            ;;
+        5) 
+            # Install XFCE
+            noninteractive -t pattern xfce
+            noninteractive lightdm
             ;;
     esac
     
@@ -151,6 +172,7 @@ show_de_menu() {
     show_menu_item 2 "${NC}" "KDE Plasma"
     show_menu_item 3 "${NC}" "DWM"
     show_menu_item 4 "${NC}" "Cosmic"
+    show_menu_item 5 "${NC}" "XFCE"
 }
 
 # Main script
@@ -176,10 +198,10 @@ printf "%b\n" "${CYAN}Detected Distribution: $DTYPE${RC}"
 printf "\nAvailable Desktop Environments:\n"
 
 # Use arrow keys to select the desktop environment
-handle_menu_selection 4 "Select your desired desktop environment:" show_de_menu
+handle_menu_selection 5 "Select your desired desktop environment:" show_de_menu
 choice=$?
 
-if [ "$choice" -ge 1 ] && [ "$choice" -le 4 ]; then
+if [ "$choice" -ge 1 ] && [ "$choice" -le 5 ]; then
     # Update system first
     update_system
 
@@ -198,9 +220,10 @@ if [ "$choice" -ge 1 ] && [ "$choice" -le 4 ]; then
     # Enable display manager if not already set
     if [ -z "$current_dm" ]; then
         case $choice in
-            1|2) enable_display_manager "sddm" ;;
+            1|5) enable_display_manager "lightdm" ;; # Cinnamon and XFCE use LightDM
+            2) enable_display_manager "sddm" ;; # KDE Plasma uses SDDM
             3) : ;; # DWM handles its own display manager setup
-            4) enable_display_manager "gdm" ;; # Enable GDM for COSMIC
+            4) enable_display_manager "gdm" ;; # COSMIC uses GDM
         esac
     else
         printf "%b\n" "${CYAN}Using existing display manager: $current_dm${RC}"
@@ -214,6 +237,6 @@ if [ "$choice" -ge 1 ] && [ "$choice" -le 4 ]; then
 
     printf "%b\n" "${GREEN}Installation complete! Please reboot your system.${RC}"
 else
-    printf "%b\n" "${RED}Invalid choice. Please select a number between 1 and 4.${RC}"
+    printf "%b\n" "${RED}Invalid choice. Please select a number between 1 and 5.${RC}"
     exit 1
 fi 
