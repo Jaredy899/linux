@@ -119,7 +119,7 @@ install_dependencies() {
             $ESCALATION_TOOL zypper install -y gtk4-tools libadwaita-devel pkgconf-pkg-config zig
             ;;
         "eopkg")
-            $ESCALATION_TOOL eopkg install -y libgtk-4-devel libadwaita-devel perl-extutils-pkgconfig
+            $ESCALATION_TOOL eopkg install -c system.devel -y libgtk-4-devel libadwaita-devel perl-extutils-pkgconfig
             ;;
         *)
             printf "%b\n" "${RED}No dependency installation method found for your distribution.${RC}"
