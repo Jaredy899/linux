@@ -165,7 +165,7 @@ create_desktop_entry() {
     fi
 
     # Modify the Exec line for Raspberry Pi if needed
-    if [ "$ARCH" = "aarch64" ]; then
+    if [ "$ARCH" = "aarch64" ] && grep -q "Raspberry Pi" /proc/cpuinfo; then
         sed -i "s|^Exec=.*|Exec=env GDK_BACKEND=wayland,x11 LIBGL_ALWAYS_SOFTWARE=1 $HOME/.local/bin/ghostty|" "$DESKTOP_FILE"
     fi
 
