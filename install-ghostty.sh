@@ -183,19 +183,21 @@ printf "%b\n" "${CYAN}Checking for binary package availability...${RC}"
 
 if check_binary_availability; then
     printf "%b\n" "${CYAN}Binary package found for Ghostty${RC}"
-    install_binary_package
-    printf "%b\n" "${GREEN}Ghostty has been installed successfully from package repository!${RC}"
+    
+    printf "%b\n" "${YELLOW}Would you like to install Ghostty from the binary package? (y/N)${RC}"
+    read -r binary_response
+    if [ "$binary_response" = "y" ] || [ "$binary_response" = "Y" ]; then
+        install_binary_package
+        printf "%b\n" "${GREEN}Ghostty has been installed successfully from package repository!${RC}"
+    else
+        printf "%b\n" "${YELLOW}Proceeding to install Ghostty from source...${RC}"
+        install_from_source
+    fi
 else
     printf "%b\n" "${YELLOW}No binary package found for Ghostty.${RC}"
-    if command -v zig >/dev/null 2>&1; then
-        printf "%b\n" "${CYAN}Zig is already installed${RC}"
-    else
-        printf "%b\n" "${YELLOW}Zig binary not found.${RC}"
-    fi
-    
     printf "%b\n" "${YELLOW}Would you like to install Ghostty from source? (y/N)${RC}"
-    read -r response
-    if [ "$response" = "y" ] || [ "$response" = "Y" ]; then
+    read -r source_response
+    if [ "$source_response" = "y" ] || [ "$source_response" = "Y" ]; then
         if ! command -v zig >/dev/null 2>&1; then
             install_zig
         fi
