@@ -115,7 +115,7 @@ install_dependencies() {
             $ESCALATION_TOOL eopkg install -c system.devel -y libgtk-4-devel libadwaita-devel perl-extutils-pkgconfig
             ;;
         "apk")
-            $ESCALATION_TOOL apk add build-base gtk+4.0-dev libadwaita-dev zig
+            $ESCALATION_TOOL apk add build-base gtk4.0-dev libadwaita-dev zig
             ;;
         *)
             printf "%b\n" "${RED}No dependency installation method found for your distribution.${RC}"
