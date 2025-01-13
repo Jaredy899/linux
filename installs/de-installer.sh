@@ -90,7 +90,7 @@ install_debian_de() {
             ;;
         5) 
             # Install XFCE
-            noninteractive xfce4 xfce4-goodies lightdm feh
+            noninteractive xfce4 xfce4-goodies lightdm xorg feh
             ;;
     esac
 }

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Source common functions
 eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
 eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)"
@@ -20,11 +20,11 @@ else
 fi
 
 install_zig() {
-    if ! command -v zig &> /dev/null; then
+    if ! command -v zig >/dev/null 2>&1; then
         printf "%b\n" "${YELLOW}Installing Zig ${ZIG_VERSION}...${RC}"
         
         # Determine Zig URL and directory based on architecture
-        if [ "$ARCH" == "aarch64" ]; then
+        if [ "$ARCH" = "aarch64" ]; then
             ZIG_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-linux-aarch64-${ZIG_VERSION}.tar.xz"
             ZIG_DIR="zig-linux-aarch64-${ZIG_VERSION}"
         else
@@ -33,11 +33,11 @@ install_zig() {
         fi
 
         # Download and extract Zig
-        curl -LO ${ZIG_URL}
-        tar -xf ${ZIG_DIR}.tar.xz
+        curl -LO "${ZIG_URL}"
+        tar -xf "${ZIG_DIR}.tar.xz"
 
         # Apply patch for aarch64 on Raspberry Pi
-        if [ "$ARCH" == "aarch64" ] && grep -q "Raspberry Pi" /proc/cpuinfo; then
+        if [ "$ARCH" = "aarch64" ] && grep -q "Raspberry Pi" /proc/cpuinfo; then
             MEM_ZIG_PATH="${ZIG_DIR}/lib/std/mem.zig"
             if [ -f "$MEM_ZIG_PATH" ]; then
                 sed -i 's/4 \* 1024/16 \* 1024/' "$MEM_ZIG_PATH"
@@ -46,11 +46,11 @@ install_zig() {
 
         # Install Zig with distribution-specific paths
         "$ESCALATION_TOOL" mkdir -p "$LIB_DIR"
-        "$ESCALATION_TOOL" mv ${ZIG_DIR} "$LIB_DIR/"
+        "$ESCALATION_TOOL" mv "${ZIG_DIR}" "$LIB_DIR/"
         "$ESCALATION_TOOL" ln -sf "$LIB_DIR/${ZIG_DIR}/zig" "$INSTALL_DIR/zig"
-        rm ${ZIG_DIR}.tar.xz
+        rm "${ZIG_DIR}.tar.xz"
 
-        if ! command -v zig &> /dev/null; then
+        if ! command -v zig >/dev/null 2>&1; then
             printf "%b\n" "${RED}Zig installation failed${RC}"
             exit 1
         fi
@@ -76,7 +76,7 @@ install_ghostty_binary() {
             ;;
     esac
 
-    if command -v ghostty &> /dev/null; then
+    if command -v ghostty >/dev/null 2>&1; then
         printf "%b\n" "${GREEN}Ghostty installed from binaries!${RC}"
         return 0
     else
@@ -146,7 +146,7 @@ if install_ghostty_binary; then
 else
     printf "%b\n" "${YELLOW}Official binaries not available. Do you want to build Ghostty from source? (y/n)${RC}"
     read -r response
-    if [[ "$response" =~ ^[Yy]$ ]]; then
+    if [ "$response" = "y" ] || [ "$response" = "Y" ]; then
         build_ghostty_from_source
     else
         printf "%b\n" "${RED}Installation aborted.${RC}"
