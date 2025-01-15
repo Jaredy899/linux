@@ -390,6 +390,9 @@ distribution () {
             slackware)
                 dtype="slackware"
                 ;;
+            solus)
+                dtype="solus"
+                ;;
             *)
                 # Check ID_LIKE only if dtype is still unknown
                 if [ -n "$ID_LIKE" ]; then
@@ -412,6 +415,9 @@ distribution () {
                         *slackware*)
                             dtype="slackware"
                             ;;
+                        *solus*)
+                            dtype="solus"
+                            ;;
                     esac
                 fi
 
@@ -425,7 +431,7 @@ distribution () {
 
 
 DISTRIBUTION=$(distribution)
-if [ "$DISTRIBUTION" = "redhat" ] || [ "$DISTRIBUTION" = "arch" ]; then
+if [ "$DISTRIBUTION" = "redhat" ] || [ "$DISTRIBUTION" = "arch" ] || [ "$DISTRIBUTION" = "solus" ]; then
       alias cat='bat'
 else
       alias cat='batcat'
