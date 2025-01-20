@@ -192,7 +192,7 @@ buildGhosttyFromSource() {
     if command -v zig >/dev/null 2>&1; then
         "$ESCALATION_TOOL" zig build -p /usr -Doptimize=ReleaseFast
     else
-        "$ESCALATION_TOOL" "$INSTALL_DIR/zig" build -p /usr -Doptimize=ReleaseFast
+        zig build -p /usr -Doptimize=ReleaseFast
     fi
 
     printf "%b\n" "${GREEN}Ghostty has been built and installed successfully!${RC}"
