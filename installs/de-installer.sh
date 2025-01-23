@@ -20,7 +20,7 @@ install_arch_de() {
     case $1 in
         1) 
             # Install Cinnamon
-            noninteractive cinnamon dolphin konsole lightdm xed xreader feh
+            noninteractive cinnamon dolphin konsole sddm xed xreader feh
             ;;
         2) 
             # Install KDE Plasma
@@ -36,7 +36,7 @@ install_arch_de() {
             ;;
         5) 
             # Install XFCE
-            noninteractive xfce4 xfce4-goodies lightdm feh
+            noninteractive xfce4 xfce4-goodies sddm feh
             ;;
     esac
 }
@@ -46,7 +46,7 @@ install_fedora_de() {
     case $1 in
         1) 
             # Install Cinnamon
-            noninteractive @"cinnamon-desktop" lightdm feh
+            noninteractive @"cinnamon-desktop" sddm feh
             ;;
         2) 
             # Install KDE Plasma
@@ -63,7 +63,7 @@ install_fedora_de() {
             ;;
         5) 
             # Install XFCE
-            noninteractive @"xfce-desktop-environment" lightdm feh
+            noninteractive @"xfce-desktop-environment" sddm feh
             ;;
     esac
 }
@@ -73,7 +73,7 @@ install_debian_de() {
     case $1 in
         1) 
             # Install Cinnamon
-            noninteractive cinnamon-core lightdm feh
+            noninteractive cinnamon-core sddm feh
             ;;
         2) 
             # Install KDE Plasma
@@ -90,7 +90,7 @@ install_debian_de() {
             ;;
         5) 
             # Install XFCE
-            noninteractive xfce4 xfce4-goodies lightdm xorg feh
+            noninteractive xfce4 xfce4-goodies sddm xorg feh
             ;;
     esac
 }
@@ -101,7 +101,7 @@ install_opensuse_de() {
         1) 
             # Install Cinnamon
             noninteractive -t pattern cinnamon
-            noninteractive lightdm
+            noninteractive sddm
             ;;
         2) 
             # Install KDE Plasma
@@ -124,7 +124,7 @@ install_opensuse_de() {
         5) 
             # Install XFCE
             noninteractive -t pattern xfce
-            noninteractive lightdm
+            noninteractive sddm
             ;;
     esac
     
