@@ -53,5 +53,6 @@ alias ....='cd ../../..'
 alias .....='cd ../../../..'
 
 alias update='curl https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/installs/updater.sh | sh'
+alias jc='sh <(curl -fsSL jaredcervantes.com/linux)'
 fastfetch
 eval "$(zoxide init posix --hook prompt)"
