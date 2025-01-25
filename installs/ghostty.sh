@@ -1,33 +1,18 @@
 #!/bin/sh -e
 # Source common functions
-eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
+. ../common-script.sh
 
 # Define variables
 GHOSTTY_VERSION="latest"
 ZIG_VERSION="0.13.0"
 
-# Set installation directory based on distribution
-if [ "$PACKAGER" = "eopkg" ]; then
-    INSTALL_DIR="/usr/bin"
-    LIB_DIR="/usr/lib"
-else
-    INSTALL_DIR="/usr/local/bin"
-    LIB_DIR="/usr/local/lib"
-fi
+INSTALL_DIR="/usr/local/bin"
+LIB_DIR="/usr/local/lib"
 
 installZig() {
-    # Check if zig is installed and verify version
+    # Check if zig is installed
     if command -v zig >/dev/null 2>&1; then
-        INSTALLED_ZIG_VERSION=$(zig version)
-        if [ "$INSTALLED_ZIG_VERSION" = "0.13.0" ]; then
-            return 0
-        else
-            printf "%b\n" "${YELLOW}Incorrect Zig version detected ($INSTALLED_ZIG_VERSION). Installing Zig 0.13.0...${RC}"
-            # Remove existing zig if it exists in our install location
-            if [ -L "$INSTALL_DIR/zig" ]; then
-                "$ESCALATION_TOOL" rm "$INSTALL_DIR/zig"
-            fi
-        fi
+        return 0
     fi
 
     printf "%b\n" "${YELLOW}Installing Zig...${RC}"
@@ -37,8 +22,15 @@ installZig() {
         pacman)
             "$ESCALATION_TOOL" pacman -S --needed zig=0.13.0
             ;;
-        dnf|zypper|eopkg)
+        dnf|eopkg)
             "$ESCALATION_TOOL" "$PACKAGER" install -y zig
+            ;;
+        zypper)
+            if grep -q "Tumbleweed" /etc/os-release; then
+                "$ESCALATION_TOOL" "$PACKAGER" install -y zig
+            else
+                PACKAGE_MANAGER_FAILED=true
+            fi
             ;;
         apk)
             "$ESCALATION_TOOL" "$PACKAGER" add zig
@@ -51,59 +43,37 @@ installZig() {
             ;;
     esac
 
-    # Verify version after package manager installation
-    if [ "${PACKAGE_MANAGER_FAILED:-}" != "true" ] && command -v zig >/dev/null 2>&1; then
-        INSTALLED_ZIG_VERSION=$(zig version)
-        if [ "$INSTALLED_ZIG_VERSION" = "0.13.0" ]; then
-            return 0
+    # Fall back to manual installation if package manager failed
+    if [ "${PACKAGE_MANAGER_FAILED:-}" = "true" ]; then
+        printf "%b\n" "${YELLOW}No package manager installation available, installing Zig ${ZIG_VERSION} manually...${RC}"
+        
+        # Determine Zig URL and directory based on architecture
+        if [ "$ARCH" = "aarch64" ]; then
+            ZIG_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-linux-aarch64-${ZIG_VERSION}.tar.xz"
+            ZIG_DIR="zig-linux-aarch64-${ZIG_VERSION}"
         else
-            printf "%b\n" "${YELLOW}Package manager installed wrong Zig version. Falling back to manual installation...${RC}"
-            case "$PACKAGER" in
-                pacman)
-                    "$ESCALATION_TOOL" pacman -R --noconfirm zig
-                    ;;
-                dnf|zypper|eopkg)
-                    "$ESCALATION_TOOL" "$PACKAGER" remove -y zig
-                    ;;
-                apk)
-                    "$ESCALATION_TOOL" "$PACKAGER" del zig
-                    ;;
-                xbps-install)
-                    "$ESCALATION_TOOL" xbps-remove -R zig
-                    ;;
-            esac
+            ZIG_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz"
+            ZIG_DIR="zig-linux-x86_64-${ZIG_VERSION}"
         fi
-    fi
 
-    # Fall back to manual installation if package manager failed or installed wrong version
-    printf "%b\n" "${YELLOW}No package manager installation available, installing Zig ${ZIG_VERSION} manually...${RC}"
-    
-    # Determine Zig URL and directory based on architecture
-    if [ "$ARCH" = "aarch64" ]; then
-        ZIG_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-linux-aarch64-${ZIG_VERSION}.tar.xz"
-        ZIG_DIR="zig-linux-aarch64-${ZIG_VERSION}"
-    else
-        ZIG_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz"
-        ZIG_DIR="zig-linux-x86_64-${ZIG_VERSION}"
-    fi
+        # Download and extract Zig
+        curl -LO "${ZIG_URL}"
+        tar -xf "${ZIG_DIR}.tar.xz"
 
-    # Download and extract Zig
-    curl -LO "${ZIG_URL}"
-    tar -xf "${ZIG_DIR}.tar.xz"
-
-    # Apply patch for aarch64 on Raspberry Pi
-    if [ "$ARCH" = "aarch64" ] && grep -q "Raspberry Pi" /proc/cpuinfo; then
-        MEM_ZIG_PATH="${ZIG_DIR}/lib/std/mem.zig"
-        if [ -f "$MEM_ZIG_PATH" ]; then
-            sed -i 's/4 \* 1024/16 \* 1024/' "$MEM_ZIG_PATH"
+        # Apply patch for aarch64 on Raspberry Pi
+        if [ "$ARCH" = "aarch64" ] && grep -q "Raspberry Pi" /proc/cpuinfo; then
+            MEM_ZIG_PATH="${ZIG_DIR}/lib/std/mem.zig"
+            if [ -f "$MEM_ZIG_PATH" ]; then
+                sed -i 's/4 \* 1024/16 \* 1024/' "$MEM_ZIG_PATH"
+            fi
         fi
-    fi
 
-    # Install Zig with distribution-specific paths
-    "$ESCALATION_TOOL" mkdir -p "$LIB_DIR"
-    "$ESCALATION_TOOL" mv "${ZIG_DIR}" "$LIB_DIR/"
-    "$ESCALATION_TOOL" ln -sf "$LIB_DIR/${ZIG_DIR}/zig" "$INSTALL_DIR/zig"
-    rm "${ZIG_DIR}.tar.xz"
+        # Install Zig with distribution-specific paths
+        "$ESCALATION_TOOL" mkdir -p "$LIB_DIR"
+        "$ESCALATION_TOOL" mv "${ZIG_DIR}" "$LIB_DIR/"
+        "$ESCALATION_TOOL" ln -sf "$LIB_DIR/${ZIG_DIR}/zig" "$INSTALL_DIR/zig"
+        rm "${ZIG_DIR}.tar.xz"
+    fi
 }
 
 installGhosttyBinary() {
@@ -119,7 +89,7 @@ installGhosttyBinary() {
             printf "%b" "Enter your choice: "
             read -r choice
             case $choice in
-                1) "$ESCALATION_TOOL" pacman -S ghostty ;;
+                1) "$ESCALATION_TOOL" pacman -S --noconfirm ghostty ;;
                 2) "$AUR_HELPER" -S --needed --noconfirm ghostty-git ;;
                 *)
                     printf "%b\n" "${RED}Invalid choice:${RC} $choice"
@@ -131,10 +101,10 @@ installGhosttyBinary() {
             "$ESCALATION_TOOL" "$PACKAGER" -av ghostty
             ;;
         xbps-install)
-            "$ESCALATION_TOOL" "$PACKAGER" -S ghostty
+            "$ESCALATION_TOOL" "$PACKAGER" -Sy ghostty
             ;;
-        zypper)
-            "$ESCALATION_TOOL" "$PACKAGER" install ghostty
+        zypper|eopkg)
+            "$ESCALATION_TOOL" "$PACKAGER" install -y ghostty
             ;;
         *)
             return 1
@@ -155,26 +125,26 @@ installDependencies() {
     
     case "$PACKAGER" in
         pacman)
-            "$ESCALATION_TOOL" pacman -S --needed gtk4 libadwaita
+            "$ESCALATION_TOOL" "$PACKAGER" -S --needed git gtk4 libadwaita
             ;;
-        nala|apt)
-            "$ESCALATION_TOOL" apt update
+        apt-get|nala)
+            "$ESCALATION_TOOL" "$PACKAGER" update
             "$ESCALATION_TOOL" "$PACKAGER" install -y build-essential libgtk-4-dev libadwaita-1-dev git
             if grep -q "testing\|unstable" /etc/debian_version; then
                 "$ESCALATION_TOOL" "$PACKAGER" install -y gcc-multilib
             fi
             ;;
         dnf)
-            "$ESCALATION_TOOL" "$PACKAGER" install -y gtk4-devel libadwaita-devel
+            "$ESCALATION_TOOL" "$PACKAGER" install -y git gtk4-devel libadwaita-devel
             ;;
         zypper)
-            "$ESCALATION_TOOL" "$PACKAGER" install -y gtk4-devel libadwaita-devel pkgconf ncurses-devel
+            "$ESCALATION_TOOL" "$PACKAGER" install -y git gtk4-devel libadwaita-devel pkgconf ncurses-devel
             ;;
         apk)
-            "$ESCALATION_TOOL" "$PACKAGER" add gtk4.0-dev libadwaita-dev pkgconf ncurses
+            "$ESCALATION_TOOL" "$PACKAGER" add gtk4.0-dev git libadwaita-dev pkgconf ncurses
             ;;
         eopkg)
-            "$ESCALATION_TOOL" "$PACKAGER" install -y libgtk-4-devel libadwaita-devel pkgconf
+            "$ESCALATION_TOOL" "$PACKAGER" install -y git libgtk-4-devel libadwaita-devel pkgconf
             ;;
         *)
             printf "%b\n" "${RED}No dependency installation method found for your distribution.${RC}"
@@ -196,6 +166,13 @@ buildGhosttyFromSource() {
         "$ESCALATION_TOOL" zig build -p /usr -Doptimize=ReleaseFast
     else
         zig build -p /usr -Doptimize=ReleaseFast
+    fi
+
+    # Add special environment variables for Raspberry Pi OS
+    if [ -f /etc/os-release ] && grep -q "Raspberry Pi OS" /etc/os-release; then
+        if [ -f /usr/share/applications/com.mitchellh.ghostty.desktop ]; then
+            "$ESCALATION_TOOL" sed -i 's|^Exec=.*|Exec=env GDK_BACKEND=wayland,x11 LIBGL_ALWAYS_SOFTWARE=1 ghostty|' /usr/share/applications/com.mitchellh.ghostty.desktop
+        fi
     fi
 
     printf "%b\n" "${GREEN}Ghostty has been built and installed successfully!${RC}"
