@@ -203,17 +203,11 @@ setupNonInteractive() {
         pacman)
             NONINTERACTIVE="--noconfirm --needed"
             ;;
-        apt-get|nala|dnf|zypper)
+        apt-get|nala|dnf|zypper|eopkg|xbps-install)
             NONINTERACTIVE="-y"
             ;;
         apk)
             NONINTERACTIVE="--no-cache"
-            ;;
-        eopkg)
-            NONINTERACTIVE="-y"
-            ;;
-        xbps-install)
-            NONINTERACTIVE="-y"
             ;;
         *)
             echo "Unsupported package manager: $PACKAGER"
@@ -255,17 +249,11 @@ getNonInteractiveFlags() {
         pacman)
             echo "--noconfirm --needed"
             ;;
-        apt-get|nala|dnf|zypper)
+        apt-get|nala|dnf|zypper|eopkg|xbps-install)
             echo "-y"
             ;;
         apk)
             echo "--no-cache"
-            ;;
-        eopkg)
-            echo "-y"
-            ;;
-        xbps-install)
-            echo "-y"
             ;;
         *)
             echo ""  # Default to empty string if package manager is unknown

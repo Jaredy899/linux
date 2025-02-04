@@ -6,10 +6,7 @@ eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/mai
 updateSystem() {
     printf "%b\n" "${YELLOW}Updating system packages.${RC}"
     case "$PACKAGER" in
-        apt-get|nala)
-            "$ESCALATION_TOOL" "$PACKAGER" upgrade -y
-            ;;
-        dnf)
+        nala | apt-get | dnf | eopkg)
             "$ESCALATION_TOOL" "$PACKAGER" upgrade -y
             ;;
         pacman)
@@ -22,11 +19,8 @@ updateSystem() {
         apk)
             "$ESCALATION_TOOL" "$PACKAGER" upgrade
             ;;
-        eopkg)
-            "$ESCALATION_TOOL" "$PACKAGER" upgrade -y
-            ;;
         xbps-install)
-            "$ESCALATION_TOOL" xbps-install -Su
+            "$ESCALATION_TOOL" "$PACKAGER" -Su
             ;;
         *)
             printf "%b\n" "${RED}Unsupported package manager: ${PACKAGER}${RC}"

@@ -79,16 +79,14 @@ show_main_menu() {
     show_menu_item 5  "${NC}" "Install Cockpit"
     show_menu_item 6  "${NC}" "Install Tailscale"
     show_menu_item 7  "${NC}" "Install Docker"
-    show_menu_item 8  "${NC}" "Update System"
-    show_menu_item 9  "${NC}" "Replace configs"
-    show_menu_item 10 "${NC}" "Install Desktop Environment"
-    show_menu_item 11 "${NC}" "Install NetworkManager"
-    show_menu_item 12 "${NC}" "Run Ghostty Script"
-    show_menu_item 13 "${NC}" "Exit"
+    show_menu_item 8  "${NC}" "Replace configs"
+    show_menu_item 9  "${NC}" "Install Desktop Environment"
+    show_menu_item 10 "${NC}" "Update System"
+    show_menu_item 11 "${NC}" "Exit"
 }
 
 while true; do
-    handle_menu_selection 13 "Select an option:" show_main_menu
+    handle_menu_selection 11 "Select an option:" show_main_menu
     choice=$?
     
     case $choice in
@@ -114,21 +112,15 @@ while true; do
             run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         8)
-            run_script "updater.sh" "$GITPATH/installs" "$INSTALLS_URL"
-            ;;
-        9)
             run_script "replace_configs.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
-        10)
+        9)
             run_script "de-installer.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
+        10)
+            run_script "updater.sh" "$GITPATH/installs" "$INSTALLS_URL"
+            ;;
         11)
-            run_script "install_networkmanager.sh" "$GITPATH/installs" "$INSTALLS_URL"
-            ;;
-        12)
-            run_script "ghostty.sh" "$GITPATH/installs" "$INSTALLS_URL"
-            ;;
-        13)
             printf "${GREEN}Exiting script.${RC}\n"
             exit 0
             ;;
