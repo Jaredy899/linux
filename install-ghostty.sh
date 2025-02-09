@@ -4,27 +4,55 @@
 eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
 eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)"
 
-# Check environment and requirements
-checkEnv
-
 # Define variables
 GHOSTTY_VERSION="latest"
-# Set installation directory based on distribution
-if [ "$PACKAGER" = "eopkg" ]; then
-    INSTALL_DIR="/usr/bin"
-    LIB_DIR="/usr/lib"
-else
-    INSTALL_DIR="/usr/local/bin"
-    LIB_DIR="/usr/local/lib"
-fi
 ZIG_VERSION="0.13.0"
 
-install_zig() {
-    if ! command -v zig &> /dev/null; then
-        printf "%b\n" "${YELLOW}Installing Zig ${ZIG_VERSION}...${RC}"
+INSTALL_DIR="/usr/local/bin"
+LIB_DIR="/usr/local/lib"
+
+installZig() {
+    # Check if zig is installed
+    if command -v zig >/dev/null 2>&1; then
+        return 0
+    fi
+
+    printf "%b\n" "${YELLOW}Installing Zig...${RC}"
+    
+    # First try package manager installation
+    case "$PACKAGER" in
+        pacman)
+            "$ESCALATION_TOOL" "$PACKAGER" -S --needed zig=0.13.0
+            ;;
+        dnf|eopkg)
+            if ! "$ESCALATION_TOOL" "$PACKAGER" install -y zig; then
+                PACKAGE_MANAGER_FAILED=true
+            fi
+            ;;
+        zypper)
+            if grep -q "Tumbleweed" /etc/os-release; then
+                "$ESCALATION_TOOL" "$PACKAGER" install -y zig
+            else
+                PACKAGE_MANAGER_FAILED=true
+            fi
+            ;;
+        apk)
+            "$ESCALATION_TOOL" "$PACKAGER" add zig
+            ;;
+        xbps-install)
+            "$ESCALATION_TOOL" "$PACKAGER" -S zig
+            ;;
+        *)
+            PACKAGE_MANAGER_FAILED=true
+            ;;
+    esac
+
+    # Fall back to manual installation if package manager failed
+    if [ "${PACKAGE_MANAGER_FAILED:-}" = "true" ]; then
+        printf "%b\n" "${YELLOW}No package manager installation available, installing Zig ${ZIG_VERSION} manually...${RC}"
         
         # Determine Zig URL and directory based on architecture
-        if [ "$ARCH" == "aarch64" ]; then
+        if [ "$ARCH" = "aarch64" ]; then
             ZIG_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-linux-aarch64-${ZIG_VERSION}.tar.xz"
             ZIG_DIR="zig-linux-aarch64-${ZIG_VERSION}"
         else
@@ -33,11 +61,11 @@ install_zig() {
         fi
 
         # Download and extract Zig
-        curl -LO ${ZIG_URL}
-        tar -xf ${ZIG_DIR}.tar.xz
+        curl -LO "${ZIG_URL}"
+        tar -xf "${ZIG_DIR}.tar.xz"
 
         # Apply patch for aarch64 on Raspberry Pi
-        if [ "$ARCH" == "aarch64" ] && grep -q "Raspberry Pi" /proc/cpuinfo; then
+        if [ "$ARCH" = "aarch64" ] && grep -q "Raspberry Pi" /proc/cpuinfo; then
             MEM_ZIG_PATH="${ZIG_DIR}/lib/std/mem.zig"
             if [ -f "$MEM_ZIG_PATH" ]; then
                 sed -i 's/4 \* 1024/16 \* 1024/' "$MEM_ZIG_PATH"
@@ -46,173 +74,146 @@ install_zig() {
 
         # Install Zig with distribution-specific paths
         "$ESCALATION_TOOL" mkdir -p "$LIB_DIR"
-        "$ESCALATION_TOOL" mv ${ZIG_DIR} "$LIB_DIR/"
+        "$ESCALATION_TOOL" mv "${ZIG_DIR}" "$LIB_DIR/"
         "$ESCALATION_TOOL" ln -sf "$LIB_DIR/${ZIG_DIR}/zig" "$INSTALL_DIR/zig"
-        rm ${ZIG_DIR}.tar.xz
-
-        if ! command -v zig &> /dev/null; then
-            printf "%b\n" "${RED}Zig installation failed${RC}"
-            exit 1
-        fi
+        rm "${ZIG_DIR}.tar.xz"
     fi
 }
 
-install_binary_package() {
+installGhosttyBinary() {
+    printf "%b\n" "${CYAN}Attempting to install Ghostty from official binaries...${RC}"
+    
     case "$PACKAGER" in
-        "pacman")
-            printf "%b\n" "${CYAN}Installing Ghostty from official repositories...${RC}"
-            noninteractive ghostty
+        pacman)
+            printf "%b\n" "-----------------------------------------------------"
+            printf "%b\n" "Select the package to install:"
+            printf "%b\n" "1. ${CYAN}ghostty${RC}      (stable release)"
+            printf "%b\n" "2. ${CYAN}ghostty-git${RC}  (compiled from the latest commit)"
+            printf "%b\n" "-----------------------------------------------------"
+            printf "%b" "Enter your choice: "
+            read -r choice
+            case $choice in
+                1) "$ESCALATION_TOOL" pacman -S --noconfirm ghostty ;;
+                2) "$AUR_HELPER" -S --needed --noconfirm ghostty-git ;;
+                *)
+                    printf "%b\n" "${RED}Invalid choice:${RC} $choice"
+                    return 1
+                    ;;
+            esac
             ;;
-        "eopkg")
-            printf "%b\n" "${CYAN}Installing Ghostty from repositories...${RC}"
-            noninteractive ghostty
+        xbps-install)
+            "$ESCALATION_TOOL" "$PACKAGER" -Sy ghostty
             ;;
-        "xbps-install")
-            printf "%b\n" "${CYAN}Installing Ghostty from repositories...${RC}"
-            noninteractive ghostty
-            ;;
-        "dnf")
-            printf "%b\n" "${YELLOW}Installing Ghostty from COPR repository...${RC}"
-            "$ESCALATION_TOOL" dnf copr enable -y pgdev/ghostty
-            noninteractive ghostty
+        zypper|eopkg)
+            "$ESCALATION_TOOL" "$PACKAGER" install -y ghostty
             ;;
         *)
             return 1
             ;;
     esac
-    return 0
+
+    if command -v ghostty >/dev/null 2>&1; then
+        printf "%b\n" "${GREEN}Ghostty installed from binaries!${RC}"
+        return 0
+    else
+        printf "%b\n" "${RED}Failed to install Ghostty from binaries.${RC}"
+        return 1
+    fi
 }
 
-install_from_source() {
-    printf "%b\n" "${YELLOW}Installing Ghostty from source...${RC}"
+installDependencies() {
+    printf "%b\n" "${CYAN}Installing dependencies for building Ghostty...${RC}"
     
-    # Install dependencies based on package manager
     case "$PACKAGER" in
-        "apt-get"|"nala")
-            noninteractive libgtk-4-dev libadwaita-1-dev git
+        pacman)
+            "$ESCALATION_TOOL" "$PACKAGER" -S --needed git gtk4 libadwaita
             ;;
-        "pacman")
-            noninteractive gtk4 libadwaita
+        apt-get|nala)
+            "$ESCALATION_TOOL" "$PACKAGER" update
+            "$ESCALATION_TOOL" "$PACKAGER" install -y libgtk-4-dev libadwaita-1-dev git
+            if grep -q "testing\|unstable" /etc/debian_version; then
+                "$ESCALATION_TOOL" "$PACKAGER" install -y gcc-multilib
+            fi
             ;;
-        "dnf")
-            noninteractive gtk4-devel libadwaita-devel
+        dnf)
+            # For Rocky Linux, install libadwaita instead of libadwaita-devel
+            if grep -qi "rocky" /etc/os-release; then
+                "$ESCALATION_TOOL" "$PACKAGER" install -y git gtk4-devel libadwaita
+            else
+                "$ESCALATION_TOOL" "$PACKAGER" install -y git gtk4-devel libadwaita-devel
+            fi
             ;;
-        "zypper")
-            noninteractive gtk4-tools libadwaita-devel pkgconf-pkg-config
+        zypper)
+            "$ESCALATION_TOOL" "$PACKAGER" install -y git gtk4-devel libadwaita-devel pkgconf ncurses-devel
             ;;
-        "eopkg")
-            noninteractive -c system.devel libgtk-4-devel libadwaita-devel perl-extutils-pkgconfig
+        apk)
+            "$ESCALATION_TOOL" "$PACKAGER" add icu-data-full icu-libs gtk4.0-dev git libadwaita-dev pkgconf ncurses
+            ;;
+        eopkg)
+            "$ESCALATION_TOOL" "$PACKAGER" install -y git libgtk-4-devel libadwaita-devel pkgconf
             ;;
         *)
-            printf "%b\n" "${RED}Unsupported package manager for source installation${RC}"
-            exit 1
+            printf "%b\n" "${RED}No dependency installation method found for your distribution.${RC}"
+            return 1
             ;;
     esac
+}
 
-    # Install Zig if not present
-    install_zig
+buildGhosttyFromSource() {
+    installDependencies || return 1
+    installZig
 
-    # Clone Ghostty repository
+    printf "%b\n" "${CYAN}Building Ghostty from source...${RC}"
+    
     git clone https://github.com/ghostty-org/ghostty.git
     cd ghostty
+    # Try PATH first, fall back to full path if needed
+    if command -v zig >/dev/null 2>&1; then
+        "$ESCALATION_TOOL" zig build -p /usr -Doptimize=ReleaseFast
+    else
+        zig build -p /usr -Doptimize=ReleaseFast
+    fi
 
-    # Build Ghostty
-    printf "%b\n" "${CYAN}Building Ghostty...${RC}"
-    zig build -p "$HOME/.local" -Doptimize=ReleaseFast
+    # Add special environment variables for Raspberry Pi OS
+    if [ -f /etc/os-release ] && grep -q "Raspberry Pi OS" /etc/os-release; then
+        if [ -f /usr/share/applications/com.mitchellh.ghostty.desktop ]; then
+            "$ESCALATION_TOOL" sed -i 's|^\s*Exec=.*|Exec=env GDK_BACKEND=wayland,x11 LIBGL_ALWAYS_SOFTWARE=1 ghostty|' /usr/share/applications/com.mitchellh.ghostty.desktop
+        fi
+    fi
 
     printf "%b\n" "${GREEN}Ghostty has been built and installed successfully!${RC}"
 }
 
-function check_binary_availability() {
-    case "$PACKAGER" in
-        "pacman")
-            if $AUR_HELPER -Ss "^ghostty$" >/dev/null 2>&1; then
-                return 0
-            fi
-            ;;
-        "eopkg")
-            if eopkg list-available | grep -q "^ghostty$"; then
-                return 0
-            fi
-            ;;
-        "xbps-install")
-            if xbps-query -Rs ghostty >/dev/null 2>&1; then
-                return 0
-            fi
-            ;;
-        "dnf")
-            "$ESCALATION_TOOL" dnf copr enable -y pgdev/ghostty
-            if dnf list ghostty >/dev/null 2>&1; then
-                return 0
-            fi
-            ;;
-        *)
-            return 1
-            ;;
-    esac
-    return 1
-}
-
-create_desktop_entry() {
-    printf "%b\n" "${CYAN}Updating desktop entry...${RC}"
-    
-    DESKTOP_FILE="$HOME/.local/share/applications/com.mitchellh.ghostty.desktop"
-    
-    # Wait for desktop file to be created by build process
-    if [ ! -f "$DESKTOP_FILE" ]; then
-        printf "%b\n" "${RED}Desktop entry not found at $DESKTOP_FILE${RC}"
-        return 1
+installGhostty() {
+    if command_exists ghostty; then
+         printf "%b\n" "${GREEN}Ghostty is already installed!${RC}"
+         exit 0
     fi
 
-    # Modify the Exec line for Raspberry Pi if needed
-    if [ "$ARCH" = "aarch64" ] && grep -q "Raspberry Pi" /proc/cpuinfo; then
-        sed -i "s|^Exec=.*|Exec=env GDK_BACKEND=wayland,x11 LIBGL_ALWAYS_SOFTWARE=1 $HOME/.local/bin/ghostty|" "$DESKTOP_FILE"
-    fi
+    printf "%b\n" "${YELLOW}Do you want to install Ghostty from binaries? (y/n)${RC}"
+    read -r install_choice
 
-    # Update desktop database for user
-    if command_exists update-desktop-database; then
-        update-desktop-database "$HOME/.local/share/applications"
-    fi
-
-    printf "%b\n" "${GREEN}Desktop entry updated successfully${RC}"
-    printf "%b\n" "${YELLOW}Note: You may need to log out and back in to see the application in your menu${RC}"
-}
-
-# Main installation logic
-printf "%b\n" "${CYAN}Checking for binary package availability...${RC}"
-
-if check_binary_availability; then
-    printf "%b\n" "${CYAN}Binary package found for Ghostty${RC}"
-    
-    printf "%b\n" "${YELLOW}Would you like to install Ghostty from the binary package? (y/N)${RC}"
-    read -r binary_response
-    if [ "$binary_response" = "y" ] || [ "$binary_response" = "Y" ]; then
-        install_binary_package
-        printf "%b\n" "${GREEN}Ghostty has been installed successfully from package repository!${RC}"
-    else
-        printf "%b\n" "${YELLOW}Proceeding to install Ghostty from source...${RC}"
-        install_from_source
-    fi
-else
-    printf "%b\n" "${YELLOW}No binary package found for Ghostty.${RC}"
-    printf "%b\n" "${YELLOW}Would you like to install Ghostty from source? (y/N)${RC}"
-    read -r source_response
-    if [ "$source_response" = "y" ] || [ "$source_response" = "Y" ]; then
-        if ! command -v zig >/dev/null 2>&1; then
-            install_zig
+    if [ "$install_choice" = "y" ] || [ "$install_choice" = "Y" ]; then
+        if installGhosttyBinary; then
+            printf "%b\n" "${GREEN}Ghostty installed successfully from binaries!${RC}"
+            exit 0
+        else
+            printf "%b\n" "${RED}Failed to install Ghostty from binaries.${RC}"
+            printf "%b\n" "${YELLOW}Do you want to build Ghostty from source instead? (y/n)${RC}"
+            read -r source_choice
+            if [ "$source_choice" = "y" ] || [ "$source_choice" = "Y" ]; then
+                buildGhosttyFromSource
+            else
+                exit 1
+            fi
         fi
-        install_from_source
     else
-        printf "%b\n" "${RED}Installation cancelled.${RC}"
-        exit 1
+        printf "%b\n" "${YELLOW}Building Ghostty from source...${RC}"
+        buildGhosttyFromSource
     fi
-fi
+}
 
-# Verify installation
-if command -v ghostty &> /dev/null; then
-    printf "%b\n" "${GREEN}Ghostty installation verified successfully!${RC}"
-    ghostty --version
-else
-    printf "%b\n" "${RED}Ghostty installation could not be verified.${RC}"
-    exit 1
-fi 
+checkEnv
+checkEscalationTool
+checkAURHelper
+installGhostty

@@ -73,7 +73,7 @@ eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/mai
 # Function to display main menu items
 show_main_menu() {
     show_menu_item 1  "${NC}" "Run Post Install Script"
-    show_menu_item 2  "${NC}" "Run Chris Titus Tech Script"
+    show_menu_item 2  "${NC}" "Run Linux Utility"
     show_menu_item 3  "${NC}" "Add SSH Key"
     show_menu_item 4  "${NC}" "Install a network drive"
     show_menu_item 5  "${NC}" "Install Cockpit"
