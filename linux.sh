@@ -76,13 +76,12 @@ show_main_menu() {
     show_menu_item 2  "${NC}" "Run Linux Utility"
     show_menu_item 3  "${NC}" "Add SSH Key"
     show_menu_item 4  "${NC}" "Install a network drive"
-    show_menu_item 5  "${NC}" "Install Cockpit"
-    show_menu_item 6  "${NC}" "Install Tailscale"
-    show_menu_item 7  "${NC}" "Install Docker"
-    show_menu_item 8  "${NC}" "Replace configs"
-    show_menu_item 9  "${NC}" "Install Desktop Environment"
-    show_menu_item 10 "${NC}" "Update System"
-    show_menu_item 11 "${NC}" "Exit"
+    show_menu_item 5  "${NC}" "Install Tailscale"
+    show_menu_item 6  "${NC}" "Install Docker"
+    show_menu_item 7  "${NC}" "Replace configs"
+    show_menu_item 8  "${NC}" "Install Desktop Environment"
+    show_menu_item 9  "${NC}" "Update System"
+    show_menu_item 10 "${NC}" "Exit"
 }
 
 while true; do
@@ -103,24 +102,21 @@ while true; do
             run_script "add_network_drive.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         5)
-            run_script "cockpit.sh" "$GITPATH/installs" "$INSTALLS_URL"
-            ;;
-        6)
             curl -fsSL https://tailscale.com/install.sh | sh
             ;;
-        7)
+        6)
             run_script "docker.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
-        8)
+        7)
             run_script "replace_configs.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
-        9)
+        8)
             run_script "de-installer.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
-        10)
+        9)
             run_script "updater.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
-        11)
+        10)
             printf "${GREEN}Exiting script.${RC}\n"
             exit 0
             ;;
