@@ -85,7 +85,7 @@ show_main_menu() {
 }
 
 while true; do
-    handle_menu_selection 11 "Select an option:" show_main_menu
+    handle_menu_selection 10 "Select an option:" show_main_menu
     choice=$?
     
     case $choice in
