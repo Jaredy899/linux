@@ -33,7 +33,7 @@ updateSystem() {
 updateFlatpaks() {
     if command_exists flatpak; then
         printf "%b\n" "${YELLOW}Updating flatpak packages.${RC}"
-        flatpak update -y
+        "$ESCALATION_TOOL" flatpak update -y
     fi
 }
 
