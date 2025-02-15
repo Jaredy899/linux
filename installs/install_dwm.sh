@@ -131,7 +131,7 @@ setupDWM() {
             $ESCALATION_TOOL apt-get install $NONINTERACTIVE xorg xinit build-essential libx11-dev libxinerama-dev libxft-dev libimlib2-dev
             ;;
         dnf)
-            noninteractive "@Development Tools"
+            "$ESCALATION_TOOL" "$PACKAGER" install -y "@development-tools" || "$ESCALATION_TOOL" "$PACKAGER" group install -y "Development Tools"
             noninteractive xorg-x11-xinit xorg-x11-server-Xorg libX11-devel libXinerama-devel libXft-devel imlib2-devel
             ;;
         zypper)

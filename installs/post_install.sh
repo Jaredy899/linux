@@ -44,17 +44,8 @@ install_nala() {
         printf "%b\n" "${CYAN}Installing Nala...${RC}"
         if "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive apt-get update && noninteractive nala; then
             yes | "$ESCALATION_TOOL" nala fetch --auto --fetches 1 || printf "%b\n" "${YELLOW}Nala fetch failed, continuing...${RC}"
-            printf "%b\n" "${CYAN}Configuring nala as an alternative to apt...${RC}"
-            echo "alias apt='nala'" | "$ESCALATION_TOOL" tee -a /etc/bash.bashrc > /dev/null
-            "$ESCALATION_TOOL" tee /usr/local/bin/apt << EOF > /dev/null
-#!/bin/sh
-echo "apt has been replaced by nala. Running nala instead."
-nala "\$@"
-EOF
-            "$ESCALATION_TOOL" chmod +x /usr/local/bin/apt
-            printf "%b\n" "${GREEN}Nala has been installed and set as an alternative to apt.${RC}"
-            # Update PACKAGER to nala after successful installation
-            PACKAGER="nala"
+            printf "%b\n" "${GREEN}Nala has been installed.${RC}"
+            PACKAGER="apt-get"
         else
             printf "%b\n" "${YELLOW}Nala installation failed. Continuing with apt...${RC}"
         fi
