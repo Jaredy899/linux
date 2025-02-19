@@ -17,7 +17,7 @@ checkInitManager() {
 
 startService() {
     case "$INIT_MANAGER" in
-        init|rc-service)
+        rc-service)
             "$ESCALATION_TOOL" "$INIT_MANAGER" "$1" start
             ;;
         systemctl|sv|service)
@@ -32,7 +32,7 @@ startService() {
 
 stopService() {
     case "$INIT_MANAGER" in
-        init|rc-service)
+        rc-service)
             "$ESCALATION_TOOL" "$INIT_MANAGER" "$1" stop
             ;;
         systemctl|sv|service)
