@@ -110,6 +110,7 @@ case "$PACKAGER" in
         ;;
     slapt-get)
         install_package "terminus-font"
+        ;;
     *)
         printf "%b\n" "${YELLOW}Unknown package manager. Installing basic packages only.${RC}"
         install_package "openssh"
