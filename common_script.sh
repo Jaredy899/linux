@@ -203,7 +203,7 @@ setupNonInteractive() {
         pacman)
             NONINTERACTIVE="--noconfirm --needed"
             ;;
-        apt-get|nala|dnf|zypper|eopkg|xbps-install)
+        apt-get|nala|dnf|zypper|eopkg|xbps-install|slapt-get)
             NONINTERACTIVE="-y"
             ;;
         apk)
@@ -237,6 +237,8 @@ noninteractive() {
         xbps-install)
             $ESCALATION_TOOL xbps-install -y "$@"
             ;;
+        slapt-get)
+            $ESCALATION_TOOL slapt-get -i -y "$@"
         *)
             $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
             ;;
@@ -249,7 +251,7 @@ getNonInteractiveFlags() {
         pacman)
             echo "--noconfirm --needed"
             ;;
-        apt-get|nala|dnf|zypper|eopkg|xbps-install)
+        apt-get|nala|dnf|zypper|eopkg|xbps-install|slapt-get)
             echo "-y"
             ;;
         apk)

@@ -16,7 +16,7 @@ install_package() {
     for package_name in "$@"; do
         if ! command_exists "$package_name"; then
             printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
-            "$ESCALATION_TOOL" "$PACKAGER" "$package_name"
+            noninteractive "$package_name"
         else
             printf "%b\n" "${GREEN}$package_name is already installed.${RC}"
         fi
