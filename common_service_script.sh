@@ -26,7 +26,6 @@ handleServiceCommand() {
             "$ESCALATION_TOOL" "$INIT_MANAGER" "$service" "$action"
         fi
     else
-        # Handle other init managers normally
         "$ESCALATION_TOOL" "$INIT_MANAGER" "$service" "$action"
     fi
 }
