@@ -16,7 +16,7 @@ install_package() {
     for package_name in "$@"; do
         if ! command_exists "$package_name"; then
             printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
-            noninteractive "$package_name"
+            "$ESCALATION_TOOL" "$PACKAGER" "$package_name"
         else
             printf "%b\n" "${GREEN}$package_name is already installed.${RC}"
         fi
@@ -108,6 +108,8 @@ case "$PACKAGER" in
     xbps-install)
         install_package "terminus-font" "openssh" "qemu-ga"
         ;;
+    slapt-get)
+        install_package "terminus-font"
     *)
         printf "%b\n" "${YELLOW}Unknown package manager. Installing basic packages only.${RC}"
         install_package "openssh"
@@ -167,7 +169,7 @@ set_console_font() {
 
 # Set permanent console font
 case "$DTYPE" in
-    arch|fedora|rocky|almalinux|opensuse-tumbleweed|opensuse-leap|alpine|void)
+    arch|fedora|rocky|almalinux|opensuse-tumbleweed|opensuse-leap|alpine|void|salix)
         if command -v setfont >/dev/null 2>&1; then
             if ! set_console_font; then
                 printf "%b\n" "${YELLOW}Font setting failed. Check if terminus-font package is installed.${RC}"
