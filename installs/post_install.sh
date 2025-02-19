@@ -109,7 +109,7 @@ case "$PACKAGER" in
         install_package "terminus-font" "openssh" "qemu-ga"
         ;;
     slapt-get)
-        install_package "terminus-font"
+        install_package "terminus-font" "openssh"
         ;;
     *)
         printf "%b\n" "${YELLOW}Unknown package manager. Installing basic packages only.${RC}"
