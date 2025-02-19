@@ -23,7 +23,11 @@ startService() {
             "$ESCALATION_TOOL" "$INIT_MANAGER" "$1" start
             ;;
         systemctl|sv|service)
-            "$ESCALATION_TOOL" "$INIT_MANAGER" start "$1"
+            if [ "$DISTRO" = "salix" ]; then
+                "$ESCALATION_TOOL" "$INIT_MANAGER" start "$1"
+            else
+                "$ESCALATION_TOOL" "$INIT_MANAGER" "$1" start
+            fi
             ;;
     esac
 }
@@ -119,4 +123,4 @@ isServiceActive() {
     esac
 }
 
-checkInitManager 'systemctl rc-service sv service init'
+checkInitManager 'systemctl rc-service sv service'
