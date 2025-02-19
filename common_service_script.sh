@@ -53,7 +53,16 @@ enableService() {
             sleep 5
             ;;
         service)
-            "$ESCALATION_TOOL" chmod +x /etc/rc.d/rc."$1"
+            if command_exists update-rc.d; then
+                "$ESCALATION_TOOL" update-rc.d "$1" defaults
+            elif [ -f "/etc/rc.d/rc.$1" ]; then
+                "$ESCALATION_TOOL" chmod +x "/etc/rc.d/rc.$1"
+            elif [ -f "/etc/init.d/$1" ]; then
+                "$ESCALATION_TOOL" chmod +x "/etc/init.d/$1"
+            else
+                printf "%b\n" "${YELLOW}No suitable init script found for $1.${RC}"
+                return 1
+            fi
             ;;
     esac
 }
