@@ -99,12 +99,13 @@ startAndEnableService() {
 isServiceActive() {
     case "$INIT_MANAGER" in
         service)
-            "$ESCALATION_TOOL" service list 2>/dev/null \
-                | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' \
-                | grep -q -E "^$1.*\[on\]"
-            ;;
-        init)
-            "$ESCALATION_TOOL" service "$1" status | grep -q 'running'
+            if [ "$INIT_MANAGER" = "service" ]; then
+                "$ESCALATION_TOOL" service list 2>/dev/null \
+                    | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' \
+                    | grep -q -E "^$1.*\[on\]"
+            else
+                "$ESCALATION_TOOL" service "$1" status | grep -q 'running'
+            fi
             ;;
         systemctl)
             "$ESCALATION_TOOL" "$INIT_MANAGER" is-active --quiet "$1"
