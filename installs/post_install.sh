@@ -119,7 +119,11 @@ esac
 
 # Set base services
 services="qemu-guest-agent"
-[ "$PACKAGER" = "xbps-install" ] && services="qemu-ga"
+case "$PACKAGER" in
+    xbps-install|slapt-get)
+        services="qemu-ga"
+        ;;
+esac
 
 # Add SSH service based on system
 if [ -e /usr/lib/systemd/system/sshd.service ] || [ -e /etc/init.d/sshd ]; then
