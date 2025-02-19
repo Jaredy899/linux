@@ -97,4 +97,4 @@ isServiceActive() {
     esac
 }
 
-checkInitManager 'systemctl rc-service sv'
+checkInitManager 'systemctl rc-service sv service'
