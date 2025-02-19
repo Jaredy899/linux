@@ -100,11 +100,11 @@ isServiceActive() {
     case "$INIT_MANAGER" in
         service)
             if [ "$INIT_MANAGER" = "service" ]; then
-                "$ESCALATION_TOOL" service list 2>/dev/null \
+                "$ESCALATION_TOOL" "$INIT_MANAGER" list 2>/dev/null \
                     | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' \
                     | grep -q -E "^$1.*\[on\]"
             else
-                "$ESCALATION_TOOL" service "$1" status | grep -q 'running'
+                "$ESCALATION_TOOL" "$INIT_MANAGER" "$1" status | grep -q 'running'
             fi
             ;;
         systemctl)
@@ -114,7 +114,7 @@ isServiceActive() {
             "$ESCALATION_TOOL" "$INIT_MANAGER" "$1" status --quiet
             ;;
         sv)
-            "$ESCALATION_TOOL" sv status "$1" >/dev/null 2>&1
+            "$ESCALATION_TOOL" "$INIT_MANAGER" status "$1" >/dev/null 2>&1
             ;;
     esac
 }
