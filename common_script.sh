@@ -278,17 +278,18 @@ show_menu_item() {
     fi
 }
 
+saved_stty=""
+cleanup() {
+    stty "$saved_stty"
+    printf "\n${GREEN}Script terminated.${RC}\n"
+    exit 0
+}
+
 # Function to handle menu selection
 handle_menu_selection() {
     selected=1
     total_options=$1
     saved_stty=$(stty -g)
-
-    cleanup() {
-        stty "$saved_stty"
-        printf "\n${GREEN}Script terminated.${RC}\n"
-        exit 0
-    }
 
     trap cleanup INT
 
