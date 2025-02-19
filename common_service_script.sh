@@ -15,21 +15,6 @@ checkInitManager() {
     fi
 }
 
-handleServiceCommand() {
-    local action="$1"
-    local service="$2"
-    
-    if [ "$INIT_MANAGER" = "service" ]; then
-        if [ "$DISTRO" = "salix" ]; then
-            "$ESCALATION_TOOL" "$INIT_MANAGER" "$action" "$service"
-        else
-            "$ESCALATION_TOOL" "$INIT_MANAGER" "$service" "$action"
-        fi
-    else
-        "$ESCALATION_TOOL" "$INIT_MANAGER" "$service" "$action"
-    fi
-}
-
 startService() {
     case "$INIT_MANAGER" in
         rc-service)
@@ -39,7 +24,11 @@ startService() {
             "$ESCALATION_TOOL" "$INIT_MANAGER" "$1" start
             ;;
         service)
-            handleServiceCommand "start" "$1"
+            if [ -d "/etc/rc.d" ]; then
+                "$ESCALATION_TOOL" "$INIT_MANAGER" start "$1"
+            else
+                "$ESCALATION_TOOL" "$INIT_MANAGER" "$1" start
+            fi
             ;;
     esac
 }
@@ -53,7 +42,11 @@ stopService() {
             "$ESCALATION_TOOL" "$INIT_MANAGER" "$1" stop
             ;;
         service)
-            handleServiceCommand "stop" "$1"
+            if [ -d "/etc/rc.d" ]; then
+                "$ESCALATION_TOOL" "$INIT_MANAGER" stop "$1"
+            else
+                "$ESCALATION_TOOL" "$INIT_MANAGER" "$1" stop
+            fi
             ;;
     esac
 }
@@ -72,7 +65,7 @@ enableService() {
             sleep 5
             ;;
         service)
-            if [ "$DISTRO" = "salix" ]; then
+            if [ -d "/etc/rc.d" ]; then
                 "$ESCALATION_TOOL" chmod +x "/etc/rc.d/rc.$1"
             else
                 "$ESCALATION_TOOL" update-rc.d "$1" defaults
@@ -93,7 +86,7 @@ disableService() {
             "$ESCALATION_TOOL" rm -f "/var/service/$1"
             ;;
         service)
-            if [ "$DISTRO" = "salix" ]; then
+            if [ -d "/etc/rc.d" ]; then
                 "$ESCALATION_TOOL" chmod -x "/etc/rc.d/rc.$1"
             else
                 "$ESCALATION_TOOL" update-rc.d -f "$1" remove
