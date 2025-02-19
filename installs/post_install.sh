@@ -11,18 +11,6 @@ checkEnv || exit 1
 
 reboot_required=false
 
-# Function to install a package
-install_package() {
-    for package_name in "$@"; do
-        if ! command_exists "$package_name"; then
-            printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
-            noninteractive "$package_name"
-        else
-            printf "%b\n" "${GREEN}$package_name is already installed.${RC}"
-        fi
-    done
-}
-
 # Detect timezone
 detected_timezone="$(curl --fail https://ipapi.co/timezone)"
 if [ -n "$detected_timezone" ]; then
@@ -42,7 +30,7 @@ install_nala() {
     printf "%b\n" "${CYAN}Checking if Nala should be installed...${RC}"
     if [ "$PACKAGER" = "apt-get" ]; then
         printf "%b\n" "${CYAN}Installing Nala...${RC}"
-        if "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive apt-get update && noninteractive nala; then
+        if "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive apt-get update && "$ESCALATION_TOOL" apt-get install -y nala; then
             yes | "$ESCALATION_TOOL" nala fetch --auto --fetches 1 || printf "%b\n" "${YELLOW}Nala fetch failed, continuing...${RC}"
             printf "%b\n" "${GREEN}Nala has been installed.${RC}"
             PACKAGER="apt-get"
@@ -79,41 +67,35 @@ if [ "$DTYPE" = "rocky" ] || [ "$DTYPE" = "almalinux" ] || [ "$DTYPE" = "ol" ]; 
     "$ESCALATION_TOOL" dnf install -y epel-release
 fi
 
-# Install common packages
-common_packages="nano git wget btop ncdu qemu-guest-agent unzip"
-for package in $common_packages; do
-    install_package $package
-done
-
-# OS-specific packages
+# Install packages based on package manager
 case "$PACKAGER" in
     pacman)
-        install_package "terminus-font" "yazi" "openssh"
+        "$ESCALATION_TOOL" "$PACKAGER" -S --noconfirm --needed nano git wget btop ncdu qemu-guest-agent unzip terminus-font yazi openssh
         ;;
     apt-get|nala)
-        install_package "console-setup" "xfonts-terminus" "openssh-server"
+        "$ESCALATION_TOOL" "$PACKAGER" install -y nano git wget btop ncdu qemu-guest-agent unzip console-setup xfonts-terminus openssh-server
         ;;
     dnf)
-        install_package "terminus-fonts-console" "openssh-server"
+        "$ESCALATION_TOOL" "$PACKAGER" install -y nano git wget btop ncdu qemu-guest-agent unzip terminus-fonts-console openssh-server
         ;;
     zypper)
-        install_package "terminus-bitmap-fonts" "openssh"
+        "$ESCALATION_TOOL" "$PACKAGER" install -y nano git wget btop ncdu qemu-guest-agent unzip terminus-bitmap-fonts openssh
         ;;
     apk)
-        install_package "openssh" "shadow" "font-terminus"
+        "$ESCALATION_TOOL" "$PACKAGER" add nano git wget btop ncdu qemu-guest-agent unzip openssh shadow font-terminus
         ;;
     eopkg)
-        install_package "font-terminus-console" "openssh-server"
+        "$ESCALATION_TOOL" "$PACKAGER" install -y nano git wget btop ncdu qemu-guest-agent unzip font-terminus-console openssh-server
         ;;
     xbps-install)
-        install_package "terminus-font" "openssh" "qemu-ga"
+        "$ESCALATION_TOOL" "$PACKAGER" -y nano git wget btop ncdu qemu-guest-agent unzip terminus-font openssh qemu-ga
         ;;
     slapt-get)
-        install_package "terminus-font" "openssh"
+        "$ESCALATION_TOOL" "$PACKAGER" -i -y nano git wget btop ncdu qemu-guest-agent unzip terminus-font openssh
         ;;
     *)
         printf "%b\n" "${YELLOW}Unknown package manager. Installing basic packages only.${RC}"
-        install_package "openssh"
+        "$ESCALATION_TOOL" "$PACKAGER" install -y nano git wget btop ncdu qemu-guest-agent unzip openssh
         ;;
 esac
 
