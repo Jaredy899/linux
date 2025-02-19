@@ -239,6 +239,7 @@ noninteractive() {
             ;;
         slapt-get)
             $ESCALATION_TOOL slapt-get -i -y "$@"
+            ;;
         *)
             $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
             ;;
