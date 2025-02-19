@@ -129,7 +129,6 @@ isServiceActive() {
         sv)
             "$ESCALATION_TOOL" "$INIT_MANAGER" status "$1" >/dev/null 2>&1
             ;;
-            case "$INIT_MANAGER" in
         service)
             if [ "$INIT_MANAGER" = "service" ]; then
                 "$ESCALATION_TOOL" "$INIT_MANAGER" list 2>/dev/null \
