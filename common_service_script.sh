@@ -133,6 +133,16 @@ isServiceActive() {
         sv)
             "$ESCALATION_TOOL" "$INIT_MANAGER" status "$1" >/dev/null 2>&1
             ;;
+            case "$INIT_MANAGER" in
+        service)
+            if [ "$INIT_MANAGER" = "service" ]; then
+                "$ESCALATION_TOOL" "$INIT_MANAGER" list 2>/dev/null \
+                    | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' \
+                    | grep -q -E "^$1.*\[on\]"
+            else
+                "$ESCALATION_TOOL" "$INIT_MANAGER" "$1" status | grep -q 'running'
+            fi
+            ;;
     esac
 }
 
