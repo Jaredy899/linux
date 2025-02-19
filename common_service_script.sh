@@ -21,10 +21,8 @@ handleServiceCommand() {
     
     if [ "$INIT_MANAGER" = "service" ]; then
         if [ "$DISTRO" = "salix" ]; then
-            # Salix-style: service action servicename
             "$ESCALATION_TOOL" "$INIT_MANAGER" "$action" "$service"
         else
-            # Debian-style: service servicename action
             "$ESCALATION_TOOL" "$INIT_MANAGER" "$service" "$action"
         fi
     else
@@ -75,7 +73,6 @@ enableService() {
             sleep 5
             ;;
         service)
-            # For SysV init systems
             if [ "$DISTRO" = "salix" ]; then
                 "$ESCALATION_TOOL" chmod +x "/etc/rc.d/rc.$1"
             else
