@@ -27,10 +27,10 @@ install_docker() {
         printf "%b\n" "${YELLOW}Installing Docker...${RC}"
         case "$PACKAGER" in
             pacman|eopkg|xbps-install)
-                noninteractive docker docker-compose
+                checkNonInteractive docker docker-compose
                 ;;
             zypper)
-                noninteractive docker docker-compose docker-compose-switch
+                checkNonInteractive docker docker-compose docker-compose-switch
                 ;;
             apk)
                 "$ESCALATION_TOOL" apk add --no-cache --update-cache \
@@ -42,7 +42,7 @@ install_docker() {
                     "$ESCALATION_TOOL" dnf remove -y docker docker-client docker-client-latest \
                         docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
                     "$ESCALATION_TOOL" dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-                    noninteractive docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+                    checkNonInteractive docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
                 else
                     curl -fsSL https://get.docker.com | "$ESCALATION_TOOL" sh
                 fi

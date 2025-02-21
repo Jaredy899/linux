@@ -209,10 +209,11 @@ checkEnv() {
     checkSuperUser
     checkDistro
     checkAURHelper
+    checkNonInteractive
 }
 
 # Unified package installation function
-noninteractive() {
+checkNonInteractive() {
     case $PACKAGER in
         pacman)
             $ESCALATION_TOOL $PACKAGER -S --noconfirm --needed "$@"

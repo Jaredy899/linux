@@ -20,11 +20,11 @@ install_arch_de() {
     case $1 in
         1) 
             # Install Cinnamon
-            noninteractive cinnamon dolphin konsole sddm xed xreader feh
+            checkNonInteractive cinnamon dolphin konsole sddm xed xreader feh
             ;;
         2) 
             # Install KDE Plasma
-            noninteractive plasma-meta sddm dolphin konsole feh
+            checkNonInteractive plasma-meta sddm dolphin konsole feh
             ;;
         3) 
             # Install DWM
@@ -32,11 +32,11 @@ install_arch_de() {
             ;;
         4) 
             # Install COSMIC
-            noninteractive gdm cosmic
+            checkNonInteractive gdm cosmic
             ;;
         5) 
             # Install XFCE
-            noninteractive xfce4 xfce4-goodies sddm feh
+            checkNonInteractive xfce4 xfce4-goodies sddm feh
             ;;
     esac
 }
@@ -46,12 +46,12 @@ install_fedora_de() {
     case $1 in
         1) 
             # Install Cinnamon
-            noninteractive @"cinnamon-desktop" sddm feh
+            checkNonInteractive @"cinnamon-desktop" sddm feh
             ;;
         2) 
             # Install KDE Plasma
             $ESCALATION_TOOL $PACKAGER remove -y sddm-wayland-generic
-            noninteractive @"kde-desktop-environment" sddm feh
+            checkNonInteractive @"kde-desktop-environment" sddm feh
             ;;
         3) 
             # Install DWM
@@ -59,11 +59,11 @@ install_fedora_de() {
             ;;
         4) 
             # Install COSMIC
-            noninteractive gdm @"cosmic-desktop-environment"
+            checkNonInteractive gdm @"cosmic-desktop-environment"
             ;;
         5) 
             # Install XFCE
-            noninteractive @"xfce-desktop-environment" sddm feh
+            checkNonInteractive @"xfce-desktop-environment" sddm feh
             ;;
     esac
 }
@@ -73,12 +73,12 @@ install_debian_de() {
     case $1 in
         1) 
             # Install Cinnamon
-            noninteractive cinnamon-core sddm feh
+            checkNonInteractive cinnamon-core sddm feh
             ;;
         2) 
             # Install KDE Plasma
             echo "sddm shared/default-display-manager select sddm" | $ESCALATION_TOOL debconf-set-selections
-            noninteractive kde-plasma-desktop plasma-desktop plasma-workspace sddm plasma-nm plasma-pa dolphin konsole kwin-x11 systemsettings plasma-workspace-wayland feh
+            checkNonInteractive kde-plasma-desktop plasma-desktop plasma-workspace sddm plasma-nm plasma-pa dolphin konsole kwin-x11 systemsettings plasma-workspace-wayland feh
             ;;
         3) 
             # Install DWM
@@ -86,11 +86,11 @@ install_debian_de() {
             ;;
         4)
             # Install COSMIC
-            noninteractive gdm cosmic
+            checkNonInteractive gdm cosmic
             ;;
         5) 
             # Install XFCE
-            noninteractive xfce4 xfce4-goodies sddm xorg feh
+            checkNonInteractive xfce4 xfce4-goodies sddm xorg feh
             ;;
     esac
 }
@@ -100,12 +100,12 @@ install_opensuse_de() {
     case $1 in
         1) 
             # Install Cinnamon
-            noninteractive -t pattern cinnamon
-            noninteractive sddm
+            checkNonInteractive -t pattern cinnamon
+            checkNonInteractive sddm
             ;;
         2) 
             # Install KDE Plasma
-            noninteractive -t pattern kde kde_plasma
+            checkNonInteractive -t pattern kde kde_plasma
             $ESCALATION_TOOL sed -i 's/^DISPLAYMANAGER=.*/DISPLAYMANAGER="sddm"/' /etc/sysconfig/displaymanager
             ;;
         3) 
@@ -123,8 +123,8 @@ install_opensuse_de() {
             ;;
         5) 
             # Install XFCE
-            noninteractive -t pattern xfce
-            noninteractive sddm
+            checkNonInteractive -t pattern xfce
+            checkNonInteractive sddm
             ;;
     esac
     
