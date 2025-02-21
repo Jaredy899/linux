@@ -205,81 +205,23 @@ checkEnv() {
     checkSuperUser
     checkDistro
     checkAURHelper
-    setupNonInteractive
-}
-
-# Function to set up the non-interactive installation flags
-setupNonInteractive() {
-    case "$PACKAGER" in
-        pacman)
-            NONINTERACTIVE="--noconfirm --needed"
-            ;;
-        apt-get|nala|dnf|zypper)
-            NONINTERACTIVE="-y"
-            ;;
-        apk)
-            NONINTERACTIVE="--no-cache"
-            ;;
-        eopkg)
-            NONINTERACTIVE="-y"
-            ;;
-        xbps-install)
-            NONINTERACTIVE="-y"
-            ;;
-        *)
-            echo "Unsupported package manager: $PACKAGER"
-            return 1
-            ;;
-    esac
 }
 
 # Unified package installation function
 noninteractive() {
-    if [ -z "$NONINTERACTIVE" ]; then
-        setupNonInteractive
-    fi
-    case "$PACKAGER" in
+    case $PACKAGER in
         pacman)
-            $ESCALATION_TOOL pacman -S --noconfirm --needed "$@"
+            $ESCALATION_TOOL $PACKAGER -S --noconfirm --needed "$@"
             ;;
-        apt-get|apt)
-            $ESCALATION_TOOL apt-get install -y "$@"
+        apt-get|nala|eopkg|xbps-install)
+            $ESCALATION_TOOL $PACKAGER install -y "$@"
             ;;
         apk)
-            $ESCALATION_TOOL apk add --no-cache "$@"
-            ;;
-        eopkg)
-            $ESCALATION_TOOL eopkg install -y "$@"
-            ;;
-        xbps-install)
-            $ESCALATION_TOOL xbps-install -y "$@"
+            $ESCALATION_TOOL $PACKAGER add --no-cache "$@"
             ;;
         *)
-            $ESCALATION_TOOL $PACKAGER install $NONINTERACTIVE "$@"
-            ;;
-    esac
-}
-
-# Function to get non-interactive installation flags (if needed elsewhere)
-getNonInteractiveFlags() {
-    case "$PACKAGER" in
-        pacman)
-            echo "--noconfirm --needed"
-            ;;
-        apt-get|nala|dnf|zypper)
-            echo "-y"
-            ;;
-        apk)
-            echo "--no-cache"
-            ;;
-        eopkg)
-            echo "-y"
-            ;;
-        xbps-install)
-            echo "-y"
-            ;;
-        *)
-            echo ""  # Default to empty string if package manager is unknown
+            echo "Unsupported package manager: $PACKAGER"
+            return 1
             ;;
     esac
 }
