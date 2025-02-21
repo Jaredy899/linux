@@ -213,7 +213,7 @@ noninteractive() {
         pacman)
             $ESCALATION_TOOL $PACKAGER -S --noconfirm --needed "$@"
             ;;
-        apt-get|nala|eopkg|xbps-install)
+        apt-get|nala|dnf|zypper|eopkg|xbps-install)
             $ESCALATION_TOOL $PACKAGER install -y "$@"
             ;;
         apk)
