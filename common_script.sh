@@ -133,7 +133,7 @@ checkPackageManager() {
         if command_exists "${pgm}"; then
             PACKAGER=${pgm}
             printf "%b\n" "${CYAN}Using ${pgm} as package manager${RC}"
-            if ! noninteractive --version >/dev/null 2>&1; then
+            if ! checkNonInteractive --version >/dev/null 2>&1; then
                 printf "%b\n" "${RED}Package manager installation function failed${RC}"
                 return 1
             fi
