@@ -28,7 +28,7 @@ install_package() {
         if [ "$PACKAGER" = "apt" ] || [ "$PACKAGER" = "nala" ] && [ "$package_name" = "nfs-utils" ]; then
             package_name="nfs-common"
         fi
-        noninteractive "$package_name"
+        checkNonInteractive "$package_name"
         if [ $? -eq 0 ]; then
             printf "%b\n" "${GREEN}$package_name installed successfully.${RC}"
         else
