@@ -219,6 +219,9 @@ noninteractive() {
         apk)
             $ESCALATION_TOOL $PACKAGER add --no-cache "$@"
             ;;
+        slapt-get)
+            $ESCALATION_TOOL $PACKAGER -y -i "@"
+            ;;
         *)
             echo "Unsupported package manager: $PACKAGER"
             return 1
