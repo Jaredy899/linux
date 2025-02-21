@@ -67,35 +67,38 @@ if [ "$DTYPE" = "rocky" ] || [ "$DTYPE" = "almalinux" ] || [ "$DTYPE" = "ol" ]; 
     "$ESCALATION_TOOL" dnf install -y epel-release
 fi
 
-# Install packages based on package manager
+# Install common packages across all distributions
+checkNonInteractive nano git wget btop ncdu qemu-guest-agent unzip
+
+# Install SSH and distribution-specific packages
 case "$PACKAGER" in
     pacman)
-        "$ESCALATION_TOOL" "$PACKAGER" -S --noconfirm --needed nano git wget btop ncdu qemu-guest-agent unzip terminus-font yazi openssh
+        checkNonInteractive openssh terminus-font yazi
         ;;
     apt-get|nala)
-        "$ESCALATION_TOOL" "$PACKAGER" install -y nano git wget btop ncdu qemu-guest-agent unzip console-setup xfonts-terminus openssh-server
+        checkNonInteractive openssh-server console-setup xfonts-terminus
         ;;
     dnf)
-        "$ESCALATION_TOOL" "$PACKAGER" install -y nano git wget btop ncdu qemu-guest-agent unzip terminus-fonts-console openssh-server
+        checkNonInteractive openssh-server terminus-fonts-console
         ;;
     zypper)
-        "$ESCALATION_TOOL" "$PACKAGER" install -y nano git wget btop ncdu qemu-guest-agent unzip terminus-bitmap-fonts openssh
+        checkNonInteractive openssh terminus-bitmap-fonts
         ;;
     apk)
-        "$ESCALATION_TOOL" "$PACKAGER" add nano git wget btop ncdu qemu-guest-agent unzip openssh shadow font-terminus
+        checkNonInteractive openssh shadow font-terminus
         ;;
     eopkg)
-        "$ESCALATION_TOOL" "$PACKAGER" install -y nano git wget btop ncdu qemu-guest-agent unzip font-terminus-console openssh-server
+        checkNonInteractive openssh-server font-terminus-console
         ;;
     xbps-install)
-        "$ESCALATION_TOOL" "$PACKAGER" -y nano git wget btop ncdu qemu-guest-agent unzip terminus-font openssh qemu-ga
+        checkNonInteractive openssh terminus-font qemu-ga
         ;;
     slapt-get)
-        "$ESCALATION_TOOL" "$PACKAGER" -i -y nano git wget btop ncdu qemu-guest-agent unzip terminus-font openssh
+        checkNonInteractive openssh terminus-font
         ;;
     *)
-        printf "%b\n" "${YELLOW}Unknown package manager. Installing basic packages only.${RC}"
-        "$ESCALATION_TOOL" "$PACKAGER" install -y nano git wget btop ncdu qemu-guest-agent unzip openssh
+        printf "%b\n" "${YELLOW}Unknown package manager. Basic packages installed only.${RC}"
+        checkNonInteractive openssh
         ;;
 esac
 
