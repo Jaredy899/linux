@@ -200,7 +200,7 @@ checkEnv() {
     checkArch
     checkEscalationTool
     checkCommandRequirements "curl groups $ESCALATION_TOOL"
-    checkPackageManager 'eopkg nala apt-get dnf pacman zypper apk xbps-install slapt-get'
+    checkPackageManager 'nala apt-get dnf pacman zypper apk xbps-install eopkg slapt-get'
     checkCurrentDirectoryWritable
     checkSuperUser
     checkDistro
