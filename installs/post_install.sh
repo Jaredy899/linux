@@ -72,14 +72,14 @@ fi
 
 # Install common packages across all distributions
 printf "%b\n" "${CYAN}Installing common packages...${RC}"
-for package in nano git wget btop ncdu qemu-guest-agent unzip; do
-    checkNonInteractive "$package"
-done
+checkNonInteractive nano git wget btop ncdu qemu-guest-agent unzip || {
+    printf "%b\n" "${RED}Failed to install common packages. Continuing...${RC}"
+}
 
 # Install SSH and distribution-specific packages
 case "$PACKAGER" in
     pacman)
-        checkNonInteractive openssh terminus-font yazi
+        checkNonInteractive terminus-font yazi
         ;;
     apt-get|nala)
         checkNonInteractive openssh-server console-setup xfonts-terminus
