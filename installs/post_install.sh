@@ -125,10 +125,11 @@ for service in $services; do
             printf "%b\n" "${GREEN}$service enabled and started${RC}" || \
             printf "%b\n" "${YELLOW}Failed to enable/start $service. It may start on next boot.${RC}"
         
-        # Configure YaST firewall for SSH on openSUSE
-        if [ "$PACKAGER" = "zypper" ] && [ "$service" = "sshd" ] && command -v yast2 >/dev/null 2>&1; then
-            printf "%b\n" "${CYAN}Enabling SSH in YaST firewall...${RC}"
-            "$ESCALATION_TOOL" yast2 firewall services add zone=public service=service:sshd && \
+        # Configure firewall for SSH on openSUSE
+        if [ "$PACKAGER" = "zypper" ] && [ "$service" = "sshd" ] && command -v firewall-cmd >/dev/null 2>&1; then
+            printf "%b\n" "${CYAN}Enabling SSH in firewall...${RC}"
+            "$ESCALATION_TOOL" firewall-cmd --permanent --add-service=ssh && \
+            "$ESCALATION_TOOL" firewall-cmd --reload && \
                 printf "%b\n" "${GREEN}SSH enabled in firewall${RC}" || \
                 printf "%b\n" "${YELLOW}Failed to configure SSH in firewall${RC}"
         fi
