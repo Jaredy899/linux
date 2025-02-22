@@ -212,19 +212,19 @@ checkEnv() {
 checkNonInteractive() {    
     case $PACKAGER in
         pacman)
-            $ESCALATION_TOOL $PACKAGER -S --noconfirm --needed "$@"
+            "$ESCALATION_TOOL" "$PACKAGER" -S --noconfirm --needed "$@"
             ;;
         apt-get|nala|dnf|zypper|eopkg)
-            $ESCALATION_TOOL $PACKAGER install -y "$@"
+            "$ESCALATION_TOOL" "$PACKAGER" install -y "$@"
             ;;
         apk)
-            $ESCALATION_TOOL $PACKAGER add --no-cache "$@"
+            "$ESCALATION_TOOL" "$PACKAGER" add --no-cache "$@"
             ;;
         xbps-install)
-            $ESCALATION_TOOL $PACKAGER -Sy "$@"
+            "$ESCALATION_TOOL" "$PACKAGER" -Sy "$@"
             ;;
         slapt-get)
-            $ESCALATION_TOOL $PACKAGER -y -i "$@"
+            "$ESCALATION_TOOL" "$PACKAGER" -y -i "$@"
             ;;
         *)
             echo "Unsupported package manager: $PACKAGER"
