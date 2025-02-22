@@ -72,39 +72,39 @@ fi
 
 # Install common packages across all distributions
 printf "%b\n" "${CYAN}Installing common packages...${RC}"
-checkNonInteractive nano git wget btop ncdu qemu-guest-agent unzip || {
+checkNonInteractive "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" || {
     printf "%b\n" "${RED}Failed to install common packages. Continuing...${RC}"
 }
 
 # Install SSH and distribution-specific packages
 case "$PACKAGER" in
     pacman)
-        checkNonInteractive terminus-font yazi
+        checkNonInteractive "terminus-font" "yazi"
         ;;
     apt-get|nala)
-        checkNonInteractive openssh-server console-setup xfonts-terminus
+        checkNonInteractive "openssh-server" "console-setup" "xfonts-terminus"
         ;;
     dnf)
-        checkNonInteractive openssh-server terminus-fonts-console
+        checkNonInteractive "openssh-server" "terminus-fonts-console"
         ;;
     zypper)
-        checkNonInteractive openssh terminus-bitmap-fonts
+        checkNonInteractive "openssh" "terminus-bitmap-fonts"
         ;;
     apk)
-        checkNonInteractive openssh shadow font-terminus
+        checkNonInteractive "openssh" "shadow" "font-terminus"
         ;;
     eopkg)
-        checkNonInteractive openssh-server font-terminus-console
+        checkNonInteractive "openssh-server" "font-terminus-console"
         ;;
     xbps-install)
-        checkNonInteractive openssh terminus-font qemu-ga
+        checkNonInteractive "openssh" "terminus-font" "qemu-ga"
         ;;
     slapt-get)
-        checkNonInteractive openssh terminus-font
+        checkNonInteractive "openssh" "terminus-font"
         ;;
     *)
         printf "%b\n" "${YELLOW}Unknown package manager. Basic packages installed only.${RC}"
-        checkNonInteractive openssh
+        checkNonInteractive "openssh"
         ;;
 esac
 
