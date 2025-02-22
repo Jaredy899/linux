@@ -95,7 +95,7 @@ case "$PACKAGER" in
         "$ESCALATION_TOOL" "$PACKAGER" -Sy nano git wget btop ncdu qemu-guest-agent unzip openssh terminus-font qemu-ga
         ;;
     slapt-get)
-        "$ESCALATION_TOOL" "$PACKAGER" -y -i nano git wget btop ncdu qemu-guest-agent unzip openssh terminus-font
+        "$ESCALATION_TOOL" "$PACKAGER" -y -i nano git wget btop ncdu qemu-guest-agent openssh terminus-font
         ;;
     *)
         printf "%b\n" "${YELLOW}Unknown package manager. Cannot install packages.${RC}"
