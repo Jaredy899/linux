@@ -205,32 +205,6 @@ checkEnv() {
     checkSuperUser
     checkDistro
     checkAURHelper
-     "$ESCALATION_TOOL" "$PACKAGER"
-}
-
-# Unified package installation function
- "$ESCALATION_TOOL" "$PACKAGER"() {    
-    case $PACKAGER in
-        pacman)
-            "$ESCALATION_TOOL" "$PACKAGER" -S --noconfirm --needed "$@"
-            ;;
-        apt-get|nala|dnf|zypper|eopkg)
-            "$ESCALATION_TOOL" "$PACKAGER" install -y "$@"
-            ;;
-        apk)
-            "$ESCALATION_TOOL" "$PACKAGER" add --no-cache "$@"
-            ;;
-        xbps-install)
-            "$ESCALATION_TOOL" "$PACKAGER" -Sy "$@"
-            ;;
-        slapt-get)
-            "$ESCALATION_TOOL" "$PACKAGER" -y -i "$@"
-            ;;
-        *)
-            echo "Unsupported package manager: $PACKAGER"
-            return 1
-            ;;
-    esac
 }
 
 # Function to read keyboard input
