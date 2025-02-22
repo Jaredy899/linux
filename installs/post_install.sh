@@ -74,28 +74,28 @@ fi
 printf "%b\n" "${CYAN}Installing packages...${RC}"
 case "$PACKAGER" in
     pacman)
-        "$ESCALATION_TOOL" "$PACKAGER" -S --noconfirm --needed "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" "terminus-font" "yazi"
+        "$ESCALATION_TOOL" "$PACKAGER" -S --noconfirm --needed nano git wget btop ncdu qemu-guest-agent unzip terminus-font yazi
         ;;
     apt-get|nala)
-        "$ESCALATION_TOOL" "$PACKAGER" install -y "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" "openssh-server" "console-setup" "xfonts-terminus"
+        "$ESCALATION_TOOL" "$PACKAGER" install -y nano git wget btop ncdu qemu-guest-agent unzip openssh-server console-setup xfonts-terminus
         ;;
     dnf)
-        "$ESCALATION_TOOL" "$PACKAGER" install -y "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" "openssh-server" "terminus-fonts-console"
+        "$ESCALATION_TOOL" "$PACKAGER" install -y nano git wget btop ncdu qemu-guest-agent unzip openssh-server terminus-fonts-console
         ;;
     zypper)
-        "$ESCALATION_TOOL" "$PACKAGER" install -y "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" "openssh" "terminus-bitmap-fonts"
+        "$ESCALATION_TOOL" "$PACKAGER" install -y nano git wget btop ncdu qemu-guest-agent unzip openssh terminus-bitmap-fonts
         ;;
     apk)
-        "$ESCALATION_TOOL" "$PACKAGER" add --no-cache "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" "openssh" "shadow" "font-terminus"
+        "$ESCALATION_TOOL" "$PACKAGER" add --no-cache nano git wget btop ncdu qemu-guest-agent unzip openssh shadow font-terminus
         ;;
     eopkg)
-        "$ESCALATION_TOOL" "$PACKAGER" install -y "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" "openssh-server" "font-terminus-console"
+        "$ESCALATION_TOOL" "$PACKAGER" install -y nano git wget btop ncdu qemu-guest-agent unzip openssh-server font-terminus-console
         ;;
     xbps-install)
-        "$ESCALATION_TOOL" "$PACKAGER" -Sy "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" "openssh" "terminus-font" "qemu-ga"
+        "$ESCALATION_TOOL" "$PACKAGER" -Sy nano git wget btop ncdu qemu-guest-agent unzip openssh terminus-font qemu-ga
         ;;
     slapt-get)
-        "$ESCALATION_TOOL" "$PACKAGER" -y -i "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" "openssh" "terminus-font"
+        "$ESCALATION_TOOL" "$PACKAGER" -y -i nano git wget btop ncdu qemu-guest-agent unzip openssh terminus-font
         ;;
     *)
         printf "%b\n" "${YELLOW}Unknown package manager. Cannot install packages.${RC}"

@@ -26,23 +26,26 @@ install_docker() {
     if ! command_exists docker; then
         printf "%b\n" "${YELLOW}Installing Docker...${RC}"
         case "$PACKAGER" in
-            pacman|eopkg|xbps-install)
-                checkNonInteractive docker docker-compose
+            pacman|eopkg)
+                "$ESCALATION_TOOL" "$PACKAGER" install -y docker docker-compose
                 ;;
+            xbps-install)
+                 "$ESCALATION_TOOL" "$PACKAGER" -Sy docker docker-compose
+                 ;;
             zypper)
-                checkNonInteractive docker docker-compose docker-compose-switch
+                "$ESCALATION_TOOL" "$PACKAGER" install -y docker docker-compose docker-compose-switch
                 ;;
             apk)
                 "$ESCALATION_TOOL" apk add --no-cache --update-cache \
                     --repository http://dl-cdn.alpinelinux.org/alpine/latest-stable/community \
-                    docker docker-compose
+                    "docker" "docker-compose"
                 ;;
             dnf)
                 if [ "$DTYPE" = "rocky" ] || [ "$DTYPE" = "almalinux" ]; then
                     "$ESCALATION_TOOL" dnf remove -y docker docker-client docker-client-latest \
                         docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine
                     "$ESCALATION_TOOL" dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-                    checkNonInteractive docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+                     "$ESCALATION_TOOL" "$PACKAGER" docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
                 else
                     curl -fsSL https://get.docker.com | "$ESCALATION_TOOL" sh
                 fi

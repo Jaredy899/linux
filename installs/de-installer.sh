@@ -20,11 +20,11 @@ install_arch_de() {
     case $1 in
         1) 
             # Install Cinnamon
-            checkNonInteractive cinnamon dolphin konsole sddm xed xreader feh
+            "$ESCALATION_TOOL" "$PACKAGER" -S --noconfirm --needed "cinnamon" "dolphin" "konsole" "sddm" "xed" "xreader" "feh"
             ;;
         2) 
             # Install KDE Plasma
-            checkNonInteractive plasma-meta sddm dolphin konsole feh
+            "$ESCALATION_TOOL" "$PACKAGER" -S --noconfirm --needed "plasma-meta" "sddm" "dolphin" "konsole" "feh"
             ;;
         3) 
             # Install DWM
@@ -32,11 +32,11 @@ install_arch_de() {
             ;;
         4) 
             # Install COSMIC
-            checkNonInteractive gdm cosmic
+            "$ESCALATION_TOOL" "$PACKAGER" -S --noconfirm --needed "gdm" "cosmic"
             ;;
         5) 
             # Install XFCE
-            checkNonInteractive xfce4 xfce4-goodies sddm feh
+            "$ESCALATION_TOOL" "$PACKAGER" -S --noconfirm --needed "xfce4" "xfce4-goodies" "sddm" "feh"
             ;;
     esac
 }
@@ -46,12 +46,12 @@ install_fedora_de() {
     case $1 in
         1) 
             # Install Cinnamon
-            checkNonInteractive @"cinnamon-desktop" sddm feh
+            "$ESCALATION_TOOL" "$PACKAGER" install -y "@cinnamon-desktop" "sddm" "feh"
             ;;
         2) 
             # Install KDE Plasma
-            $ESCALATION_TOOL $PACKAGER remove -y sddm-wayland-generic
-            checkNonInteractive @"kde-desktop-environment" sddm feh
+            "$ESCALATION_TOOL" "$PACKAGER" remove -y "sddm-wayland-generic"
+            "$ESCALATION_TOOL" "$PACKAGER" install -y "@kde-desktop-environment" "sddm" "feh"
             ;;
         3) 
             # Install DWM
@@ -59,11 +59,11 @@ install_fedora_de() {
             ;;
         4) 
             # Install COSMIC
-            checkNonInteractive gdm @"cosmic-desktop-environment"
+            "$ESCALATION_TOOL" "$PACKAGER" install -y "gdm" "@cosmic-desktop-environment"
             ;;
         5) 
             # Install XFCE
-            checkNonInteractive @"xfce-desktop-environment" sddm feh
+            "$ESCALATION_TOOL" "$PACKAGER" install -y "@xfce-desktop-environment" "sddm" "feh"
             ;;
     esac
 }
@@ -73,12 +73,12 @@ install_debian_de() {
     case $1 in
         1) 
             # Install Cinnamon
-            checkNonInteractive cinnamon-core sddm feh
+             "$ESCALATION_TOOL" "$PACKAGER" cinnamon-core sddm feh
             ;;
         2) 
             # Install KDE Plasma
             echo "sddm shared/default-display-manager select sddm" | $ESCALATION_TOOL debconf-set-selections
-            checkNonInteractive kde-plasma-desktop plasma-desktop plasma-workspace sddm plasma-nm plasma-pa dolphin konsole kwin-x11 systemsettings plasma-workspace-wayland feh
+             "$ESCALATION_TOOL" "$PACKAGER" kde-plasma-desktop plasma-desktop plasma-workspace sddm plasma-nm plasma-pa dolphin konsole kwin-x11 systemsettings plasma-workspace-wayland feh
             ;;
         3) 
             # Install DWM
@@ -86,11 +86,11 @@ install_debian_de() {
             ;;
         4)
             # Install COSMIC
-            checkNonInteractive gdm cosmic
+             "$ESCALATION_TOOL" "$PACKAGER" gdm cosmic
             ;;
         5) 
             # Install XFCE
-            checkNonInteractive xfce4 xfce4-goodies sddm xorg feh
+             "$ESCALATION_TOOL" "$PACKAGER" xfce4 xfce4-goodies sddm xorg feh
             ;;
     esac
 }
@@ -100,12 +100,12 @@ install_opensuse_de() {
     case $1 in
         1) 
             # Install Cinnamon
-            checkNonInteractive -t pattern cinnamon
-            checkNonInteractive sddm
+             "$ESCALATION_TOOL" "$PACKAGER" -t pattern cinnamon
+             "$ESCALATION_TOOL" "$PACKAGER" sddm
             ;;
         2) 
             # Install KDE Plasma
-            checkNonInteractive -t pattern kde kde_plasma
+             "$ESCALATION_TOOL" "$PACKAGER" -t pattern kde kde_plasma
             $ESCALATION_TOOL sed -i 's/^DISPLAYMANAGER=.*/DISPLAYMANAGER="sddm"/' /etc/sysconfig/displaymanager
             ;;
         3) 
@@ -123,8 +123,8 @@ install_opensuse_de() {
             ;;
         5) 
             # Install XFCE
-            checkNonInteractive -t pattern xfce
-            checkNonInteractive sddm
+             "$ESCALATION_TOOL" "$PACKAGER" -t pattern xfce
+             "$ESCALATION_TOOL" "$PACKAGER" sddm
             ;;
     esac
     
@@ -157,12 +157,12 @@ enable_display_manager() {
 # Function to update the system
 update_system() {
     case $PACKAGER in
-        pacman) $ESCALATION_TOOL $PACKAGER -Syu $(getNonInteractiveFlags) ;;
+        pacman) "$ESCALATION_TOOL" "$PACKAGER" -Syu ;;
         apt-get|nala) 
-            $ESCALATION_TOOL $PACKAGER update
-            $ESCALATION_TOOL $PACKAGER upgrade $(getNonInteractiveFlags)
+            "$ESCALATION_TOOL" "$PACKAGER" update
+            "$ESCALATION_TOOL" "$PACKAGER" upgrade -y
             ;;
-        dnf) $ESCALATION_TOOL $PACKAGER update $(getNonInteractiveFlags) ;;
+        dnf) "$ESCALATION_TOOL" "$PACKAGER" update -y ;;
     esac
 }
 

@@ -25,10 +25,54 @@ install_package() {
     package_name="$1"
     if ! command_exists "$package_name"; then
         printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
-        if [ "$PACKAGER" = "apt" ] || [ "$PACKAGER" = "nala" ] && [ "$package_name" = "nfs-utils" ]; then
+        
+        if [ "$package_name" = "nfs-utils" ] && [ "$PACKAGER" = "apt-get" ] || [ "$PACKAGER" = "nala" ]; then
             package_name="nfs-common"
+        elif [ "$package_name" = "cifs-utils" ]; then
+            case "$PACKAGER" in
+                apk)
+                    package_name="cifs-utils samba-client"
+                    ;;
+                zypper)
+                    package_name="cifs-utils samba-client"
+                    ;;
+                *)
+                    package_name="cifs-utils"
+                    ;;
+            esac
         fi
-        checkNonInteractive "$package_name"
+        
+        case "$PACKAGER" in
+            pacman)
+                "$ESCALATION_TOOL" "$PACKAGER" -S --noconfirm --needed "$package_name"
+                ;;
+            apt-get|nala)
+                "$ESCALATION_TOOL" "$PACKAGER" install -y "$package_name"
+                ;;
+            dnf)
+                "$ESCALATION_TOOL" "$PACKAGER" install -y "$package_name"
+                ;;
+            zypper)
+                "$ESCALATION_TOOL" "$PACKAGER" install -y "$package_name"
+                ;;
+            apk)
+                "$ESCALATION_TOOL" "$PACKAGER" add --no-cache "$package_name"
+                ;;
+            eopkg)
+                "$ESCALATION_TOOL" "$PACKAGER" install -y "$package_name"
+                ;;
+            xbps-install)
+                "$ESCALATION_TOOL" "$PACKAGER" -Sy "$package_name"
+                ;;
+            slapt-get)
+                "$ESCALATION_TOOL" "$PACKAGER" -y -i "$package_name"
+                ;;
+            *)
+                printf "%b\n" "${RED}Unknown package manager. Cannot install package.${RC}"
+                exit 1
+                ;;
+        esac
+
         if [ $? -eq 0 ]; then
             printf "%b\n" "${GREEN}$package_name installed successfully.${RC}"
         else
