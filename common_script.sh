@@ -209,13 +209,7 @@ checkEnv() {
 }
 
 # Unified package installation function
-checkNonInteractive() {
-    printf "%b\n" "${CYAN}Debug: Installing package(s): $*${RC}"
-    if [ $# -eq 0 ]; then
-        printf "%b\n" "${RED}Error: No packages specified${RC}"
-        return 1
-    }
-    
+checkNonInteractive() {    
     case $PACKAGER in
         pacman)
             $ESCALATION_TOOL $PACKAGER -S --noconfirm --needed "$@"
