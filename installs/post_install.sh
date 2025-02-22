@@ -72,10 +72,9 @@ fi
 
 # Install common packages across all distributions
 printf "%b\n" "${CYAN}Installing common packages...${RC}"
-for pkg in nano git wget btop ncdu qemu-guest-agent unzip; do
-    printf "%b\n" "${CYAN}Installing $pkg...${RC}"
-    checkNonInteractive "$pkg" || printf "%b\n" "${RED}Failed to install $pkg. Continuing...${RC}"
-done
+checkNonInteractive nano git wget btop ncdu qemu-guest-agent unzip || {
+    printf "%b\n" "${RED}Failed to install common packages. Continuing...${RC}"
+}
 
 # Install SSH and distribution-specific packages
 case "$PACKAGER" in
