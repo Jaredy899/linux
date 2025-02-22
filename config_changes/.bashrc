@@ -105,7 +105,7 @@ alias jc='sh <(curl -fsSL jaredcervantes.com/linux)'
 alias nfzf='nano $(fzf -m --preview="bat --color=always {}")'
 alias update='curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/installs/updater.sh | sh'
 alias convert='heif-convert'
-alias deploy='docker compose up -d --force-recreate'
+alias dup='docker compose up -d --force-recreate'
 
 # Alias's for SSH
 # alias SERVERNAME='ssh YOURWEBSITE.com -l USERNAME -p PORTNUMBERHERE'
