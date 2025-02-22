@@ -70,41 +70,35 @@ if [ "$DTYPE" = "rocky" ] || [ "$DTYPE" = "almalinux" ] || [ "$DTYPE" = "ol" ]; 
     }
 fi
 
-# Install common packages across all distributions
-printf "%b\n" "${CYAN}Installing common packages...${RC}"
-checkNonInteractive "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" || {
-    printf "%b\n" "${RED}Failed to install common packages. Continuing...${RC}"
-}
-
-# Install SSH and distribution-specific packages
+# Install all required packages based on distribution
+printf "%b\n" "${CYAN}Installing packages...${RC}"
 case "$PACKAGER" in
     pacman)
-        checkNonInteractive "terminus-font" "yazi"
+        "$ESCALATION_TOOL" "$PACKAGER" -S --noconfirm --needed "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" "terminus-font" "yazi"
         ;;
     apt-get|nala)
-        checkNonInteractive "openssh-server" "console-setup" "xfonts-terminus"
+        "$ESCALATION_TOOL" "$PACKAGER" install -y "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" "openssh-server" "console-setup" "xfonts-terminus"
         ;;
     dnf)
-        checkNonInteractive "openssh-server" "terminus-fonts-console"
+        "$ESCALATION_TOOL" "$PACKAGER" install -y "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" "openssh-server" "terminus-fonts-console"
         ;;
     zypper)
-        checkNonInteractive "openssh" "terminus-bitmap-fonts"
+        "$ESCALATION_TOOL" "$PACKAGER" install -y "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" "openssh" "terminus-bitmap-fonts"
         ;;
     apk)
-        checkNonInteractive "openssh" "shadow" "font-terminus"
+        "$ESCALATION_TOOL" "$PACKAGER" add --no-cache "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" "openssh" "shadow" "font-terminus"
         ;;
     eopkg)
-        checkNonInteractive "openssh-server" "font-terminus-console"
+        "$ESCALATION_TOOL" "$PACKAGER" install -y "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" "openssh-server" "font-terminus-console"
         ;;
     xbps-install)
-        checkNonInteractive "openssh" "terminus-font" "qemu-ga"
+        "$ESCALATION_TOOL" "$PACKAGER" -Sy "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" "openssh" "terminus-font" "qemu-ga"
         ;;
     slapt-get)
-        checkNonInteractive "openssh" "terminus-font"
+        "$ESCALATION_TOOL" "$PACKAGER" -y -i "nano" "git" "wget" "btop" "ncdu" "qemu-guest-agent" "unzip" "openssh" "terminus-font"
         ;;
     *)
-        printf "%b\n" "${YELLOW}Unknown package manager. Basic packages installed only.${RC}"
-        checkNonInteractive "openssh"
+        printf "%b\n" "${YELLOW}Unknown package manager. Cannot install packages.${RC}"
         ;;
 esac
 
