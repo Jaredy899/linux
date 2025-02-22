@@ -23,64 +23,55 @@ show_item() {
 # Function to install a package
 install_package() {
     package_name="$1"
-    if ! command_exists "$package_name"; then
-        printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
-        
-        if [ "$package_name" = "nfs-utils" ] && [ "$PACKAGER" = "apt-get" ] || [ "$PACKAGER" = "nala" ]; then
-            package_name="nfs-common"
-        elif [ "$package_name" = "cifs-utils" ]; then
-            case "$PACKAGER" in
-                apk)
-                    package_name="cifs-utils samba-client"
-                    ;;
-                zypper)
-                    package_name="cifs-utils samba-client"
-                    ;;
-                *)
-                    package_name="cifs-utils"
-                    ;;
-            esac
-        fi
-        
-        case "$PACKAGER" in
-            pacman)
-                "$ESCALATION_TOOL" "$PACKAGER" -S --noconfirm --needed "$package_name"
-                ;;
-            apt-get|nala)
-                "$ESCALATION_TOOL" "$PACKAGER" install -y "$package_name"
-                ;;
-            dnf)
-                "$ESCALATION_TOOL" "$PACKAGER" install -y "$package_name"
-                ;;
-            zypper)
-                "$ESCALATION_TOOL" "$PACKAGER" install -y "$package_name"
-                ;;
-            apk)
-                "$ESCALATION_TOOL" "$PACKAGER" add --no-cache "$package_name"
-                ;;
-            eopkg)
-                "$ESCALATION_TOOL" "$PACKAGER" install -y "$package_name"
-                ;;
-            xbps-install)
-                "$ESCALATION_TOOL" "$PACKAGER" -Sy "$package_name"
-                ;;
-            slapt-get)
-                "$ESCALATION_TOOL" "$PACKAGER" -y -i "$package_name"
-                ;;
-            *)
-                printf "%b\n" "${RED}Unknown package manager. Cannot install package.${RC}"
-                exit 1
-                ;;
-        esac
+    mount_type="$2"
 
-        if [ $? -eq 0 ]; then
-            printf "%b\n" "${GREEN}$package_name installed successfully.${RC}"
+    # Determine the correct package name based on mount type and package manager
+    if [ "$mount_type" = "nfs" ]; then
+        if [ "$PACKAGER" = "apt-get" ] || [ "$PACKAGER" = "nala" ]; then
+            package_name="nfs-common"
         else
-            printf "%b\n" "${RED}Failed to install $package_name. Please install it manually.${RC}"
-            exit 1
+            package_name="nfs-utils"
         fi
-    else
+    elif [ "$mount_type" = "cifs" ]; then
+        package_name="cifs-utils"
+    fi
+
+    # Check if already installed
+    if command_exists "$package_name"; then
         printf "%b\n" "${GREEN}$package_name is already installed.${RC}"
+        return 0
+    fi
+
+    printf "%b\n" "${YELLOW}Installing $package_name...${RC}"
+    
+    # Install the package
+    case "$PACKAGER" in
+        pacman)
+            "$ESCALATION_TOOL" "$PACKAGER" -S --noconfirm --needed "$package_name"
+            ;;
+        apt-get|nala|dnf|zypper|eopkg)
+            "$ESCALATION_TOOL" "$PACKAGER" install -y "$package_name"
+            ;;
+        apk)
+            "$ESCALATION_TOOL" "$PACKAGER" add --no-cache "$package_name"
+            ;;
+        xbps-install)
+            "$ESCALATION_TOOL" "$PACKAGER" -Sy "$package_name"
+            ;;
+        slapt-get)
+            "$ESCALATION_TOOL" "$PACKAGER" -y -i "$package_name"
+            ;;
+        *)
+            printf "%b\n" "${RED}Unknown package manager. Cannot install package.${RC}"
+            exit 1
+            ;;
+    esac
+
+    if [ $? -eq 0 ]; then
+        printf "%b\n" "${GREEN}$package_name installed successfully.${RC}"
+    else
+        printf "%b\n" "${RED}Failed to install $package_name. Please install it manually.${RC}"
+        exit 1
     fi
 }
 
@@ -98,7 +89,7 @@ while true; do
         1)
             mount_type="cifs"
             # Ensure cifs-utils is installed
-            install_package "cifs-utils"
+            install_package "cifs-utils" "$mount_type"
 
             # Prompt the user for the remote mount location
             printf "%b" "${CYAN}Enter the remote CIFS (Samba) mount location (e.g., //192.168.1.1/Files): ${RC}"
@@ -133,11 +124,7 @@ while true; do
         2)
             mount_type="nfs"
             # Ensure nfs-utils or nfs-common is installed
-            if [ "$PACKAGER" = "apt" ] || [ "$PACKAGER" = "nala" ]; then
-                install_package "nfs-common"
-            else
-                install_package "nfs-utils"
-            fi
+            install_package "nfs-utils" "$mount_type"
 
             # Prompt the user for the remote mount location
             printf "%b" "${CYAN}Enter the remote NFS mount location (e.g., 192.168.1.1:/path/to/share): ${RC}"
