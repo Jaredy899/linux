@@ -124,19 +124,19 @@ for service in $services; do
         startAndEnableService "$service" && \
             printf "%b\n" "${GREEN}$service enabled and started${RC}" || \
             printf "%b\n" "${YELLOW}Failed to enable/start $service. It may start on next boot.${RC}"
-        
-        # Configure firewall for SSH on openSUSE
-        if [ "$PACKAGER" = "zypper" ] && [ "$service" = "sshd" ] && command -v firewall-cmd >/dev/null 2>&1; then
-            printf "%b\n" "${CYAN}Enabling SSH in firewall...${RC}"
-            "$ESCALATION_TOOL" firewall-cmd --permanent --add-service=ssh && \
-            "$ESCALATION_TOOL" firewall-cmd --reload && \
-                printf "%b\n" "${GREEN}SSH enabled in firewall${RC}" || \
-                printf "%b\n" "${YELLOW}Failed to configure SSH in firewall${RC}"
-        fi
     else
         printf "%b\n" "${GREEN}$service is already running${RC}"
     fi
 done
+
+# Configure firewall for SSH on openSUSE (moved outside the service loop)
+if [ "$PACKAGER" = "zypper" ] && command -v firewall-cmd >/dev/null 2>&1; then
+    printf "%b\n" "${CYAN}Enabling SSH in firewall...${RC}"
+    "$ESCALATION_TOOL" firewall-cmd --permanent --add-service=ssh && \
+    "$ESCALATION_TOOL" firewall-cmd --reload && \
+        printf "%b\n" "${GREEN}SSH enabled in firewall${RC}" || \
+        printf "%b\n" "${YELLOW}Failed to configure SSH in firewall${RC}"
+fi
 
 printf "%b\n" "${GREEN}Services processed. Some may require a system reboot to start properly.${RC}"
 
