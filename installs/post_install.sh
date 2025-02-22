@@ -64,11 +64,17 @@ echo "-------------------------------------------------------------------------"
 
 # Install EPEL for Rocky, AlmaLinux, and Oracle Linux
 if [ "$DTYPE" = "rocky" ] || [ "$DTYPE" = "almalinux" ] || [ "$DTYPE" = "ol" ]; then
-    "$ESCALATION_TOOL" dnf install -y epel-release
+    printf "%b\n" "${CYAN}Installing EPEL repository...${RC}"
+    "$ESCALATION_TOOL" "$PACKAGER" install -y epel-release || {
+        printf "%b\n" "${RED}Failed to install EPEL repository. Continuing...${RC}"
+    }
 fi
 
 # Install common packages across all distributions
-checkNonInteractive nano git wget btop ncdu qemu-guest-agent unzip
+printf "%b\n" "${CYAN}Installing common packages...${RC}"
+for package in nano git wget btop ncdu qemu-guest-agent unzip; do
+    checkNonInteractive "$package"
+done
 
 # Install SSH and distribution-specific packages
 case "$PACKAGER" in
