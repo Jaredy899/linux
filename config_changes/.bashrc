@@ -440,9 +440,11 @@ distribution () {
     echo $dtype
 }
 
+# Set DISTRIBUTION variable based on the distribution function
+DISTRIBUTION=$(distribution)
 
 if command -v bat &> /dev/null || command -v batcat &> /dev/null; then
-    if [ "$DISTRIBUTION" = "redhat" ] || [ "$DISTRIBUTION" = "arch" ] || ["$DISTRIBUTION" = "solus" ]; then
+    if [ "$DISTRIBUTION" = "redhat" ] || [ "$DISTRIBUTION" = "arch" ] || [ "$DISTRIBUTION" = "solus" ]; then
         alias cat='bat'
     else
         alias cat='batcat'
@@ -661,5 +663,6 @@ eval "$(zoxide init bash)"
 # Auto-start DWM if we're on TTY1 and .xinitrc contains "exec dwm"
 if [[ "$(tty)" == "/dev/tty1" ]] && [ -f "$HOME/.xinitrc" ] && grep -q "^exec dwm" "$HOME/.xinitrc"; then
     startx
+fi
 fi
 fi
