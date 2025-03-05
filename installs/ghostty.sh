@@ -1,6 +1,6 @@
 #!/bin/sh -e
 # Source common functions
-. ../../common-script.sh
+eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
 
 
 # Define variables
