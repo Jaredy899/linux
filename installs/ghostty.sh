@@ -1,6 +1,7 @@
 #!/bin/sh -e
 # Source common functions
-. ../common-script.sh
+. ../../common-script.sh
+
 
 # Define variables
 GHOSTTY_VERSION="latest"
@@ -20,7 +21,7 @@ installZig() {
     # First try package manager installation
     case "$PACKAGER" in
         pacman)
-            "$ESCALATION_TOOL" pacman -S --needed zig=0.13.0
+            "$ESCALATION_TOOL" "$PACKAGER" -S --needed zig=0.13.0
             ;;
         dnf|eopkg)
             "$ESCALATION_TOOL" "$PACKAGER" install -y zig
@@ -97,9 +98,6 @@ installGhosttyBinary() {
                     ;;
             esac
             ;;
-        emerge)
-            "$ESCALATION_TOOL" "$PACKAGER" -av ghostty
-            ;;
         xbps-install)
             "$ESCALATION_TOOL" "$PACKAGER" -Sy ghostty
             ;;
@@ -129,7 +127,7 @@ installDependencies() {
             ;;
         apt-get|nala)
             "$ESCALATION_TOOL" "$PACKAGER" update
-            "$ESCALATION_TOOL" "$PACKAGER" install -y build-essential libgtk-4-dev libadwaita-1-dev git
+            "$ESCALATION_TOOL" "$PACKAGER" install -y libgtk-4-dev libadwaita-1-dev git
             if grep -q "testing\|unstable" /etc/debian_version; then
                 "$ESCALATION_TOOL" "$PACKAGER" install -y gcc-multilib
             fi
@@ -141,7 +139,7 @@ installDependencies() {
             "$ESCALATION_TOOL" "$PACKAGER" install -y git gtk4-devel libadwaita-devel pkgconf ncurses-devel
             ;;
         apk)
-            "$ESCALATION_TOOL" "$PACKAGER" add gtk4.0-dev git libadwaita-dev pkgconf ncurses
+            "$ESCALATION_TOOL" "$PACKAGER" add icu-data-full icu-libs gtk4.0-dev git libadwaita-dev pkgconf ncurses
             ;;
         eopkg)
             "$ESCALATION_TOOL" "$PACKAGER" install -y git libgtk-4-devel libadwaita-devel pkgconf
@@ -171,7 +169,7 @@ buildGhosttyFromSource() {
     # Add special environment variables for Raspberry Pi OS
     if [ -f /etc/os-release ] && grep -q "Raspberry Pi OS" /etc/os-release; then
         if [ -f /usr/share/applications/com.mitchellh.ghostty.desktop ]; then
-            "$ESCALATION_TOOL" sed -i 's|^Exec=.*|Exec=env GDK_BACKEND=wayland,x11 LIBGL_ALWAYS_SOFTWARE=1 ghostty|' /usr/share/applications/com.mitchellh.ghostty.desktop
+            "$ESCALATION_TOOL" sed -i 's|^\s*Exec=.*|Exec=env GDK_BACKEND=wayland,x11 LIBGL_ALWAYS_SOFTWARE=1 ghostty|' /usr/share/applications/com.mitchellh.ghostty.desktop
         fi
     fi
 
@@ -179,15 +177,24 @@ buildGhosttyFromSource() {
 }
 
 installGhostty() {
+    if command_exists ghostty; then
+         printf "%b\n" "${GREEN}Ghostty is already installed!${RC}"
+         exit 0
+    fi
+
+    printf "%b\n" "${CYAN}Attempting to install Ghostty...${RC}"
+    
     if installGhosttyBinary; then
         printf "%b\n" "${GREEN}Ghostty installed successfully from binaries!${RC}"
+        exit 0
     else
-        printf "%b\n" "${YELLOW}Official binaries not available. Do you want to build Ghostty from source? (y/n)${RC}"
-        read -r response
-        if [ "$response" = "y" ] || [ "$response" = "Y" ]; then
+        printf "%b\n" "${YELLOW}Binary installation not available or failed.${RC}"
+        printf "%b\n" "${YELLOW}Do you want to build Ghostty from source instead? (y/n)${RC}"
+        read -r source_choice
+        if [ "$source_choice" = "y" ] || [ "$source_choice" = "Y" ]; then
             buildGhosttyFromSource
         else
-            printf "%b\n" "${RED}Installation aborted.${RC}"
+            exit 1
         fi
     fi
 }
