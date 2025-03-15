@@ -21,6 +21,7 @@ replace_configs() {
 
     if [ -f /etc/alpine-release ]; then
         "$ESCALATION_TOOL" curl -sSfL -o "/etc/profile" "$BASE_URL/profile"
+        "$ESCALATION_TOOL" apk add zoxide
     else
         curl -sSfL -o "$MYBASH_DIR/.bashrc" "$BASE_URL/.bashrc"
     fi
