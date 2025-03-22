@@ -7,7 +7,7 @@
     "modules": [
         {
             "type": "custom",
-            "format": "┌─────────────── \u001b[1mSystem Information\u001b[0m ───────────────┐"
+            "format": "┌──────────────────── \u001b[1;36mSystem Information\u001b[0m ───────────────────┐"
         },
         {
             "type": "host",
@@ -40,11 +40,11 @@
         },
         {
             "type": "custom",
-            "format": "├─────────────── \u001b[1mSoftware Information\u001b[0m ──────────────┤"
+            "format": "├─────────────────── \u001b[1;32mSoftware Information\u001b[0m ──────────────────┤"
         },
         {
             "type": "os",
-            "key": "  "
+            "key": "  "
         },
         {
             "type": "kernel",
@@ -70,7 +70,11 @@
         },
         {
             "type": "custom",
-            "format": "├──────────────── \u001b[1mNetwork & Weather\u001b[0m ──────────────┤"
+            "format": "├─────────────────── \u001b[1;33mNetwork & Weather\u001b[0m ─────────────────────┤"
+        },
+        {
+            "type": "datetime",
+            "key": "  "
         },
         {
             "type": "localip",
@@ -87,15 +91,11 @@
         {
             "type": "weather",
             "timeout": 1000,
-            "key": "  "
-        },
-        {
-            "type": "datetime",
-            "key": "  "
+            "key": "  "
         },
         {
             "type": "custom",
-            "format": "├───────────────── \u001b[1mSystem Status\u001b[0m ─────────────────┤"
+            "format": "├───────────────────── \u001b[1;35mSystem Status\u001b[0m ───────────────────────┤"
         },
         {
             "type": "command",
@@ -110,7 +110,7 @@
         },
         {
             "type": "custom",
-            "format": "└───────────────────────────────────────────────────┘"
+            "format": "└───────────────────────────────────────────────────────────┘"
         },
         {
             "type": "colors",
