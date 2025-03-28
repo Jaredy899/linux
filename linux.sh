@@ -79,13 +79,12 @@ show_main_menu() {
     show_menu_item 5  "${NC}" "Install Tailscale"
     show_menu_item 6  "${NC}" "Install Docker"
     show_menu_item 7  "${NC}" "Replace configs"
-    show_menu_item 8  "${NC}" "Install Desktop Environment"
-    show_menu_item 9  "${NC}" "Update System"
-    show_menu_item 10 "${NC}" "Exit"
+    show_menu_item 8  "${NC}" "Update System"
+    show_menu_item 9  "${NC}" "Exit"
 }
 
 while true; do
-    handle_menu_selection 10 "Select an option:" show_main_menu
+    handle_menu_selection 9 "Select an option:" show_main_menu
     choice=$?
     
     case $choice in
@@ -111,12 +110,9 @@ while true; do
             run_script "replace_configs.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
         8)
-            run_script "de-installer.sh" "$GITPATH/installs" "$INSTALLS_URL"
-            ;;
-        9)
             run_script "updater.sh" "$GITPATH/installs" "$INSTALLS_URL"
             ;;
-        10)
+        9)
             printf "${GREEN}Exiting script.${RC}\n"
             exit 0
             ;;
