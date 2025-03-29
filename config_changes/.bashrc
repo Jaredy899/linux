@@ -157,6 +157,13 @@ alias ps='ps auxf'
 alias less='less -R'
 alias cls='clear'
 alias apt-get='sudo apt-get'
+# Use nala instead of apt if available
+if command -v nala &> /dev/null; then
+    # Create apt function to intercept and redirect to nala
+    apt() {
+        sudo nala "$@"
+    }
+fi
 alias multitail='multitail --no-repeat -c'
 alias freshclam='sudo freshclam'
 alias vi='nvim'
