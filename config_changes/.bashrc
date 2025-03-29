@@ -112,6 +112,7 @@ alias nfzf='nano $(fzf -m --preview="bat --color=always {}")'
 alias update='curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/installs/updater.sh | sh'
 alias convert='heif-convert'
 alias dup='docker compose up -d --force-recreate'
+alias build='./build.sh'
 
 # Alias's for SSH
 # alias SERVERNAME='ssh YOURWEBSITE.com -l USERNAME -p PORTNUMBERHERE'
@@ -266,6 +267,16 @@ alias docker-clean=' \
 #######################################################
 # SPECIAL FUNCTIONS
 #######################################################
+
+# Function to scp builds directory to a Tailscale device
+tscp() {
+    if [ -z "$1" ]; then
+        return 1
+    fi
+    
+    scp -r builds/ "jared@$1:~/Downloads/"
+}
+
 # Extracts any archive(s) (if unp isn't installed)
 extract() {
 	for archive in "$@"; do
