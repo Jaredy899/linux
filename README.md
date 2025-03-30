@@ -41,32 +41,10 @@ The main menu provides the following options:
 8. **Update System** - Run system updates
 9. **Exit** - Exit the script
 
-## 🔧 Advanced Usage
-
-### Manual Installation
-
-You can also clone this repository and run the scripts directly:
-
-```sh
-git clone https://github.com/Jaredy899/linux.git
-cd linux
-chmod +x linux.sh
-./linux.sh
-```
-
-### Custom Scripts
-
-Each functionality is implemented as a separate script in the `installs` directory, which can be run individually if needed.
-
 ## 📝 License
 
 This project is open source and available under the [MIT License](LICENSE).
 
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to submit issues or pull requests.
-
 ## 📚 Documentation
 
 For more detailed information about each component, see the comments in the individual script files.
-
