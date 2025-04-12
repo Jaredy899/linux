@@ -22,6 +22,10 @@ replace_configs() {
     if [ -f /etc/alpine-release ]; then
         "$ESCALATION_TOOL" curl -sSfL -o "/etc/profile" "$BASE_URL/profile"
         "$ESCALATION_TOOL" apk add zoxide
+    elif [ "$DTYPE" = "solus" ]; then
+        # Download Solus-specific .profile configuration
+        curl -sSfL -o "$HOME/.profile" "$BASE_URL/.profile"
+        curl -sSfL -o "$MYBASH_DIR/.bashrc" "$BASE_URL/.bashrc"
     else
         curl -sSfL -o "$MYBASH_DIR/.bashrc" "$BASE_URL/.bashrc"
     fi
