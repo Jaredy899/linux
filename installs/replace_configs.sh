@@ -14,7 +14,17 @@ MYBASH_DIR="$HOME/.local/share/mybash"
 replace_configs() {
     printf "%b\n" "${YELLOW}Downloading and replacing configurations...${RC}"
 
-    # Create directories
+    if [ "$DTYPE" = "nixos" ]; then
+        # Replace NixOS configuration and rebuild
+        printf "%b\n" "${YELLOW}Replacing NixOS configuration...${RC}"
+        "$ESCALATION_TOOL" curl -sSfL -o "/etc/nixos/configuration.nix" "$BASE_URL/configuration.nix"
+        printf "%b\n" "${YELLOW}Rebuilding NixOS...${RC}"
+        "$ESCALATION_TOOL" nixos-rebuild switch
+        printf "%b\n" "${GREEN}NixOS configuration replaced and rebuilt successfully.${RC}"
+        return 0
+    fi
+
+    # Create directories (only for non-NixOS systems)
     mkdir -p "$MYBASH_DIR"
     mkdir -p "$HOME/.config/fastfetch"
     mkdir -p "$HOME/.config"
