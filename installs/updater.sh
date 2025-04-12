@@ -23,6 +23,10 @@ updateSystem() {
         xbps-install)
             "$ESCALATION_TOOL" "$PACKAGER" -Syu
             ;;
+        nix)
+            "$ESCALATION_TOOL" nix-channel --update
+            "$ESCALATION_TOOL" "$PACKAGER" -u '*'
+            ;;
         *)
             printf "%b\n" "${RED}Unsupported package manager: ${PACKAGER}${RC}"
             exit 1
