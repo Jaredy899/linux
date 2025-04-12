@@ -500,6 +500,12 @@ ver() {
         "slackware")
             cat /etc/slackware-version
             ;;
+        "solus")
+            cat /etc/os-release
+            ;;
+        "nixos")
+            cat /etc/os-release
+            ;;
         *)
             if [ -s /etc/issue ]; then
                 cat /etc/issue
