@@ -73,6 +73,9 @@
     # Communication
     signal-desktop
     tailscale
+    
+    # Terminal
+    termius
   ];
 
   # Allow unfree packages (required for Signal and Zed)
@@ -223,6 +226,11 @@ EOF
   # networking.proxy.default = "http://user:password@proxy:port/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
+  # SSH configuration
+  # programs.ssh = {
+  #   askPassword = pkgs.lib.mkForce "${pkgs.ksshaskpass}/bin/ksshaskpass";  # Use KDE's SSH askpass
+  # };
+
   # Enable networking
   networking.networkmanager.enable = true;
 
@@ -251,6 +259,12 @@ EOF
   services.displayManager.sddm.enable = true;
   services.desktopManager.plasma6.enable = true;
 
+  # Enable XFCE
+  # services.xserver.desktopManager.xfce.enable = true;
+
+  # Enable GNOME
+  # services.xserver.desktopManager.gnome.enable = true;
+
   # Set default applications
   xdg.portal.enable = true;
   xdg.mime.defaultApplications = {
@@ -277,6 +291,7 @@ EOF
    programs.gnupg.agent = {
      enable = true;
      enableSSHSupport = true;
+     # pinentryPackage = pkgs.lib.mkForce pkgs.pinentry-qt; # Force using Qt pinentry for consistency
    };
 
   # List services that you want to enable:
