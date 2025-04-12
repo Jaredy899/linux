@@ -421,6 +421,9 @@ distribution () {
             solus)
                 dtype="solus"
                 ;;
+            nixos)
+                dtype="nixos"
+                ;;
             *)
                 # Check ID_LIKE only if dtype is still unknown
                 if [ -n "$ID_LIKE" ]; then
