@@ -113,6 +113,7 @@ alias update='curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/refs/
 alias convert='heif-convert'
 alias dup='docker compose up -d --force-recreate'
 alias build='./build.sh'
+alias rebuild='sudo nixos-rebuild switch'
 
 # Alias's for SSH
 # alias SERVERNAME='ssh YOURWEBSITE.com -l USERNAME -p PORTNUMBERHERE'

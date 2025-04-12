@@ -10,6 +10,13 @@
       ./hardware-configuration.nix
     ];
 
+  # Shell initialization
+  environment.shellInit = ''
+    if [ -f "$HOME/.bashrc" ]; then
+      . "$HOME/.bashrc"
+    fi
+  '';
+
   # Shell setup configuration
   environment.systemPackages = with pkgs; [
     # Existing packages
@@ -60,6 +67,22 @@
 
   # Allow unfree packages (required for Signal and Zed)
   nixpkgs.config.allowUnfree = true;
+
+  # Automatic system updates
+  system.autoUpgrade = {
+    enable = true;
+    channel = "https://nixos.org/channels/nixos-unstable";
+    dates = "03:00"; # Run at 3 AM
+    operation = "switch";
+    allowReboot = false;
+  };
+
+  # Automatic garbage collection
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 7d";
+  };
 
   # Define a user account. Don't forget to set a password with 'passwd'.
   users.users.jared = {
