@@ -51,8 +51,10 @@
     ripgrep
     fzf
     python3
-    python3Packages.virtualenv
+    python3Packages.pynvim
     luaPackages.luarocks
+    gcc
+    gnumake
     go
     shellcheck
     git
@@ -60,6 +62,9 @@
     cmake
     unzip
     curl
+    tree-sitter
+    lazygit
+    nodejs    # Added for general Node.js support
 
     # Editors
     zed-editor
@@ -98,10 +103,10 @@
     packages = with pkgs; [
     #  thunderbird
         ghostty
-	brave
-	zed-editor
-	neovim
-	fastfetch	
+        brave
+        zed-editor
+        neovim
+        fastfetch    
     ];
     home = "/home/jared";
     createHome = true;
@@ -109,51 +114,6 @@
 
   # Create the jared group
   users.groups.jared = {};
-
-  # Neovim setup activation script
-  system.activationScripts.neovim-setup = ''
-    # Wait for user to be created
-    while [ ! -d "/home/jared" ]; do
-      sleep 1
-    done
-
-    # Create necessary directories
-    mkdir -p /home/jared/.local/share/neovim
-    mkdir -p /home/jared/.config/nvim
-
-    # Backup existing Neovim config if it exists
-    if [ -d "/home/jared/.config/nvim" ] && [ ! -d "/home/jared/.config/nvim-backup" ]; then
-      cp -r /home/jared/.config/nvim /home/jared/.config/nvim-backup
-    fi
-
-    # Remove existing Neovim config
-    rm -rf /home/jared/.config/nvim
-
-    # Clone Neovim configuration
-    if [ -d "/home/jared/.local/share/neovim" ]; then
-      rm -rf /home/jared/.local/share/neovim
-    fi
-    ${pkgs.git}/bin/git clone https://github.com/ChrisTitusTech/neovim.git /home/jared/.local/share/neovim
-
-    # Create nvim directory again to ensure it exists
-    mkdir -p /home/jared/.config/nvim
-
-    # Check if the source directory exists
-    if [ -d "/home/jared/.local/share/neovim/titus-kickstart" ]; then
-      # Create symbolic links for each file in the directory
-      for file in /home/jared/.local/share/neovim/titus-kickstart/*; do
-        if [ -f "$file" ]; then
-          ln -sf "$file" "/home/jared/.config/nvim/$(basename "$file")"
-        fi
-      done
-    else
-      echo "Warning: Neovim configuration directory not found at /home/jared/.local/share/neovim/titus-kickstart"
-    fi
-
-    # Set correct permissions
-    chown -R 1000:1000 /home/jared/.local/share/neovim
-    chown -R 1000:1000 /home/jared/.config/nvim
-  '';
 
   # Docker configuration
   virtualisation.docker = {
