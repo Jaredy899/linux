@@ -461,7 +461,7 @@ distribution () {
 DISTRIBUTION=$(distribution)
 
 if command -v bat &> /dev/null || command -v batcat &> /dev/null; then
-    if [ "$DISTRIBUTION" = "redhat" ] || [ "$DISTRIBUTION" = "arch" ] || [ "$DISTRIBUTION" = "solus" ]; then
+    if [ "$DISTRIBUTION" = "redhat" ] || [ "$DISTRIBUTION" = "arch" ] || [ "$DISTRIBUTION" = "solus" ] || [ "$DISTRIBUTION" = "nixos" ]; then
         alias cat='bat'
     else
         alias cat='batcat'
