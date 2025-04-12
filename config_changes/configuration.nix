@@ -10,6 +10,9 @@
       ./hardware-configuration.nix
     ];
 
+  # Enable QEMU Guest Services
+  services.qemuGuest.enable = true;
+
   # Shell initialization
   environment.shellInit = ''
     if [ -f "$HOME/.bashrc" ]; then
