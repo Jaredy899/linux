@@ -33,10 +33,11 @@ replace_nixos_config() {
         printf "%b\n" "${YELLOW}Rebuilding NixOS...${RC}"
         "$ESCALATION_TOOL" nixos-rebuild switch
         printf "%b\n" "${GREEN}NixOS configuration replaced and rebuilt successfully.${RC}"
+        exit 0
     fi
 }
 
-# Replace NixOS configuration if applicable
+# Replace NixOS configuration if applicable and exit if it's NixOS
 replace_nixos_config
 
 # Function to install and configure Nala
