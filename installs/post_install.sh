@@ -18,12 +18,26 @@ if [ -n "$detected_timezone" ]; then
     if [ -e /usr/bin/timedatectl ]; then
         "$ESCALATION_TOOL" timedatectl set-timezone "$detected_timezone" || printf "%b\n" "${YELLOW}Failed to set timezone. This may be due to running in a chroot environment.${RC}"
     else
-        "$ESCALATION_TOOL" ln -sf /usr/share/zoneinfo/$detected_timezone /etc/localtime
+        "$ESCALATION_TOOL" ln -sf "/usr/share/zoneinfo/$detected_timezone" /etc/localtime
     fi
     printf "%b\n" "${GREEN}Timezone set to $detected_timezone${RC}"
 else
     printf "%b\n" "${YELLOW}Failed to detect timezone. Please set it manually if needed.${RC}"
 fi
+
+# Function to replace NixOS configuration
+replace_nixos_config() {
+    if [ "$DTYPE" = "nixos" ]; then
+        printf "%b\n" "${YELLOW}Replacing NixOS configuration...${RC}"
+        "$ESCALATION_TOOL" curl -sSfL -o "/etc/nixos/configuration.nix" "https://raw.githubusercontent.com/Jaredy899/linux/main/config_changes/configuration.nix"
+        printf "%b\n" "${YELLOW}Rebuilding NixOS...${RC}"
+        "$ESCALATION_TOOL" nixos-rebuild switch
+        printf "%b\n" "${GREEN}NixOS configuration replaced and rebuilt successfully.${RC}"
+    fi
+}
+
+# Replace NixOS configuration if applicable
+replace_nixos_config
 
 # Function to install and configure Nala
 install_nala() {
