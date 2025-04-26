@@ -168,7 +168,7 @@ set_console_font() {
 
 # Set permanent console font
 case "$DTYPE" in
-    arch|fedora|rocky|almalinux|opensuse-tumbleweed|opensuse-leap|alpine|void|salix)
+    arch|fedora|rocky|almalinux|opensuse-tumbleweed|opensuse-leap|opensuse-microos|alpine|void|salix)
         if command -v setfont >/dev/null 2>&1; then
             if ! set_console_font; then
                 printf "%b\n" "${YELLOW}Font setting failed. Check if terminus-font package is installed.${RC}"
