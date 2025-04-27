@@ -211,6 +211,44 @@ esac
 printf "%b\n" "${GREEN}Console font settings have been configured and should persist after reboot.${RC}"
 
 echo "-------------------------------------------------------------------------"
+echo "                    Enabling Serial Console (Proxmox)                   "
+echo "-------------------------------------------------------------------------"
+
+# Enable serial console for systemd systems
+if command -v systemctl >/dev/null 2>&1; then
+    "$ESCALATION_TOOL" systemctl enable getty@ttyS0.service
+    printf "%b\n" "${GREEN}Enabled getty@ttyS0.service for serial console.${RC}"
+fi
+
+# Enable serial console for Alpine (OpenRC/BusyBox)
+if [ "$DTYPE" = "alpine" ] && [ -f /etc/inittab ]; then
+    if grep -q '^#ttyS0::respawn:/sbin/getty' /etc/inittab; then
+        "$ESCALATION_TOOL" sed -i 's/^#\(ttyS0::respawn:\/sbin\/getty.*\)/\1/' /etc/inittab
+        printf "%b\n" "${GREEN}Uncommented ttyS0::respawn in /etc/inittab for Alpine serial console.${RC}"
+        reboot_required=true
+    else
+        printf "%b\n" "${YELLOW}ttyS0::respawn already enabled in /etc/inittab or not present.${RC}"
+    fi
+fi
+
+# Add serial console to GRUB if present
+if [ -f /etc/default/grub ]; then
+    if ! grep -q 'console=ttyS0' /etc/default/grub; then
+        "$ESCALATION_TOOL" sed -i 's/GRUB_CMDLINE_LINUX="\(.*\)"/GRUB_CMDLINE_LINUX="\1 console=tty0 console=ttyS0,115200"/' /etc/default/grub
+        # Update GRUB
+        if command -v update-grub >/dev/null 2>&1; then
+            "$ESCALATION_TOOL" update-grub
+        elif command -v grub2-mkconfig >/dev/null 2>&1; then
+            "$ESCALATION_TOOL" grub2-mkconfig -o /boot/grub2/grub.cfg
+        fi
+        printf "%b\n" "${GREEN}Added serial console to GRUB and updated bootloader.${RC}"
+        reboot_required=true
+    else
+        printf "%b\n" "${YELLOW}Serial console already present in GRUB config.${RC}"
+    fi
+fi
+
+echo "-------------------------------------------------------------------------"
 echo "                        Installation Complete                            "
 echo "-------------------------------------------------------------------------"
 

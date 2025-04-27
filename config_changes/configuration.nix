@@ -222,6 +222,12 @@ EOF
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  # Configure serial console
+  boot.kernelParams = [
+    "console=tty1"
+    "console=ttyS0,115200n8"
+  ];
+
   networking.hostName = "nixos"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
