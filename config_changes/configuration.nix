@@ -76,6 +76,11 @@
     
     # Terminal
     termius
+
+    # Others
+    rustdesk
+    protonmail-desktop
+
   ];
 
   # Allow unfree packages (required for Signal and Zed)
@@ -104,12 +109,10 @@
     extraGroups = [ "networkmanager" "wheel" "docker" "jared" ];
     group = "jared";
     packages = with pkgs; [
-    #  thunderbird
         ghostty
         brave
-        zed-editor
-        neovim
         fastfetch    
+        vlc
     ];
     home = "/home/jared";
     createHome = true;
