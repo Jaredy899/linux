@@ -27,6 +27,7 @@ alias reboot="doas reboot"
 alias shutdown="doas poweroff"
 alias nfzf='nano $(fzf -m --preview="bat --color=always {}")'
 alias ls='ls -aFh --color=always' # add colors and file type extensions
+alias rmd='/bin/rm -rfv'
 
 # Define a function to change directory and list contents
 cd() {
