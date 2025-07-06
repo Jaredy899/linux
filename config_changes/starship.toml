@@ -1,6 +1,7 @@
 # Global prompt format configuration
 format = """
 [](#3B4252)\
+$os\
 $python\
 $username\
 [](bg:#434C5E fg:#3B4252)\
@@ -62,6 +63,61 @@ home_symbol = "" # This sets the symbol for the home directory
 "Videos" = "  "
 ".config" = "  "
 ".ssh" = " 󰣀 "
+
+# OS symbols
+[os]
+disabled = false
+style = "bg:#3B4252"
+format = "[$symbol ]($style)"
+
+[os.symbols]
+AlmaLinux = ""
+Alpaquita = ""
+Alpine = ""
+Amazon = ""
+Android = ""
+Arch = ""
+Artix = ""
+CachyOS = ""
+CentOS = ""
+Debian = ""
+DragonFly = ""
+Emscripten = ""
+EndeavourOS = ""
+Fedora = ""
+FreeBSD = ""
+Garuda = "󰛓"
+Gentoo = ""
+HardenedBSD = "󰞌"
+Illumos = "󰈸"
+Kali = ""
+Linux = ""
+Mabox = ""
+Macos = ""
+Manjaro = ""
+Mariner = ""
+MidnightBSD = ""
+Mint = ""
+NetBSD = ""
+NixOS = ""
+Nobara = ""
+OpenBSD = "󰈺"
+openSUSE = ""
+OracleLinux = "󰌷"
+Pop = ""
+Raspbian = ""
+Redhat = ""
+RedHatEnterprise = ""
+RockyLinux = ""
+Redox = "󰀘"
+Solus = "󰠳"
+SUSE = ""
+Ubuntu = ""
+Ultramarine = "🔷"
+Unknown = ""
+Uos = "🐲"
+Void = ""
+Windows = "󰍲"
 
 # C module configuration
 [c]
