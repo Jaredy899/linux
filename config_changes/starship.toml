@@ -2,9 +2,11 @@
 format = """
 [](#3B4252)\
 $os\
-$python\
-$username\
 [](bg:#434C5E fg:#3B4252)\
+$username\
+[](bg:#434C5E fg:#434C5E)\
+$python\
+[](bg:#434C5E fg:#434C5E)\
 $directory\
 [](fg:#434C5E bg:#4C566A)\
 $git_branch\
