@@ -1,11 +1,12 @@
 #!/bin/sh -e
 
-# Set SKIP_AUR_CHECK to ignore AUR helper check
+# shellcheck disable=SC2034
 SKIP_AUR_CHECK=true
 
 # Source the common script directly from GitHub
 eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_script.sh)"
 eval "$(curl -s https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/common_service_script.sh)"
+
 # Run the environment check
 checkEnv || exit 1
 
@@ -109,9 +110,6 @@ case "$PACKAGER" in
     xbps-install)
         "$ESCALATION_TOOL" "$PACKAGER" -Sy nano git wget btop ncdu qemu-guest-agent unzip openssh terminus-font qemu-ga
         ;;
-    slapt-get)
-        "$ESCALATION_TOOL" "$PACKAGER" -y -i nano git wget btop ncdu qemu-guest-agent openssh terminus-font
-        ;;
     *)
         printf "%b\n" "${YELLOW}Unknown package manager. Cannot install packages.${RC}"
         ;;
@@ -120,7 +118,7 @@ esac
 # Set base services
 services="qemu-guest-agent"
 case "$PACKAGER" in
-    xbps-install|slapt-get)
+    xbps-install)
         services="qemu-ga"
         ;;
 esac
@@ -159,94 +157,44 @@ echo "-------------------------------------------------------------------------"
 echo "                    Setting Permanent Console Font"
 echo "-------------------------------------------------------------------------"
 
-# Function to set console font
-set_console_font() {
-    if [ "$DTYPE" = "alpine" ]; then
-        if "$ESCALATION_TOOL" setfont /usr/share/consolefonts/ter-v18b.psf.gz; then
-            echo 'consolefont="ter-v18b.psf.gz"' | "$ESCALATION_TOOL" tee /etc/conf.d/consolefont > /dev/null
-            "$ESCALATION_TOOL" rc-update add consolefont boot
-            printf "%b\n" "${GREEN}Console font set to ter-v18b for Alpine Linux.${RC}"
-        else
-            printf "%b\n" "${YELLOW}Failed to set font ter-v18b. Using system default.${RC}"
-            return 1
-        fi
-    else
-        if "$ESCALATION_TOOL" setfont ter-v18b; then
-            echo "FONT=ter-v18b" | "$ESCALATION_TOOL" tee /etc/vconsole.conf > /dev/null
-            printf "%b\n" "${GREEN}Console font set to ter-v18b${RC}"
-        else
-            printf "%b\n" "${YELLOW}Failed to set font ter-v18b. Using system default.${RC}"
-            return 1
-        fi
-    fi
-}
-
-# Set permanent console font
-case "$DTYPE" in
-    arch|fedora|rocky|almalinux|opensuse-*|alpine|void)
-        if command -v setfont >/dev/null 2>&1; then
-            if ! set_console_font; then
-                printf "%b\n" "${YELLOW}Font setting failed. Check if terminus-font package is installed.${RC}"
-            fi
-        else
-            printf "%b\n" "${YELLOW}setfont command not found. Console font setting may not be supported.${RC}"
-        fi
-        ;;
-    debian|ubuntu)
-        "$ESCALATION_TOOL" sed -i 's/^FONTFACE=.*/FONTFACE="TerminusBold"/' /etc/default/console-setup
-        "$ESCALATION_TOOL" sed -i 's/^FONTSIZE=.*/FONTSIZE="24x12"/' /etc/default/console-setup
-        "$ESCALATION_TOOL" DEBIAN_FRONTEND=noninteractive dpkg-reconfigure -f noninteractive console-setup
-        "$ESCALATION_TOOL" update-initramfs -u
-        # Apply the font changes immediately
-        if command -v setupcon >/dev/null 2>&1; then
-            "$ESCALATION_TOOL" setupcon --force
-            printf "%b\n" "${GREEN}Console font settings applied immediately.${RC}"
-        else
-            printf "%b\n" "${YELLOW}setupcon command not found. Font changes will apply after reboot.${RC}"
-        fi
-        printf "%b\n" "${GREEN}Console font settings configured for Debian/Ubuntu.${RC}"
-        ;;
-esac
+    case "$PACKAGER" in
+            pacman|xbps-install|dnf|eopkg|zypper)
+                printf "%b\n" "${YELLOW}Updating FONT= line in /etc/vconsole.conf...${RC}"
+                "$ESCALATION_TOOL" sed -i 's/^FONT=.*/FONT=ter-v18b/' /etc/vconsole.conf
+                if [ -z "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ]; then
+                   "$ESCALATION_TOOL" setfont -C /dev/tty1 ter-v18b
+                fi
+                printf "%b\n" "${GREEN}Terminus font set for TTY.${RC}"
+                ;;
+            apk)
+                printf "%b\n" "${YELLOW}Updating console font configuration for Alpine...${RC}"
+                if [ -z "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ]; then
+                    "$ESCALATION_TOOL" setfont -C /dev/tty1 /usr/share/consolefonts/ter-v18b.psf.gz
+                fi
+                echo 'consolefont="/usr/share/consolefonts/ter-v18b.psf.gz"' | "$ESCALATION_TOOL" tee /etc/conf.d/consolefont > /dev/null
+                "$ESCALATION_TOOL" rc-update add consolefont boot
+                printf "%b\n" "${GREEN}Terminus font set for TTY.${RC}"
+                ;;
+            apt-get|nala)
+                printf "%b\n" "${YELLOW}Updating console-setup configuration...${RC}"
+                "$ESCALATION_TOOL" sed -i 's/^CODESET=.*/CODESET="guess"/' /etc/default/console-setup
+                "$ESCALATION_TOOL" sed -i 's/^FONTFACE=.*/FONTFACE="TerminusBold"/' /etc/default/console-setup
+                "$ESCALATION_TOOL" sed -i 's/^FONTSIZE=.*/FONTSIZE="10x18"/' /etc/default/console-setup
+                printf "%b\n" "${GREEN}Console-setup configuration updated for Terminus font.${RC}"
+                # Editing console-setup requires initramfs to be regenerated
+                "$ESCALATION_TOOL" update-initramfs -u
+                if [ -z "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ]; then                    
+                   "$ESCALATION_TOOL" setfont -C /dev/tty1 /usr/share/consolefonts/Uni3-TerminusBold18x10.psf.gz
+                fi
+                printf "%b\n" "${GREEN}Terminus font has been set for TTY.${RC}"
+                ;;
+            *)
+                printf "%b\n" "${RED}Unsupported package manager for font configuration: ""$PACKAGER""${RC}"
+                exit 1
+                ;;
+        esac
 
 printf "%b\n" "${GREEN}Console font settings have been configured and should persist after reboot.${RC}"
-
-echo "-------------------------------------------------------------------------"
-echo "                    Enabling Serial Console (Proxmox)                   "
-echo "-------------------------------------------------------------------------"
-
-# Enable serial console for systemd systems
-if command -v systemctl >/dev/null 2>&1; then
-    "$ESCALATION_TOOL" systemctl enable getty@ttyS0.service
-    printf "%b\n" "${GREEN}Enabled getty@ttyS0.service for serial console.${RC}"
-fi
-
-# Enable serial console for Alpine (OpenRC/BusyBox)
-if [ "$DTYPE" = "alpine" ] && [ -f /etc/inittab ]; then
-    if grep -q '^#ttyS0::respawn:/sbin/getty' /etc/inittab; then
-        "$ESCALATION_TOOL" sed -i 's/^#\(ttyS0::respawn:\/sbin\/getty.*\)/\1/' /etc/inittab
-        printf "%b\n" "${GREEN}Uncommented ttyS0::respawn in /etc/inittab for Alpine serial console.${RC}"
-        reboot_required=true
-    else
-        printf "%b\n" "${YELLOW}ttyS0::respawn already enabled in /etc/inittab or not present.${RC}"
-    fi
-fi
-
-# Add serial console to GRUB if present
-if [ -f /etc/default/grub ]; then
-    if ! grep -q 'console=ttyS0' /etc/default/grub; then
-        "$ESCALATION_TOOL" sed -i 's/GRUB_CMDLINE_LINUX="\(.*\)"/GRUB_CMDLINE_LINUX="\1 console=tty0 console=ttyS0,115200"/' /etc/default/grub
-        # Update GRUB
-        if command -v update-grub >/dev/null 2>&1; then
-            "$ESCALATION_TOOL" update-grub
-        elif command -v grub2-mkconfig >/dev/null 2>&1; then
-            "$ESCALATION_TOOL" grub2-mkconfig -o /boot/grub2/grub.cfg
-        fi
-        printf "%b\n" "${GREEN}Added serial console to GRUB and updated bootloader.${RC}"
-        reboot_required=true
-    else
-        printf "%b\n" "${YELLOW}Serial console already present in GRUB config.${RC}"
-    fi
-fi
 
 echo "-------------------------------------------------------------------------"
 echo "                        Installation Complete                            "
