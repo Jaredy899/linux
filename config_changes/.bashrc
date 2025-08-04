@@ -651,6 +651,31 @@ lazyg() {
 	git push
 }
 
+newb() {
+  local branch="$1"
+  shift
+  local msg="$*"
+
+  if [ -z "$branch" ] || [ -z "$msg" ]; then
+    echo "Usage: newb <branch> <commit message>"
+    return 1
+  fi
+
+  git checkout -b "$branch" || return 1
+  git add .
+  git commit -m "$msg" || return 1
+  git push -u origin "$branch"
+}
+
+gbd() { # usage: gbD <branch>
+  local b="$1"
+  if [ -z "$b" ]; then
+    echo "Usage: gbD <branch>"
+    return 1
+  fi
+  git branch -D "$b"
+}
+
 function hb {
     if [ $# -eq 0 ]; then
         echo "No file path specified."
