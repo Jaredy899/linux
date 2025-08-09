@@ -1,99 +1,130 @@
 #!/usr/bin/env bash
-iatest=$(expr index "$-" i)
+# shellcheck shell=bash
 
-if [[ $iatest -gt 0 ]]; then
+# -------------------------------------------------------------------
+# Exit early if not interactive
+# -------------------------------------------------------------------
+case $- in
+  *i*) ;;
+  *) return 0 2>/dev/null || exit 0 ;;
+esac
 
-#######################################################
-# SOURCED ALIAS'S AND SCRIPTS BY zachbrowne.me
-#######################################################
-if command -v fastfetch &> /dev/null; then
-    # Only run fastfetch if we're in an interactive shell
-    if [[ $- == *i* ]]; then
-        fastfetch
-    fi
-
-# Source global definitions
-if [ -f /etc/bashrc ]; then
-	. /etc/bashrc
+# -------------------------------------------------------------------
+# Minimal work before prompt
+# -------------------------------------------------------------------
+if command -v fastfetch &>/dev/null; then
+  fastfetch
 fi
 
-# Enable bash programmable completion features in interactive shells
-if [ -f /usr/share/bash-completion/bash_completion ]; then
-	. /usr/share/bash-completion/bash_completion
-elif [ -f /etc/bash_completion ]; then
-	. /etc/bash_completion
+# Source global bashrc if present
+if [[ -r /etc/bashrc ]]; then
+  # shellcheck disable=SC1091
+  . /etc/bashrc
 fi
 
-#######################################################
-# EXPORTS
-#######################################################
+# Bash-completion
+if [[ -r /usr/share/bash-completion/bash_completion ]]; then
+  # shellcheck disable=SC1091
+  . /usr/share/bash-completion/bash_completion
+elif [[ -r /etc/bash_completion ]]; then
+  # shellcheck disable=SC1091
+  . /etc/bash_completion
+fi
 
-# Disable the bell
-if [[ $iatest -gt 0 ]]; then bind "set bell-style visible"; fi
+# -------------------------------------------------------------------
+# Readline/terminal behavior
+# -------------------------------------------------------------------
+bind "set bell-style visible"
+stty -ixon 2>/dev/null || true
+bind "set completion-ignore-case on"
+bind "set show-all-if-ambiguous On"
 
-# Expand the history size
+# -------------------------------------------------------------------
+# Safe PROMPT_COMMAND helper (dedup, normalize)
+# -------------------------------------------------------------------
+# Normalize existing PROMPT_COMMAND once on load (remove trailing ; and trim)
+if [[ -n ${PROMPT_COMMAND:-} ]]; then
+  # Strip trailing semicolons and whitespace
+  PROMPT_COMMAND="${PROMPT_COMMAND%%+([[:space:]]|\;)}"
+fi
+
+pc_add() {
+  local add="$1"
+  # Trim requested snippet
+  add="${add#"${add%%[![:space:]]*}"}"
+  add="${add%"${add##*[![:space:]]}"}"
+  [[ -z $add ]] && return 0
+
+  # Normalize current PROMPT_COMMAND (remove trailing ;)
+  local cur="${PROMPT_COMMAND:-}"
+  cur="${cur%%+([[:space:]]|\;)}"
+
+  # Build a semicolon-wrapped version for robust contains check
+  local cur_wrapped=";$cur;"
+  # Also normalize spaces around semicolons to single semicolons for comparison
+  cur_wrapped="${cur_wrapped// ;/;}"
+  cur_wrapped="${cur_wrapped//; /;}"
+  local add_norm="$add"
+  add_norm="${add_norm// ;/;}"
+  add_norm="${add_norm//; /;}"
+  if [[ -n $cur && $cur_wrapped == *";$add_norm;"* ]]; then
+    return 0
+  fi
+
+  if [[ -n $cur ]]; then
+    PROMPT_COMMAND="$cur;$add"
+  else
+    PROMPT_COMMAND="$add"
+  fi
+}
+
+# History and window size
 export HISTFILESIZE=10000
 export HISTSIZE=500
-export HISTTIMEFORMAT="%F %T" # add timestamp to history
-
-# Don't put duplicate lines in the history and do not add lines that start with a space
+export HISTTIMEFORMAT="%F %T "
 export HISTCONTROL=erasedups:ignoredups:ignorespace
-
-# Check the window size after each command and, if necessary, update the values of LINES and COLUMNS
-shopt -s checkwinsize
-
-# Causes bash to append to history instead of overwriting it so if you start a new terminal, you have old session history
 shopt -s histappend
-PROMPT_COMMAND='history -a'
+shopt -s checkwinsize
+pc_add 'history -a'
 
-# set up XDG folders
-export XDG_DATA_HOME="$HOME/.local/share"
-export XDG_CONFIG_HOME="$HOME/.config"
-export XDG_STATE_HOME="$HOME/.local/state"
-export XDG_CACHE_HOME="$HOME/.cache"
+# -------------------------------------------------------------------
+# XDG and PATH
+# -------------------------------------------------------------------
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 
-# Seeing as other scripts will use it might as well export it
 export LINUXTOOLBOXDIR="$HOME/linuxtoolbox"
 
-# Allow ctrl-S for history navigation (with ctrl-R)
-[[ $- == *i* ]] && stty -ixon
+path_add() {
+  case ":$PATH:" in
+    *":$1:"*) ;;
+    *) PATH="${PATH:+"$PATH:"}$1" ;;
+  esac
+}
+path_add "$HOME/.local/bin"
+path_add "$HOME/.cargo/bin"
+path_add "/var/lib/flatpak/exports/bin"
+path_add "$HOME/.local/share/flatpak/exports/bin"
+export PATH
 
-# Ignore case on auto-completion
-# Note: bind used instead of sticking these in .inputrc
-if [[ $iatest -gt 0 ]]; then bind "set completion-ignore-case on"; fi
-
-# Show auto-completion list automatically, without double tab
-if [[ $iatest -gt 0 ]]; then bind "set show-all-if-ambiguous On"; fi
-
-# Set the default editor
-if command -v nvim &> /dev/null; then
-    export EDITOR=nvim
-    export VISUAL=nvim
-    alias vim='nvim'
-    alias vi='nvim'
-    alias svi='sudo nvim'
-    alias vis='nvim "+set si"'
+# -------------------------------------------------------------------
+# Editor and pager
+# -------------------------------------------------------------------
+if command -v nvim &>/dev/null; then
+  export EDITOR="nvim"
+  export VISUAL="nvim"
+  alias vim='nvim'
+  alias vi='nvim'
+  alias svi='sudo -E nvim'
+  alias vis='nvim "+set si"'
 else
-    export EDITOR=vim
-    export VISUAL=vim
+  export EDITOR="vim"
+  export VISUAL="vim"
 fi
 
-# To have colors for ls and all grep commands such as grep, egrep and zgrep
-export CLICOLOR=1
-export LS_COLORS='no=00:fi=00:di=00;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arj=01;31:*.taz=01;31:*.lzh=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.bz2=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.avi=01;35:*.fli=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.ogg=01;35:*.mp3=01;35:*.wav=01;35:*.xml=00;31:'
-#export GREP_OPTIONS='--color=auto' #deprecated
-
-# Check if ripgrep is installed
-if command -v rg &> /dev/null; then
-    # Alias grep to rg if ripgrep is installed
-    alias grep='rg'
-else
-    # Alias grep to /usr/bin/grep with GREP_OPTIONS if ripgrep is not installed
-    alias grep="/usr/bin/grep $GREP_OPTIONS"
-fi
-unset GREP_OPTIONS
-
-# Color for manpages in less makes manpages a little easier to read
+# less colors for manpages
 export LESS_TERMCAP_mb=$'\E[01;31m'
 export LESS_TERMCAP_md=$'\E[01;31m'
 export LESS_TERMCAP_me=$'\E[0m'
@@ -102,73 +133,144 @@ export LESS_TERMCAP_so=$'\E[01;44;33m'
 export LESS_TERMCAP_ue=$'\E[0m'
 export LESS_TERMCAP_us=$'\E[01;32m'
 
-#######################################################
-# MACHINE SPECIFIC ALIAS'S
-#######################################################
-#alias linutil='curl -fsSL christitus.com/linux | sh'
-alias ff='fastfetch -c all'
-alias jc='sh <(curl -fsSL jaredcervantes.com/linux)'
-alias nfzf='nano $(fzf -m --preview="bat --color=always {}")'
-alias update='curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/installs/updater.sh | sh'
-alias convert='heif-convert'
-alias dup='docker compose up -d --force-recreate'
-alias build='./build.sh'
-alias rebuild='sudo nixos-rebuild switch'
+# -------------------------------------------------------------------
+# Colors and grep/rg
+# -------------------------------------------------------------------
+export CLICOLOR=1
+export LS_COLORS='no=00:fi=00:di=00;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arj=01;31:*.taz=01;31:*.lzh=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.bz2=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.avi=01;35:*.fli=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.ogg=01;35:*.mp3=01;35:*.wav=01;35:*.xml=00;31:'
 
-# Alias's for SSH
-# alias SERVERNAME='ssh YOURWEBSITE.com -l USERNAME -p PORTNUMBERHERE'
+if command -v rg &>/dev/null; then
+  alias grep='rg'
+else
+  alias grep='grep --color=auto'
+fi
 
-# Alias's to change the directory
-alias web='cd /var/www/html'
-
-# Alias's to mount ISO files
-# mount -o loop /home/NAMEOFISO.iso /home/ISOMOUNTDIR/
-# umount /home/NAMEOFISO.iso
-# (Both commands done as root only.)
-
-#######################################################
-# GENERAL ALIAS'S
-#######################################################
-# To temporarily bypass an alias, we precede the command with a \
-# EG: the ls command is aliased, but to use the normal ls command you would type \ls
-
-# Add an "alert" alias for long running commands.  Use like so:
-#   sleep 10; alert
-alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
-
-# Edit this .bashrc file
-alias ebrc='nano ~/.bashrc'
-
-# Show help for this .bashrc file
-alias hlp='less ~/.bashrc_help'
-
-# alias to show the date
-alias da='date "+%Y-%m-%d %A %T %Z"'
-
-# Alias's to modified commands
+# -------------------------------------------------------------------
+# Safer core command aliases
+# -------------------------------------------------------------------
 alias cp='cp -i'
 alias mv='mv -i'
-if command -v trash &> /dev/null; then
-    alias rm='trash -v'
+if command -v trash &>/dev/null; then
+  alias rm='trash -v'
 else
-    alias rm='rm -i'  # fallback to interactive remove
+  alias rm='rm -i'
 fi
 alias mkdir='mkdir -p'
-alias ps='ps auxf'
 alias less='less -R'
 alias cls='clear'
-alias apt-get='sudo apt-get'
-if command -v nala &> /dev/null; then
-    apt() {
-        sudo nala "$@"
-    }
-fi
+alias ps='ps auxf'
 alias multitail='multitail --no-repeat -c'
 alias freshclam='sudo freshclam'
-alias vi='nvim'
-alias svi='sudo vi'
-alias vis='nvim "+set si"'
 
+# apt helpers
+alias apt-get='sudo apt-get'
+if command -v nala &>/dev/null; then
+  apt() { sudo nala "$@"; }
+fi
+
+# Docker helpers
+alias dup='docker compose up -d --force-recreate'
+alias docker-clean='docker container prune -f && docker image prune -f && docker network prune -f && docker volume prune -f'
+
+# Misc shortcuts
+alias ff='fastfetch -c all'
+alias jc='sh <(curl -fsSL jaredcervantes.com/linux)'
+alias nfzf='nano "$(fzf -m --preview="bat --color=always {}")"'
+alias update='curl -fsSL https://raw.githubusercontent.com/Jaredy899/linux/refs/heads/main/installs/updater.sh | sh'
+alias convert='heif-convert'
+alias rebuild='sudo nixos-rebuild switch'
+alias web='cd /var/www/html'
+alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history | tail -n1 | sed -e "s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//")"'
+alias ebrc='${EDITOR:-nano} ~/.bashrc'
+alias hlp='less ~/.bashrc_help'
+alias da='date "+%Y-%m-%d %A %T %Z"'
+alias sha1='openssl sha1'
+alias clickpaste='sleep 3; xdotool type "$(xclip -o -selection clipboard)"'
+
+# ls family: prefer eza if available; otherwise fall back to GNU ls aliases
+if command -v eza &>/dev/null; then
+  # Base eza options:
+  # -a: show hidden, -h: human sizes, --icons: icons when supported
+  alias ls='eza -a --icons --group-directories-first'
+
+  # Common variants mapped to eza
+  alias la='eza -Alh --icons --group-directories-first'        # show hidden, long
+  alias ll='eza -l --icons --group-directories-first'          # long listing
+  alias lla='eza -Al --icons --group-directories-first'        # all + long
+  alias las='eza -A --icons --group-directories-first'         # all except . and ..
+  alias lw='eza -a1 --icons'                                   # one-per-line, all
+  alias lr='eza -lR --icons --group-directories-first'         # recursive long
+  alias lt='eza -ltrh --icons --group-directories-first'       # sort by date
+  alias lk='eza -lSrh --icons --group-directories-first'       # sort by size
+  alias lx='eza -lXBh --icons --group-directories-first'       # sort by extension
+  alias lc='eza -ltcrh --icons --group-directories-first'      # sort by change time
+  alias lu='eza -lturh --icons --group-directories-first'      # sort by access time
+  alias lm='eza -alh --icons | more'                           # pipe through more
+  alias labc='eza -lap --icons --group-directories-first'      # alphabetical
+  alias lf='eza -l --icons --group-directories-first | egrep -v "^d"'   # files only
+  alias ldir='eza -l --icons --group-directories-first | egrep "^d"'    # dirs only
+
+  # Extras: git and tree-style views
+  alias lg='eza -l --git --icons --group-directories-first'    # long with git
+  alias tree='eza -T --icons --group-directories-first'        # tree view
+  alias treed='eza -T -D --icons --group-directories-first'    # tree dirs only
+else
+  # Fallback to your original ls aliases
+  alias ls='ls -aFh --color=always'
+  alias la='ls -Alh'
+  alias lx='ls -lXBh'
+  alias lk='ls -lSrh'
+  alias lc='ls -ltcrh'
+  alias lu='ls -lturh'
+  alias lr='ls -lRh'
+  alias lt='ls -ltrh'
+  alias lm='ls -alh | more'
+  alias lw='ls -xAh'
+  alias ll='ls -Fls'
+  alias labc='ls -lap'
+  alias lf="ls -l | egrep -v '^d'"
+  alias ldir="ls -l | egrep '^d'"
+  alias lla='ls -Al'
+  alias las='ls -A'
+  alias lls='ls -l'
+  alias tree='tree -CAhF --dirsfirst'
+  alias treed='tree -CAFd'
+fi
+
+# Remove a directory and all files
+alias rmd='/bin/rm  --recursive --force --verbose '
+
+# chmod helpers (optional; remove if risky)
+alias mx='sudo chmod a+x'
+alias 000='sudo chmod -R 000'
+alias 644='sudo chmod -R 644'
+alias 666='sudo chmod -R 666'
+alias 755='sudo chmod -R 755'
+alias 777='sudo chmod -R 777'
+
+# Search helpers
+alias h="history | grep -- "
+alias p="ps aux | grep -- "
+alias topcpu="/bin/ps -eo pcpu,pid,user,args | sort -k1 -r | head -10"
+alias f="find . | grep -- "
+alias countfiles='for t in files links directories; do echo "$(find . -type ${t:0:1} 2>/dev/null | wc -l)" "$t"; done'
+
+# Networking and disks
+alias openports='netstat -nape --inet'
+alias rebootsafe='sudo shutdown -r now'
+alias rebootforce='sudo shutdown -r -n now'
+alias diskspace="du -S | sort -n -r | more"
+alias folders='du -h --max-depth=1'
+alias folderssort='find . -maxdepth 1 -type d -print0 | xargs -0 du -sk | sort -rn'
+alias mountedinfo='df -hT'
+
+# Archives
+alias mktar='tar -cvf'
+alias mkbz2='tar -cvjf'
+alias mkgz='tar -cvzf'
+alias untar='tar -xvf'
+alias unbz2='tar -xvjf'
+alias ungz='tar -xvzf'
 
 # Change directory aliases
 alias home='cd ~'
@@ -178,542 +280,355 @@ alias ...='cd ../..'
 alias ....='cd ../../..'
 alias .....='cd ../../../..'
 
-# cd into the old directory
-alias bd='cd "$OLDPWD"'
+# -------------------------------------------------------------------
+# Functions
+# -------------------------------------------------------------------
 
-# Remove a directory and all files
-alias rmd='/bin/rm  --recursive --force --verbose '
+# Distribution detection
+distribution() {
+  local dtype=unknown
+  if [[ -r /etc/os-release ]]; then
+    # shellcheck disable=SC1091
+    . /etc/os-release
+    case "$ID" in
+      fedora|rhel|centos) dtype=redhat ;;
+      sles|opensuse*) dtype=suse ;;
+      ubuntu|debian) dtype=debian ;;
+      gentoo) dtype=gentoo ;;
+      arch|manjaro) dtype=arch ;;
+      slackware) dtype=slackware ;;
+      solus) dtype=solus ;;
+      nixos) dtype=nixos ;;
+      *) ;;
+    esac
+    if [[ $dtype == unknown && -n ${ID_LIKE:-} ]]; then
+      case "$ID_LIKE" in
+        *fedora*|*rhel*|*centos*) dtype=redhat ;;
+        *sles*|*opensuse*) dtype=suse ;;
+        *ubuntu*|*debian*) dtype=debian ;;
+        *gentoo*) dtype=gentoo ;;
+        *arch*) dtype=arch ;;
+        *slackware*) dtype=slackware ;;
+        *solus*) dtype=solus ;;
+      esac
+    fi
+  fi
+  printf '%s\n' "$dtype"
+}
+DISTRIBUTION="$(distribution)"
 
-# Alias's for multiple directory listing commands
-alias la='ls -Alh'                # show hidden files
-alias ls='ls -aFh --color=always' # add colors and file type extensions
-alias lx='ls -lXBh'               # sort by extension
-alias lk='ls -lSrh'               # sort by size
-alias lc='ls -ltcrh'              # sort by change time
-alias lu='ls -lturh'              # sort by access time
-alias lr='ls -lRh'                # recursive ls
-alias lt='ls -ltrh'               # sort by date
-alias lm='ls -alh |more'          # pipe through 'more'
-alias lw='ls -xAh'                # wide listing format
-alias ll='ls -Fls'                # long listing format
-alias labc='ls -lap'              # alphabetical sort
-alias lf="ls -l | egrep -v '^d'"  # files only
-alias ldir="ls -l | egrep '^d'"   # directories only
-alias lla='ls -Al'                # List and Hidden Files
-alias las='ls -A'                 # Hidden Files
-alias lls='ls -l'                 # List
+# Prefer bat/batcat for cat if present
+if command -v bat &>/dev/null || command -v batcat &>/dev/null; then
+  case "$DISTRIBUTION" in
+    redhat|arch|solus|nixos|void) alias cat='bat' ;;
+    *) alias cat='batcat' ;;
+  esac
+fi
 
-# alias chmod commands
-alias mx='sudo chmod a+x'
-alias 000='sudo chmod -R 000'
-alias 644='sudo chmod -R 644'
-alias 666='sudo chmod -R 666'
-alias 755='sudo chmod -R 755'
-alias 777='sudo chmod -R 777'
+# OS version info
+ver() {
+  local dtype
+  dtype="$(distribution)"
+  case "$dtype" in
+    redhat)
+      if [[ -s /etc/redhat-release ]]; then
+        cat /etc/redhat-release
+      else
+        cat /etc/issue
+      fi
+      uname -a
+      ;;
+    suse) cat /etc/SuSE-release ;;
+    debian) command -v lsb_release &>/dev/null && lsb_release -a || cat /etc/os-release ;;
+    gentoo) cat /etc/gentoo-release ;;
+    arch|solus|nixos) cat /etc/os-release ;;
+    slackware) cat /etc/slackware-version ;;
+    *)
+      if [[ -s /etc/issue ]]; then
+        cat /etc/issue
+      else
+        echo "Error: Unknown distribution"
+        return 1
+      fi
+      ;;
+  esac
+}
 
-# Search command line history
-alias h="history | grep "
-
-# Search running processes
-alias p="ps aux | grep "
-alias topcpu="/bin/ps -eo pcpu,pid,user,args | sort -k 1 -r | head -10"
-
-# Search files in the current folder
-alias f="find . | grep "
-
-# Count all files (recursively) in the current folder
-alias countfiles="for t in files links directories; do echo \`find . -type \${t:0:1} | wc -l\` \$t; done 2> /dev/null"
-
-# To see if a command is aliased, a file, or a built-in command
-alias checkcommand="type -t"
-
-# Show open ports
-alias openports='netstat -nape --inet'
-
-# Alias's for safe and forced reboots
-alias rebootsafe='sudo shutdown -r now'
-alias rebootforce='sudo shutdown -r -n now'
-
-# Alias's to show disk space and space used in a folder
-alias diskspace="du -S | sort -n -r |more"
-alias folders='du -h --max-depth=1'
-alias folderssort='find . -maxdepth 1 -type d -print0 | xargs -0 du -sk | sort -rn'
-alias tree='tree -CAhF --dirsfirst'
-alias treed='tree -CAFd'
-alias mountedinfo='df -hT'
-
-# Alias's for archives
-alias mktar='tar -cvf'
-alias mkbz2='tar -cvjf'
-alias mkgz='tar -cvzf'
-alias untar='tar -xvf'
-alias unbz2='tar -xvjf'
-alias ungz='tar -xvzf'
-
-# Show all logs in /var/log
-alias logs="sudo find /var/log -type f -exec file {} \; | grep 'text' | cut -d' ' -f1 | sed -e's/:$//g' | grep -v '[0-9]$' | xargs tail -f"
-
-# SHA1
-alias sha1='openssl sha1'
-
-alias clickpaste='sleep 3; xdotool type "$(xclip -o -selection clipboard)"'
-
-# KITTY - alias to be able to use kitty features when connecting to remote servers(e.g use tmux on remote server)
-
-alias kssh="kitty +kitten ssh"
-
-# alias to cleanup unused docker containers, images, networks, and volumes
-
-alias docker-clean=' \
-  docker container prune -f ; \
-  docker image prune -f ; \
-  docker network prune -f ; \
-  docker volume prune -f '
-
-#######################################################
-# SPECIAL FUNCTIONS
-#######################################################
-
-# Function to scp builds directory to a Tailscale device
+# tscp: SCP any file/folder to a host (fzf host picker if no host given)
 tscp() {
-    if [ -z "$1" ]; then
+    local src="$1"
+    local host="$2"
+    local dest="${3:-~}"
+    local default_user="jared"  # change to your normal remote username
+
+    if [[ -z $src ]]; then
+        echo "Usage: tscp <file|dir> [host] [destination-path]"
+        echo "Example: tscp myfile.txt myhost"
+        echo "         tscp myfile.txt user@myhost /var/www/html"
+        echo "         tscp myfile.txt   # pick host via fzf"
         return 1
     fi
-    
-    scp -r builds/ "jared@$1:~/Downloads/"
+
+    # If host not provided, pick from SSH config or Tailscale list
+    if [[ -z $host ]]; then
+        if command -v fzf &>/dev/null; then
+            local ssh_hosts ts_hosts
+            ssh_hosts=$(grep -E '^Host ' ~/.ssh/config 2>/dev/null | awk '{print $2}')
+            if command -v tailscale &>/dev/null && command -v jq &>/dev/null; then
+                ts_hosts=$(tailscale status --json 2>/dev/null | jq -r '.Peer[]?.DNSName' | sed 's/\.$//')
+            fi
+            host=$(printf "%s\n%s\n" "$ssh_hosts" "$ts_hosts" | sort -u | fzf --prompt="Select host: ")
+        else
+            echo "Error: fzf not installed and no host provided."
+            return 1
+        fi
+    fi
+
+    [[ -z $host ]] && { echo "No host selected."; return 1; }
+
+    # If host already contains "@", use it as-is, otherwise prepend default user
+    if [[ "$host" == *"@"* ]]; then
+        remote="$host"
+    else
+        remote="${default_user}@${host}"
+    fi
+
+    # Decide whether to use -r (only for directories)
+    local scp_opts=()
+    if [[ -d $src ]]; then
+        scp_opts+=(-r)
+    fi
+
+    scp "${scp_opts[@]}" -- "$src" "${remote}:$dest"
 }
 
-# Extracts any archive(s) (if unp isn't installed)
+# extract archives
 extract() {
-	for archive in "$@"; do
-		if [ -f "$archive" ]; then
-			case $archive in
-			*.tar.bz2) tar xvjf $archive ;;
-			*.tar.gz) tar xvzf $archive ;;
-			*.bz2) bunzip2 $archive ;;
-			*.rar) rar x $archive ;;
-			*.gz) gunzip $archive ;;
-			*.tar) tar xvf $archive ;;
-			*.tbz2) tar xvjf $archive ;;
-			*.tgz) tar xvzf $archive ;;
-			*.zip) unzip $archive ;;
-			*.Z) uncompress $archive ;;
-			*.7z) 7z x $archive ;;
-			*) echo "don't know how to extract '$archive'..." ;;
-			esac
-		else
-			echo "'$archive' is not a valid file!"
-		fi
-	done
+  local archive
+  for archive in "$@"; do
+    if [[ -f $archive ]]; then
+      case "$archive" in
+        *.tar.bz2|*.tbz2) tar xvjf -- "$archive" ;;
+        *.tar.gz|*.tgz) tar xvzf -- "$archive" ;;
+        *.bz2) bunzip2 -- "$archive" ;;
+        *.rar) unrar x -- "$archive" 2>/dev/null || rar x -- "$archive" ;;
+        *.gz) gunzip -- "$archive" ;;
+        *.tar) tar xvf -- "$archive" ;;
+        *.zip) unzip -- "$archive" ;;
+        *.Z) uncompress -- "$archive" ;;
+        *.7z) 7z x -- "$archive" ;;
+        *.tar.xz|*.txz) tar xvJf -- "$archive" ;;
+        *.xz) unxz -- "$archive" ;;
+        *) echo "Don't know how to extract '$archive'." ;;
+      esac
+    else
+      echo "'$archive' is not a valid file!"
+    fi
+  done
 }
 
-# Searches for text in all files in the current folder
+# grep text recursively in current tree
 ftext() {
-	# -i case-insensitive
-	# -I ignore binary files
-	# -H causes filename to be printed
-	# -r recursive search
-	# -n causes line number to be printed
-	# optional: -F treat search term as a literal, not a regular expression
-	# optional: -l only print filenames and not the matching lines ex. grep -irl "$1" *
-	grep -iIHrn --color=always "$1" . | less -r
+  [[ -n $1 ]] || { echo "Usage: ftext <pattern>"; return 1; }
+  grep -iIHrn --color=always -- "$1" . | less -r
 }
 
-# Copy file with a progress bar
+# copy with progress (requires strace)
 cpp() {
-    set -e
-    strace -q -ewrite cp -- "${1}" "${2}" 2>&1 |
-    awk '{
-        count += $NF
+  set -e
+  local src="$1" dst="$2"
+  [[ -n $src && -n $dst ]] || { echo "Usage: cpp <src> <dst>"; return 1; }
+  strace -q -ewrite cp -- "$src" "$dst" 2>&1 |
+    awk -v total_size="$(stat -c '%s' "$src")" '
+      { count += $NF
         if (count % 10 == 0) {
-            percent = count / total_size * 100
-            printf "%3d%% [", percent
-            for (i=0;i<=percent;i++)
-                printf "="
-            printf ">"
-            for (i=percent;i<100;i++)
-                printf " "
-            printf "]\r"
+          percent = (count / total_size) * 100
+          if (percent > 100) percent = 100
+          printf "%3d%% [", percent
+          for (i = 0; i <= percent; i++) printf "="
+          printf ">"
+          for (i = percent; i < 100; i++) printf " "
+          printf "]\r"
         }
-    }
-    END { print "" }' total_size="$(stat -c '%s' "${1}")" count=0
+      }
+      END { print "" }'
 }
 
-# Copy and go to the directory
+# copy and go
 cpg() {
-	if [ -d "$2" ]; then
-		cp "$1" "$2" && cd "$2"
-	else
-		cp "$1" "$2"
-	fi
+  local src="$1" dst="$2"
+  [[ -n $src && -n $dst ]] || { echo "Usage: cpg <src> <dst-dir|file>"; return 1; }
+  if [[ -d $dst ]]; then
+    cp -- "$src" "$dst" && cd "$dst" || return
+  else
+    cp -- "$src" "$dst"
+  fi
 }
 
-# Move and go to the directory
+# move and go
 mvg() {
-	if [ -d "$2" ]; then
-		mv "$1" "$2" && cd "$2"
-	else
-		mv "$1" "$2"
-	fi
+  local src="$1" dst="$2"
+  [[ -n $src && -n $dst ]] || { echo "Usage: mvg <src> <dst-dir|file>"; return 1; }
+  if [[ -d $dst ]]; then
+    mv -- "$src" "$dst" && cd "$dst" || return
+  else
+    mv -- "$src" "$dst"
+  fi
 }
 
-# Create and go to the directory
+# mkdir and go
 mkdirg() {
-	mkdir -p "$1"
-	cd "$1"
+  [[ -n $1 ]] || { echo "Usage: mkdirg <dir>"; return 1; }
+  mkdir -p -- "$1" && cd -- "$1"
 }
 
-# Goes up a specified number of directories  (i.e. up 4)
+# up N directories
 up() {
-	local d=""
-	limit=$1
-	for ((i = 1; i <= limit; i++)); do
-		d=$d/..
-	done
-	d=$(echo $d | sed 's/^\///')
-	if [ -z "$d" ]; then
-		d=..
-	fi
-	cd $d
+  local limit="${1:-1}" d=
+  local i
+  for ((i = 1; i <= limit; i++)); do
+    d="${d}/.."
+  done
+  d="${d#/}"
+  cd "${d:-..}"
 }
 
-# Automatically do an ls after each cd, z, or zoxide
-cd ()
-{
-	if [ -n "$1" ]; then
-		builtin cd "$@" && ls
-	else
-		builtin cd ~ && ls
-	fi
+# cd wrapper: ls after cd
+cd() {
+  if [ -n $1 ]; then
+    builtin cd "$@" && ls
+  else
+    builtin cd ~ && ls
+  fi
 }
 
-# Returns the last 2 fields of the working directory
+# tail of PWD
 pwdtail() {
-	pwd | awk -F/ '{nlast = NF -1;print $nlast"/"$NF}'
+  pwd | awk -F/ '{nlast = NF - 1; print $nlast "/" $NF}'
 }
 
-# Show the current distribution
-distribution () {
-    local dtype="unknown"  # Default to unknown
+# what is my IP
+whatsmyip() {
+  local dev
+  dev="$(ip route 2>/dev/null | awk '/default/ {print $5; exit}')"
+  if [[ -n $dev ]]; then
+    echo -n "Internal IP: "
+    ip -4 -o addr show dev "$dev" 2>/dev/null | awk '{print $4}' | cut -d/ -f1
+  else
+    echo -n "Internal IP: "
+    ip -4 -o addr show 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -n1
+  fi
 
-    # Use /etc/os-release for modern distro identification
-    if [ -r /etc/os-release ]; then
-        source /etc/os-release
-        case $ID in
-            fedora|rhel|centos)
-                dtype="redhat"
-                ;;
-            sles|opensuse*)
-                dtype="suse"
-                ;;
-            ubuntu|debian)
-                dtype="debian"
-                ;;
-            gentoo)
-                dtype="gentoo"
-                ;;
-            arch|manjaro)
-                dtype="arch"
-                ;;
-            slackware)
-                dtype="slackware"
-                ;;
-            solus)
-                dtype="solus"
-                ;;
-            nixos)
-                dtype="nixos"
-                ;;
-            *)
-                # Check ID_LIKE only if dtype is still unknown
-                if [ -n "$ID_LIKE" ]; then
-                    case $ID_LIKE in
-                        *fedora*|*rhel*|*centos*)
-                            dtype="redhat"
-                            ;;
-                        *sles*|*opensuse*)
-                            dtype="suse"
-                            ;;
-                        *ubuntu*|*debian*)
-                            dtype="debian"
-                            ;;
-                        *gentoo*)
-                            dtype="gentoo"
-                            ;;
-                        *arch*)
-                            dtype="arch"
-                            ;;
-                        *slackware*)
-                            dtype="slackware"
-                            ;;
-                        *solus*)
-                            dtype="solus"
-                            ;;
-                    esac
-                fi
-
-                # If ID or ID_LIKE is not recognized, keep dtype as unknown
-                ;;
-        esac
-    fi
-
-    echo $dtype
+  echo -n "External IP: "
+  curl -fsS ifconfig.me || curl -fsS ipinfo.io/ip || echo "N/A"
 }
+alias whatismyip='whatsmyip'
 
-# Set DISTRIBUTION variable based on the distribution function
-DISTRIBUTION=$(distribution)
-
-if command -v bat &> /dev/null || command -v batcat &> /dev/null; then
-    if [ "$DISTRIBUTION" = "redhat" ] || [ "$DISTRIBUTION" = "arch" ] || [ "$DISTRIBUTION" = "solus" ] || [ "$DISTRIBUTION" = "nixos" ] || [ "$DISTRIBUTION" = "void" ] ; then
-        alias cat='bat'
-    else
-        alias cat='batcat'
-    fi
-fi
-
-# Show the current version of the operating system
-ver() {
-    local dtype
-    dtype=$(distribution)
-
-    case $dtype in
-        "redhat")
-            if [ -s /etc/redhat-release ]; then
-                cat /etc/redhat-release
-            else
-                cat /etc/issue
-            fi
-            uname -a
-            ;;
-        "suse")
-            cat /etc/SuSE-release
-            ;;
-        "debian")
-            lsb_release -a
-            ;;
-        "gentoo")
-            cat /etc/gentoo-release
-            ;;
-        "arch")
-            cat /etc/os-release
-            ;;
-        "slackware")
-            cat /etc/slackware-version
-            ;;
-        "solus")
-            cat /etc/os-release
-            ;;
-        "nixos")
-            cat /etc/os-release
-            ;;
-        *)
-            if [ -s /etc/issue ]; then
-                cat /etc/issue
-            else
-                echo "Error: Unknown distribution"
-                exit 1
-            fi
-            ;;
-    esac
-}
-
-# Automatically install the needed support files for this .bashrc file
-install_bashrc_support() {
-	local dtype
-	dtype=$(distribution)
-
-	case $dtype in
-		"redhat")
-			sudo yum install multitail tree zoxide trash-cli fzf bash-completion fastfetch
-			;;
-		"suse")
-			sudo zypper install multitail tree zoxide trash-cli fzf bash-completion fastfetch
-			;;
-		"debian")
-			sudo apt-get install multitail tree zoxide trash-cli fzf bash-completion
-			# Fetch the latest fastfetch release URL for linux-amd64 deb file
-			FASTFETCH_URL=$(curl -s https://api.github.com/repos/fastfetch-cli/fastfetch/releases/latest | grep "browser_download_url.*linux-amd64.deb" | cut -d '"' -f 4)
-
-			# Download the latest fastfetch deb file
-			curl -sL $FASTFETCH_URL -o /tmp/fastfetch_latest_amd64.deb
-
-			# Install the downloaded deb file using apt-get
-			sudo apt-get install /tmp/fastfetch_latest_amd64.deb
-			;;
-		"arch")
-			sudo paru multitail tree zoxide trash-cli fzf bash-completion fastfetch
-			;;
-		"slackware")
-			echo "No install support for Slackware"
-			;;
-		*)
-			echo "Unknown distribution"
-			;;
-	esac
-}
-
-# IP address lookup
-alias whatismyip="whatsmyip"
-function whatsmyip () {
-    # Internal IP Lookup.
-    if command -v ip &> /dev/null; then
-        echo -n "Internal IP: "
-        ip addr show wlan0 | grep "inet " | awk '{print $2}' | cut -d/ -f1
-    else
-        echo -n "Internal IP: "
-        ifconfig wlan0 | grep "inet " | awk '{print $2}'
-    fi
-
-    # External IP Lookup
-    echo -n "External IP: "
-    curl -s ifconfig.me
-}
-
-# View Apache logs
-apachelog() {
-	if [ -f /etc/httpd/conf/httpd.conf ]; then
-		cd /var/log/httpd && ls -xAh && multitail --no-repeat -c -s 2 /var/log/httpd/*_log
-	else
-		cd /var/log/apache2 && ls -xAh && multitail --no-repeat -c -s 2 /var/log/apache2/*.log
-	fi
-}
-
-# Edit the Apache configuration
-apacheconfig() {
-	if [ -f /etc/httpd/conf/httpd.conf ]; then
-		sedit /etc/httpd/conf/httpd.conf
-	elif [ -f /etc/apache2/apache2.conf ]; then
-		sedit /etc/apache2/apache2.conf
-	else
-		echo "Error: Apache config file could not be found."
-		echo "Searching for possible locations:"
-		sudo updatedb && locate httpd.conf && locate apache2.conf
-	fi
-}
-
-# Edit the PHP configuration file
-phpconfig() {
-	if [ -f /etc/php.ini ]; then
-		sedit /etc/php.ini
-	elif [ -f /etc/php/php.ini ]; then
-		sedit /etc/php/php.ini
-	elif [ -f /etc/php5/php.ini ]; then
-		sedit /etc/php5/php.ini
-	elif [ -f /usr/bin/php5/bin/php.ini ]; then
-		sedit /usr/bin/php5/bin/php.ini
-	elif [ -f /etc/php5/apache2/php.ini ]; then
-		sedit /etc/php5/apache2/php.ini
-	else
-		echo "Error: php.ini file could not be found."
-		echo "Searching for possible locations:"
-		sudo updatedb && locate php.ini
-	fi
-}
-
-# Edit the MySQL configuration file
-mysqlconfig() {
-	if [ -f /etc/my.cnf ]; then
-		sedit /etc/my.cnf
-	elif [ -f /etc/mysql/my.cnf ]; then
-		sedit /etc/mysql/my.cnf
-	elif [ -f /usr/local/etc/my.cnf ]; then
-		sedit /usr/local/etc/my.cnf
-	elif [ -f /usr/bin/mysql/my.cnf ]; then
-		sedit /usr/bin/mysql/my.cnf
-	elif [ -f ~/my.cnf ]; then
-		sedit ~/my.cnf
-	elif [ -f ~/.my.cnf ]; then
-		sedit ~/.my.cnf
-	else
-		echo "Error: my.cnf file could not be found."
-		echo "Searching for possible locations:"
-		sudo updatedb && locate my.cnf
-	fi
-}
-
-
-# Trim leading and trailing spaces (for scripts)
+# trim leading/trailing whitespace
 trim() {
-	local var=$*
-	var="${var#"${var%%[![:space:]]*}"}" # remove leading whitespace characters
-	var="${var%"${var##*[![:space:]]}"}" # remove trailing whitespace characters
-	echo -n "$var"
+  local var="$*"
+  var="${var#"${var%%[![:space:]]*}"}"
+  var="${var%"${var##*[![:space:]]}"}"
+  printf '%s' "$var"
 }
-# GitHub Titus Additions
 
+# -------------------------------
+# Development Tools
+# -------------------------------
+
+alias pd='pnpm dev'
+alias cr='cargo run'
+
+# -------------------------------
+# Git branch shortcut
+# -------------------------------
+
+gb() {
+    git branch "$@"
+}
+
+# Git pull shortcut
+gp() {
+    git pull "$@"
+}
+
+# Delete a branch
+gbd() {
+    if [ -z "$1" ]; then
+        echo "Usage: gbd <branch>"
+        return 1
+    fi
+    git branch -D "$1"
+}
+
+# Git add + commit
 gcom() {
-	git add .
-	git commit -m "$1"
+    if [ -z "$1" ]; then
+        echo "Usage: gcom <message>"
+        return 1
+    fi
+    git add .
+    git commit -m "$1"
 }
+
+# Git add + commit + push
 lazyg() {
-	git add .
-	git commit -m "$1"
-	git push
+    if [ -z "$1" ]; then
+        echo "Usage: lazyg <message>"
+        return 1
+    fi
+    git add .
+    git commit -m "$1"
+    git push
 }
 
+# Create new branch + commit + push
 newb() {
-  local branch="$1"
-  shift
-  local msg="$*"
-
-  if [ -z "$branch" ] || [ -z "$msg" ]; then
-    echo "Usage: newb <branch> <commit message>"
-    return 1
-  fi
-
-  git checkout -b "$branch" || return 1
-  git add .
-  git commit -m "$msg" || return 1
-  git push -u origin "$branch"
-}
-
-gbd() { # usage: gbD <branch>
-  local b="$1"
-  if [ -z "$b" ]; then
-    echo "Usage: gbD <branch>"
-    return 1
-  fi
-  git branch -D "$b"
-}
-
-function hb {
-    if [ $# -eq 0 ]; then
-        echo "No file path specified."
-        return
-    elif [ ! -f "$1" ]; then
-        echo "File path does not exist."
-        return
+    if [ -z "$1" ] || [ -z "$2" ]; then
+        echo "Usage: newb <branch> <message>"
+        return 1
     fi
 
-    uri="http://bin.christitus.com/documents"
-    response=$(curl -s -X POST -d @"$1" "$uri")
-    if [ $? -eq 0 ]; then
-        hasteKey=$(echo $response | jq -r '.key')
-        echo "http://bin.christitus.com/$hasteKey"
-    else
-        echo "Failed to upload the document."
+    git checkout -b "$1" || return
+    git add .
+    git commit -m "$2" || return
+    git push -u origin "$1"
+}
+
+# Fuzzy branch picker (requires fzf)
+gs() {
+    branch=$(git branch --all --color=never \
+        | sed 's/^[* ]*//' \
+        | sort \
+        | fzf --prompt="Switch to branch: ")
+
+    if [ -n "$branch" ]; then
+        git switch "$branch"
     fi
 }
 
-#######################################################
-# Set the ultimate amazing command prompt
-#######################################################
+# -------------------------------------------------------------------
+# Keybindings and tools
+# -------------------------------------------------------------------
+bind '"\C-f":"zi\n"'
 
-alias hug="hugo server -F --bind=10.0.0.97 --baseURL=http://10.0.0.97"
-
-# Check if the shell is interactive
-if [[ $- == *i* ]]; then
-    # Bind Ctrl+f to insert 'zi' followed by a newline
-    bind '"\C-f":"zi\n"'
+# starship prompt (defines starship_precmd)
+if command -v starship &>/dev/null; then
+  eval "$(starship init bash)"
+  if declare -F starship_precmd >/dev/null; then
+    pc_add 'starship_precmd'
+  fi
 fi
 
-export PATH=$PATH:"$HOME/.local/bin:$HOME/.cargo/bin:/var/lib/flatpak/exports/bin:/.local/share/flatpak/exports/bin"
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
-eval "$(starship init bash)"
-eval "$(zoxide init bash)"
-# Auto-start DWM if we're on TTY1 and .xinitrc contains "exec dwm"
-if [[ "$(tty)" == "/dev/tty1" ]] && [ -f "$HOME/.xinitrc" ] && grep -q "^exec dwm" "$HOME/.xinitrc"; then
-    startx
+# Initialize zoxide if installed
+if command -v zoxide >/dev/null 2>&1; then
+    eval "$(zoxide init bash)"
 fi
+
+# Auto-start X (dwm) on TTY1 if .xinitrc contains 'exec dwm'
+if [[ "$(tty)" == "/dev/tty1" ]] && [[ -f "$HOME/.xinitrc" ]] && grep -q "^exec dwm" "$HOME/.xinitrc"; then
+  command -v startx &>/dev/null && startx
 fi
-fi
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
