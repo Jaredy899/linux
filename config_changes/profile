@@ -8,19 +8,43 @@ umask 022
 # -------------------------------------------------------------------
 # Prompt Setup
 # -------------------------------------------------------------------
-if [ -n "$BASH_VERSION" ] || [ -n "$BB_ASH_VERSION" ]; then
-    PS1='\h:\w\$ '
-else
-    if [ -z "$HOSTNAME" ]; then
-        HOSTNAME=$(hostname)
-    fi
-    PS1="${HOSTNAME%%.*}:$PWD"
-    if [ "$(id -u)" -eq 0 ]; then
-        PS1="${PS1}# "
-    else
-        PS1="${PS1}\$ "
-    fi
-fi
+# Only set PS1 and interactive-only aliases/functions for interactive shells
+case $- in
+    *i*)
+        # If Starship is installed, use it
+        if command -v starship >/dev/null 2>&1; then
+            PS1='$(starship prompt --status "$?" --path "$PWD")'
+        else
+            # Fallback to your existing prompt logic
+            if [ -n "$BASH_VERSION" ] || [ -n "$BB_ASH_VERSION" ]; then
+                PS1='\h:\w\$ '
+            else
+                if [ -z "$HOSTNAME" ]; then
+                    HOSTNAME=$(hostname)
+                fi
+                # Changed $PWD to \w so it updates dynamically
+                PS1="${HOSTNAME%%.*}:\w"
+                if [ "$(id -u)" -eq 0 ]; then
+                    PS1="${PS1}# "
+                else
+                    PS1="${PS1}\$ "
+                fi
+            fi
+        fi
+
+        # Interactive-only aliases
+        alias sudo="doas"
+
+        # Interactive-only cd override
+        cd() {
+            if [ -n "$1" ]; then
+                command cd "$@" && ls
+            else
+                command cd ~ && ls
+            fi
+        }
+        ;;
+esac
 
 # -------------------------------------------------------------------
 # Source /etc/profile.d scripts
@@ -33,7 +57,6 @@ unset script
 # -------------------------------------------------------------------
 # Sudo/Doas Aliases
 # -------------------------------------------------------------------
-alias sudo="doas"
 alias reboot="doas reboot"
 alias shutdown="doas poweroff"
 
@@ -301,14 +324,6 @@ up() {
     cd "${d:-..}"
 }
 
-cd() {
-    if [ -n "$1" ]; then
-        command cd "$@" && ls
-    else
-        command cd ~ && ls
-    fi
-}
-
 pwdtail() {
     pwd | awk -F/ '{nlast = NF - 1; print $nlast "/" $NF}'
 }
@@ -342,7 +357,6 @@ gcom() { [ -z "$1" ] && { echo "Usage: gcom <message>"; return 1; } && git add .
 lazyg() { [ -z "$1" ] && { echo "Usage: lazyg <message>"; return 1; } && git add . && git commit -m "$1" && git push; }
 newb() { [ -z "$1" ] || [ -z "$2" ] && { echo "Usage: newb <branch> <message>"; return 1; } && git checkout -b "$1" && git add . && git commit -m "$2" && git push -u origin "$1"; }
 gs() { branch=$(git branch --all --color=never | sed 's/^[* ]*//' | sort | fzf --prompt="Switch to branch: "); [ -n "$branch" ] && git switch "$branch"; }
-
 
 # -------------------------------------------------------------------
 # Fastfetch and Zoxide
