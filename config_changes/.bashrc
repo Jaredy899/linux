@@ -325,6 +325,26 @@ if command -v bat &>/dev/null || command -v batcat &>/dev/null; then
   esac
 fi
 
+catp() {
+    if command -v bat &>/dev/null; then
+        if [ -t 1 ]; then
+            # Output is a terminal → use bat in plain mode
+            bat --plain --paging=never "$@"
+        else
+            # Output is being piped or redirected → use real cat
+            command cat "$@"
+        fi
+    elif command -v batcat &>/dev/null; then
+        if [ -t 1 ]; then
+            batcat --plain --paging=never "$@"
+        else
+            command cat "$@"
+        fi
+    else
+        command cat "$@"
+    fi
+}
+
 # OS version info
 ver() {
   local dtype
