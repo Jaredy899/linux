@@ -238,7 +238,7 @@ else
 fi
 
 # Remove a directory and all files
-alias rmd='/bin/rm  --recursive --force --verbose '
+alias rmd='sudo /bin/rm  --recursive --force --verbose '
 
 # chmod helpers (optional; remove if risky)
 alias mx='sudo chmod a+x'
