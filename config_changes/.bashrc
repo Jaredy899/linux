@@ -599,11 +599,19 @@ newb() {
 gs() {
     branch=$(git branch --all --color=never \
         | sed 's/^[* ]*//' \
-        | sort \
+        | sort -u \
         | fzf --prompt="Switch to branch: ")
 
     if [ -n "$branch" ]; then
-        git switch "$branch"
+        # Remove "remotes/" prefix if present
+        clean_branch="${branch#remotes/}"
+
+        if [[ "$branch" == remotes/* ]]; then
+            git switch --track "$clean_branch" 2>/dev/null || \
+            git checkout -b "${clean_branch#origin/}" --track "$clean_branch"
+        else
+            git switch "$clean_branch"
+        fi
     fi
 }
 
