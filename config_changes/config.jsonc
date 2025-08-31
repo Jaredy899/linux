@@ -71,8 +71,8 @@
     },
     {
       "type": "kernel",
-      "key": "  ",
-      "format": "{1} {2}"
+      "key": "   Kernel",
+      "keyColor": "red"
     },
     {
       "type": "processes",
