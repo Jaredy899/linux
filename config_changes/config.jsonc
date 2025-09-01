@@ -106,9 +106,8 @@
       "type": "command",
       "key": "  󰩠 Tailscale",
       "keyColor": "red",
-      "text": "if command -v tailscale >/dev/null 2>&1; then tailscale ip -4; else printf 'Not installed\\n'; fi"
+      "text": "command -v tailscale >/dev/null 2>&1 && tailscale ip -4"    
     },
-
     {
       "type": "custom",
       "format": "\u001b[35m───  SYSTEM STATUS  ───\u001b[0m"
