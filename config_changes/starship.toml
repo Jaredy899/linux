@@ -1,60 +1,64 @@
-# Global prompt format configuration
 format = """
-[](#3B4252)\
 $os\
-[](bg:#434C5E fg:#3B4252)\
-$username\
-[](bg:#434C5E fg:#434C5E)\
-$python\
-[](bg:#434C5E fg:#434C5E)\
+[](bg:#769ff0 fg:#3B4252)\
 $directory\
-[](fg:#434C5E bg:#4C566A)\
+[](fg:#769ff0 bg:#394260)\
 $git_branch\
 $git_status\
-[](fg:#4C566A bg:#86BBD8)\
-$c\
-$elixir\
-$elm\
-$golang\
-$haskell\
-$java\
-$julia\
+[](fg:#394260 bg:#212736)\
 $nodejs\
-$nim\
 $rust\
-[](fg:#86BBD8 bg:#06969A)\
+$bun\
+$zig\
+[](fg:#212736 bg:#06969A)\
 $docker_context\
-[](fg:#06969A bg:#33658A)\
-$time\
-[ ](fg:#33658A)\
-"""
+[ ](fg:#06969A)\
+\n$character"""
 
 command_timeout = 5000
 
-# Disable the blank line at the start of the prompt
-# add_newline = false
+# OS segment (icon only, no name)
+[os]
+disabled = false
+format = "[ $symbol ]($style)"
+style = "fg:#E5E9F0 bg:#3B4252"
 
-# Username configuration
-[username]
-show_always = true
-style_user = "bg:#3B4252"
-style_root = "bg:#3B4252"
-format = "[$user ]($style)"
+[os.symbols]
+AlmaLinux = ""
+Alpine = ""
+Arch = ""
+Debian = ""
+Fedora = ""
+FreeBSD = ""
+Gentoo = ""
+Macos = ""     # Apple logo
+Manjaro = ""
+Mint = ""
+NixOS = ""
+Pop = ""
+Raspbian = ""
+Redhat = ""
+RockyLinux = ""
+Ubuntu = ""
+Void = ""
+Windows = "󰍲"
+openSUSE = ""   # openSUSE chameleon
+Solus = "󰠳"      # Solus logo
+Unknown = ""
 
-# Directory configuration
+# Directory
 [directory]
-style = "bg:#434C5E"
+style = "fg:#e3e5e5 bg:#769ff0"
 format = "[ $path ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
-home_symbol = "" # This sets the symbol for the home directory
+home_symbol = "  "
 
-# Directory path substitutions (shortening)
 [directory.substitutions]
-"Documents" = " 󰈙 "
-"Downloads" = "  "
-"Music" = "  "
-"Pictures" = "  "
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = " "
+"Pictures" = " "
 "Applications" = " 󰀻 "
 "Desktop" = " 󰟀 "
 "Movies" = "  "
@@ -65,149 +69,55 @@ home_symbol = "" # This sets the symbol for the home directory
 "Videos" = "  "
 ".config" = "  "
 ".ssh" = " 󰣀 "
+"Github" = "  "
+# Git
+[git_branch]
+symbol = ""
+style = "bg:#394260"
+format = '[[ $symbol $branch ](fg:#769ff0 bg:#394260)]($style)'
 
-# OS symbols
-[os]
-disabled = false
-style = "bg:#3B4252"
-format = "[$symbol ]($style)"
+[git_status]
+style = "bg:#394260"
+format = '[[($all_status$ahead_behind )](fg:#769ff0 bg:#394260)]($style)'
 
-[os.symbols]
-AlmaLinux = ""
-Alpaquita = ""
-Alpine = ""
-Amazon = ""
-Android = ""
-Arch = ""
-Artix = ""
-CachyOS = ""
-CentOS = ""
-Debian = ""
-DragonFly = ""
-Emscripten = ""
-EndeavourOS = ""
-Fedora = ""
-FreeBSD = ""
-Garuda = "󰛓"
-Gentoo = ""
-HardenedBSD = "󰞌"
-Illumos = "󰈸"
-Kali = ""
-Linux = ""
-Mabox = ""
-Macos = ""
-Manjaro = ""
-Mariner = ""
-MidnightBSD = ""
-Mint = ""
-NetBSD = ""
-NixOS = ""
-Nobara = ""
-OpenBSD = "󰈺"
-openSUSE = ""
-OracleLinux = "󰌷"
-Pop = ""
-Raspbian = ""
-Redhat = ""
-RedHatEnterprise = ""
-RockyLinux = ""
-Redox = "󰀘"
-Solus = "󰠳"
-SUSE = ""
-Ubuntu = ""
-Ultramarine = "🔷"
-Unknown = ""
-Uos = "🐲"
-Void = ""
-Windows = "󰍲"
+# Toolchains
+[nodejs]
+symbol = ""
+style = "bg:#212736"
+format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
 
-# C module configuration
-[c]
-symbol = " "
-style = "bg:#86BBD8"
-format = "[ $symbol ($version) ]($style)"
+[rust]
+symbol = ""
+style = "bg:#212736"
+format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
 
-# Docker context configuration
+[bun]
+symbol = ""
+style = "bg:#212736"
+format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+
+[zig]
+symbol = ""
+style = "bg:#212736"
+format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+
+# Docker context
 [docker_context]
 symbol = " "
 style = "bg:#06969A"
-format = '[ $symbol $context ]($style)$path'
+format = '[[ $symbol $context ](fg:#e3e5e5 bg:#06969A)]($style)$path'
 
-# Elixir configuration
-[elixir]
-symbol = " "
-style = "bg:#86BBD8"
-format = "[ $symbol ($version) ]($style)"
+# Prompt character on line 2
+[character]
+success_symbol = "[❯](fg:#a3aed2)"
+error_symbol = "[❯](fg:#ff6b6b)"
+vicmd_symbol = "[❮](fg:#a3aed2)"
+format = "$symbol "
 
-# Elm configuration
-[elm]
-symbol = " "
-style = "bg:#86BBD8"
-format = "[ $symbol ($version) ]($style)"
-
-# Golang configuration
-[golang]
-symbol = " "
-style = "bg:#86BBD8"
-format = "[ $symbol ($version) ]($style)"
-
-# Haskell configuration
-[haskell]
-symbol = " "
-style = "bg:#86BBD8"
-format = "[ $symbol ($version) ]($style)"
-
-# Java configuration
-[java]
-symbol = " "
-style = "bg:#86BBD8"
-format = "[ $symbol ($version) ]($style)"
-
-# Julia configuration
-[julia]
-symbol = " "
-style = "bg:#86BBD8"
-format = "[ $symbol ($version) ]($style)"
-
-# Node.js configuration
-[nodejs]
-symbol = ""
-style = "bg:#86BBD8"
-format = "[ $symbol ($version) ]($style)"
-
-# Nim configuration
-[nim]
-symbol = " "
-style = "bg:#86BBD8"
-format = "[ $symbol ($version) ]($style)"
-
-# Python configuration
-[python]
-style = "bg:#3B4252"
-format = "[ (\\($virtualenv\\) ) ]($style)"
-
-# Rust configuration
-[rust]
-symbol = ""
-style = "bg:#86BBD8"
-format = "[ $symbol ($version) ]($style)"
-
-# Git branch configuration (disabled)
-[git_branch]
-symbol = ""
-style = "bg:#4C566A"
-format = "[ $symbol $branch ]($style)"
-disabled = true
-
-# Git status configuration (disabled)
-[git_status]
-style = "bg:#4C566A"
-format = "[$all_status$ahead_behind ]($style)"
-disabled = true
-
-# Time configuration
-[time]
+# Optional: sudo indicator
+[sudo]
 disabled = false
-time_format = "%R" # Hour:Minute Format
-style = "bg:#33658A"
-format = "[ $time ]($style)"
+style = "bold red"
+symbol = " "
+format = "[$symbol]($style) "
+allow_windows = false
