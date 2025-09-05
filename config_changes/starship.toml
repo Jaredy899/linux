@@ -6,9 +6,13 @@ $directory\
 $git_branch\
 $git_status\
 [](fg:#394260 bg:#212736)\
-$nodejs\
-$rust\
 $bun\
+$c\
+$golang\
+$nodejs\
+$python\
+$ruby\
+$rust\
 $zig\
 [](fg:#212736 bg:#06969A)\
 $docker_context\
@@ -81,18 +85,38 @@ style = "bg:#394260"
 format = '[[($all_status$ahead_behind )](fg:#769ff0 bg:#394260)]($style)'
 
 # Toolchains
+[bun]
+symbol = ""
+style = "bg:#212736"
+format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+
+[c]
+symbol = ""
+style = "bg:#212736"
+format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+
+[golang]
+symbol = ""
+style = "bg:#212736"
+format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+
 [nodejs]
 symbol = ""
 style = "bg:#212736"
 format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
 
-[rust]
-symbol = ""
+[python]
+symbol = ""
 style = "bg:#212736"
 format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
 
-[bun]
-symbol = ""
+[ruby]
+symbol = ""
+style = "bg:#212736"
+format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
+
+[rust]
+symbol = ""
 style = "bg:#212736"
 format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
 
