@@ -100,6 +100,7 @@ alias h="history | grep -- "
 alias p="ps aux | grep -- "
 alias topcpu="/bin/ps -eo pcpu,pid,user,args | sort -k1 -r | head -10"
 alias f="find . | grep -- "
+# shellcheck disable=SC2154
 alias countfiles='for t in files links directories; do echo "$(find . -type ${t:0:1} 2>/dev/null | wc -l)" "$t"; done'
 
 # Networking & disks
