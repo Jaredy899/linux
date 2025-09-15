@@ -21,7 +21,7 @@ updateSystem() {
             "$ESCALATION_TOOL" "$PACKAGER" upgrade
             ;;
         xbps-install)
-            "$ESCALATION_TOOL" "$PACKAGER" -Syu
+            "$ESCALATION_TOOL" "$PACKAGER" -Syu base-system
             ;;
         nix)
             "$ESCALATION_TOOL" nix-channel --update
@@ -41,6 +41,18 @@ updateFlatpaks() {
     fi
 }
 
+enableParallelDownloads() {
+    # Enable parallel downloads
+    if [ -f /etc/pacman.conf ]; then
+        "$ESCALATION_TOOL" sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf || printf "%b\n" "${YELLOW}Failed to enable ParallelDownloads for Pacman. Continuing...${RC}"
+    elif [ -f /etc/dnf/dnf.conf ] && ! grep -q '^max_parallel_downloads' /etc/dnf/dnf.conf; then
+        echo 'max_parallel_downloads=10' | "$ESCALATION_TOOL" tee -a /etc/dnf/dnf.conf || printf "%b\n" "${YELLOW}Failed to enable max_parallel_downloads for DNF. Continuing...${RC}"
+    elif [ -f /etc/zypp/zypp.conf ] && ! grep -q '^multiversion' /etc/zypp/zypp.conf; then
+        "$ESCALATION_TOOL" sed -i 's/^# download.use_deltarpm = true/download.use_deltarpm = true/' /etc/zypp/zypp.conf || printf "%b\n" "${YELLOW}Failed to enable parallel downloads for Zypper. Continuing...${RC}"
+    fi
+}
+
 checkEnv || exit 1
+enableParallelDownloads
 updateSystem
 updateFlatpaks
