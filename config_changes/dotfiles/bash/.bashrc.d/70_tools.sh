@@ -5,6 +5,7 @@ alias bd='bun dev'
 alias cr='cargo run'
 
 # Fzf bindings
+# shellcheck disable=SC1090
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
 # Zoxide
@@ -27,4 +28,5 @@ if [[ "$(tty)" == "/dev/tty1" ]] && [[ -f "$HOME/.xinitrc" ]] && grep -q "^exec 
 fi
 
 # Cargo environment
+# shellcheck disable=SC1091
 [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
