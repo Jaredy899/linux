@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Extra dev tools and integrations
 
-alias pd='pnpm dev'
+alias bd='bun dev'
 alias cr='cargo run'
 
 # Fzf bindings
@@ -15,9 +15,10 @@ fi
 # Starship prompt
 if command -v starship &>/dev/null; then
   eval "$(starship init bash)"
-  if declare -F starship_precmd >/dev/null; then
-    pc_add 'starship_precmd'
-  fi
+fi
+
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate bash)"
 fi
 
 # Auto-start X if TTY1 and dwm config found

@@ -1,0 +1,22 @@
+[settings]
+idiomatic_version_file_enable_tools = ["ruby"]
+
+[settings.ruby]
+ruby_build_opts = "CC=gcc-14 CXX=g++-14"
+
+[tools]
+ruby = "latest"
+zig = "latest"
+erlang = "latest"
+elixir = "latest"
+haskell = "9.12.2"
+ocaml = "latest"
+dotnet = "latest"
+java = "latest"
+bun = "latest"
+go = "latest"
+nasm = "2.16"
+kotlin = "latest"
+scala = "latest"
+groovy = "latest"
+julia = "1.11.6"

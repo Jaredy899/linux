@@ -1,0 +1,47 @@
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+
+  "logo": {
+    "type": "auto",
+    "padding": { "top": 1, "right": 2 }
+  },
+
+  "display": {
+    "separator": "  "
+  },
+
+  "modules": [
+    { "type": "custom", "format": "\u001b[36m───  SYSTEM OVERVIEW  ───\u001b[0m" },
+
+    { "type": "host",    "key": "  󰌢", "keyColor": "red" },
+    { "type": "cpu",     "key": "  ", "keyColor": "yellow" },
+    { "type": "gpu",     "detectionMethod": "pci", "key": "  ", "keyColor": "green" },
+    { "type": "display", "key": "  󱄄", "keyColor": "cyan" },
+    { "type": "memory",  "key": "  ", "keyColor": "blue" },
+    { "type": "disk",    "key": "  ", "keyColor": "magenta" },
+    { "type": "battery", "key": "  ", "keyColor": "red" },
+
+    { "type": "custom", "format": "\u001b[32m───  SOFTWARE STACK  ───\u001b[0m" },
+
+    { "type": "os",        "key": "  ", "keyColor": "cyan" },
+    { "type": "shell",     "key": "  ", "keyColor": "yellow" },
+    { "type": "kernel",    "key": "  ", "keyColor": "red" },
+    { "type": "processes", "key": "  󰧑", "format": "{1} running", "keyColor": "green" },
+    { "type": "packages",  "key": "  ", "keyColor": "magenta" },
+
+    { "type": "custom", "format": "\u001b[33m───  NETWORK & TIME  ───\u001b[0m" },
+
+    { "type": "datetime", "key": "  ", "keyColor": "blue" },
+    { "type": "localip",  "showIpv6": false, "showMac": false, "key": "  󰩠", "keyColor": "magenta" },
+    { "type": "command",  "key": "  󰩠", "keyColor": "red",
+      "text": "command -v tailscale >/dev/null 2>&1 && tailscale ip -4" },
+
+    { "type": "custom", "format": "\u001b[35m───  SYSTEM STATUS  ───\u001b[0m" },
+
+    { "type": "command", "key": "  󰻀 OS Age", "keyColor": "red",
+      "text": "case \"$(uname -s)\" in Linux) birth=$(stat -c %W /);; Darwin) birth=$(stat -f %B /);; *) powershell -NoProfile -Command \"$d=(Get-CimInstance Win32_OperatingSystem).InstallDate; ((Get-Date)-$d).Days.ToString() + ' days'\"; exit 0;; esac; now=$(date +%s); days=$(( (now - birth) / 86400 )); printf \"%s days\\n\" \"$days\"" },
+    { "type": "uptime", "key": "   Uptime", "format": "{1} days {2} hours {3} minutes", "keyColor": "green" },
+
+    { "type": "custom", "format": "\u001b[36m─────────────────────────────\u001b[0m" }
+  ]
+}
